@@ -1229,7 +1229,7 @@ body.special-menu .announce{box-shadow:0 0 0 3px rgba(211,186,130,.22),0 18px 40
 @media(max-width:360px){.guide-hero-dish{grid-template-columns:1fr;text-align:center;}.guide-hero-dish .gphoto{margin:0 auto;}.guide-actions{justify-content:center;}.guide-card{grid-template-columns:74px minmax(0,1fr);}.guide-card .guide-price{grid-column:2;text-align:left;}.guide-card .mini-actions{grid-column:1 / -1;}.guide-nav{grid-template-columns:1fr;}}
 @media(prefers-reduced-motion:reduce){.view-switch,.guide-landing,.guide-menu-card,.guide-pick,.guide-chapter,.guide-chapter::before,.guide-chapter .gicon,.guide-hero-dish,.guide-hero-dish .gphoto img,.guide-card{animation:none!important;}}
 /* Guide/category mode: only the main top panel is sticky. The category rail scrolls with content so it never crosses under the logo header. */
-body.guided-view .head{position:sticky!important;top:0!important;z-index:80!important;box-shadow:0 12px 28px rgba(20,40,42,.10)!important;}
+body.guided-view .head{position:sticky!important;top:0!important;z-index:120!important;box-shadow:0 12px 28px rgba(20,40,42,.10)!important;}
 body.guided-view .guide-picker{position:relative!important;top:auto!important;z-index:2!important;margin:8px 0 10px!important;background:transparent!important;border-bottom:0!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;}
 body.guided-view .guide-sec{scroll-margin-top:calc(var(--head-h, 136px) + 16px)!important;}
 body.guided-view .guide-hero-dish{grid-template-columns:94px minmax(0,1fr)!important;padding:12px!important;gap:12px!important;border-radius:20px!important;margin:12px 0!important;}
@@ -1253,6 +1253,23 @@ body.guided-view .guide-card .mini-actions button{min-height:31px!important;font
   body.guided-view .guide-card .gthumb img{width:52px!important;height:52px!important;}
   body.guided-view .guide-card h3{font-size:18px!important;}
 }
+
+/* Final mobile stack guard: header always wins, category rail sits below measured header height. */
+html,body{max-width:100%;overflow-x:hidden;}
+.wrap{overflow-x:visible!important;overflow-y:visible!important;}
+.head{position:fixed!important;top:0!important;left:50%!important;right:auto!important;width:100%!important;max-width:var(--maxw)!important;transform:translateX(-50%)!important;z-index:120!important;background:var(--paper)!important;border-bottom:1px solid rgba(211,186,130,.28)!important;box-shadow:0 10px 26px rgba(20,40,42,.08)!important;isolation:isolate!important;}
+.head::before{content:'';position:absolute;inset:-2px 0 0;z-index:-1;background:var(--paper);}
+body::before{content:'';position:fixed;top:0;left:50%;width:100%;max-width:var(--maxw);height:var(--head-h,92px);transform:translateX(-50%);background:var(--paper);z-index:110;pointer-events:none;}
+.wrap{padding-top:var(--head-h,92px)!important;}
+body.guided-view .head{position:fixed!important;top:0!important;left:50%!important;right:auto!important;width:100%!important;max-width:var(--maxw)!important;transform:translateX(-50%)!important;z-index:120!important;background:var(--paper)!important;}
+.nav{top:var(--head-h,96px)!important;z-index:70!important;background:var(--paper)!important;box-shadow:0 8px 22px rgba(20,40,42,.07)!important;}
+.nav.nav-fixed{position:fixed!important;top:var(--head-h,96px)!important;left:50%!important;right:auto!important;width:100%!important;max-width:var(--maxw)!important;transform:translateX(-50%)!important;margin-top:0!important;}
+body.nav-pinned:not(.guided-view) #root{padding-top:var(--nav-h,58px)!important;}
+.sec{scroll-margin-top:calc(var(--head-h,96px) + var(--nav-h,58px) + 18px)!important;}
+.guide-picker{top:calc(var(--head-h,96px) + 6px)!important;}
+body.guided-view .guide-picker{position:relative!important;top:auto!important;}
+.cookie:not(.on),.sheet:not(.on){visibility:hidden!important;pointer-events:none!important;}
+.cookie:not(.on){display:none!important;}
 
 </style>
 </head>
@@ -1892,6 +1909,7 @@ function renderViewSwitch(){
   slot.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>setMenuView(b.dataset.view));
 }
 function renderTabs(){
+  resetPinnedNav();
   const row=document.getElementById('tabs'); row.innerHTML='';
   activeMenuCats().forEach((c,ix)=>{
     if(c.hidden || !S.menu.some(i=>i.cat===c.id&&!i.hidden&&matches(i))) return;
@@ -1906,6 +1924,7 @@ function renderTabs(){
   a.innerHTML=`<span style="display:inline-flex">${ICO('warn')}</span>${esc(T('allergens'))}`;
   a.onclick=()=>{ renderAlg(); openSheet('algSheet'); };
   row.appendChild(a);
+  requestAnimationFrame(syncPinnedNav);
 }
 function ICO(n){ return `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20Z"/><path d="M12 10v4"/><path d="M12 17h.01"/></svg>`; }
 let manualCatUntil=0;
@@ -1914,6 +1933,7 @@ function scrollBehavior(){
   return (reduce || document.body.classList.contains('motion-off')) ? 'auto' : 'smooth';
 }
 function stickyNavOffset(){
+  setStickyMetrics();
   const head=document.querySelector('.head');
   const nav=document.querySelector('.nav');
   const guide=document.querySelector('.guide-picker');
@@ -1923,6 +1943,39 @@ function stickyNavOffset(){
   const guideStyle=guide ? getComputedStyle(guide) : null;
   const guideH=(document.body.classList.contains('guided-view') && guide && guideStyle && /^(sticky|fixed)$/.test(guideStyle.position)) ? guide.getBoundingClientRect().height : 0;
   return Math.ceil(headH+navH+guideH+extra);
+}
+function setStickyMetrics(){
+  const head=document.querySelector('.head');
+  const nav=document.querySelector('.nav');
+  const headH=head ? Math.ceil(head.getBoundingClientRect().height) : 96;
+  const navH=(nav && getComputedStyle(nav).display!=='none') ? Math.ceil(nav.getBoundingClientRect().height) : 0;
+  document.documentElement.style.setProperty('--head-h', headH+'px');
+  document.documentElement.style.setProperty('--nav-h', navH+'px');
+}
+function resetPinnedNav(){
+  const nav=document.querySelector('.nav');
+  if(nav){
+    nav.classList.remove('nav-fixed');
+    delete nav.dataset.stickAt;
+  }
+  document.body.classList.remove('nav-pinned');
+}
+function syncPinnedNav(){
+  const nav=document.querySelector('.nav');
+  const head=document.querySelector('.head');
+  if(!nav || !head || document.body.classList.contains('guided-view') || getComputedStyle(nav).display==='none'){
+    resetPinnedNav();
+    return;
+  }
+  setStickyMetrics();
+  const headH=Math.ceil(head.getBoundingClientRect().height);
+  if(!nav.classList.contains('nav-fixed')){
+    nav.dataset.stickAt = String(Math.max(0, window.scrollY + nav.getBoundingClientRect().top - headH));
+  }
+  const stickAt=Number(nav.dataset.stickAt || 0);
+  const shouldPin=window.scrollY >= stickAt;
+  nav.classList.toggle('nav-fixed', shouldPin);
+  document.body.classList.toggle('nav-pinned', shouldPin);
 }
 function previewScroller(){
   try{
@@ -3291,8 +3344,9 @@ function handleHandoff(){
 function apply(){
   forceCloseFloatingUI();
   renderHead();renderStrip();renderAnnounce();renderViewSwitch();renderTabs();renderList();
+  setStickyMetrics();
   renderCartSheet();updateCart();renderLang();renderClosing();resetHelp();initCookie();
-  requestAnimationFrame(forceCloseFloatingUI);
+  requestAnimationFrame(()=>{ setStickyMetrics(); syncPinnedNav(); forceCloseFloatingUI(); });
 }
 async function boot(){
   await hydratePublicConfig();
@@ -3307,6 +3361,10 @@ async function boot(){
   }
 }
 boot();
+window.addEventListener('scroll',()=>requestAnimationFrame(syncPinnedNav),{passive:true});
+window.addEventListener('resize',()=>requestAnimationFrame(()=>{ setStickyMetrics(); syncPinnedNav(); }));
+window.addEventListener('orientationchange',()=>setTimeout(()=>{ setStickyMetrics(); syncPinnedNav(); },220));
+window.addEventListener('pageshow',()=>requestAnimationFrame(()=>{ setStickyMetrics(); syncPinnedNav(); forceCloseFloatingUI(); }));
 
 /* ─── scroll reveal: adds .rv to chapter headers + closing as they arrive ───
    html.motion-on is what lets the CSS pre-hide them, so if this script never
