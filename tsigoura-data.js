@@ -17,7 +17,7 @@
       ελληνικό προϊόν δεν μεταφράζεται καλά, κρατάμε το όνομα και εξηγούμε σύντομα.
    ========================================================================== */
 
-const STORAGE_KEY = 'tsigoura_verde_v7';   /* bumped — force Sunday 27 July copy after browser cache */
+const STORAGE_KEY = 'tsigoura_verde_v8';   /* bumped — force Sunday 26 July copy after browser cache */
 
 const VENUE = {
   name: 'Tsigoura Verde Resort',
@@ -163,8 +163,8 @@ const DEFAULT_MENU = [
   M(506,'drinks',     4.00,'portion','soda',     'Τόνικ','Tonic','Tonic','Apă tonică','Тоник','Тоник'),
   M(507,'drinks',     5.00,'portion','soda',     'Ice Tea Lipton (ροδάκινο/λεμόνι)','Lipton Ice Tea (peach/lemon)','Lipton Eistee (Pfirsich/Zitrone)','Lipton Ice Tea (piersică/lămâie)','Lipton ледени чај (бресква/лимун)','Lipton студен чай (праскова/лимон)'),
   M(508,'drinks',     8.00,'portion','juice',    'Λεμονάδα σπιτική','Homemade Lemonade','Hausgemachte Limonade','Limonadă de casă','Домаћа лимунада','Домашна лимонада'),
-  M(509,'drinks',     5.00,'portion','mug',      'Βαρέλι Mythos 500ml','Mythos Draught 500ml','Mythos vom Fass 500ml','Mythos la halbă 500ml','Mythos точено 500ml','Mythos наливна 500ml'),
-  M(510,'drinks',     3.50,'portion','mug',      'Βαρέλι Mythos 300ml','Mythos Draught 300ml','Mythos vom Fass 300ml','Mythos la halbă 300ml','Mythos точено 300ml','Mythos наливна 300ml'),
+  M(509,'drinks',     5.00,'portion','mug',      'Βαρέλι Mythos 400ml','Mythos Draught 400ml','Mythos vom Fass 400ml','Mythos la halbă 400ml','Mythos точено 400ml','Mythos наливна 400ml'),
+  M(510,'drinks',     3.50,'portion','mug',      'Βαρέλι Mythos 250ml','Mythos Draught 250ml','Mythos vom Fass 250ml','Mythos la halbă 250ml','Mythos точено 250ml','Mythos наливна 250ml'),
   M(511,'drinks',     5.00,'portion','beer',     'Βεργίνα','Vergina','Vergina','Vergina','Вергина','Вергина'),
   M(512,'drinks',     5.00,'portion','beer',     'Heineken','Heineken','Heineken','Heineken','Хајнекен','Хайнекен'),
   M(513,'drinks',     5.00,'portion','beer',     'Amstel Free','Amstel Free','Amstel Free','Amstel Free','Amstel Free','Amstel Free'),
@@ -288,9 +288,9 @@ DEFAULT_MENU.forEach(i=>{
   if(REMOVABLE[i.id]) i.removable = REMOVABLE[i.id].map(k=>RM[k]);  /* [{el,en,…}] */
 });
 
-/* 27 July special-night availability: keep only the event food list visible,
+/* 26 July special-night availability: keep only the event food list visible,
    while drinks remain available. Everything else is hidden from guests. */
-const JULY27_VISIBLE = new Set([
+const JULY26_VISIBLE = new Set([
   101,102,103,104,105,106,107,110,
   201,202,203,205,
   313,315,
@@ -298,8 +298,7 @@ const JULY27_VISIBLE = new Set([
   501,502,503,504,505,506,507,508,509,510,511,512,513,514,515,516,517,518,519,520,521,522,523,524,525,526,527
 ]);
 DEFAULT_MENU.forEach(i=>{
-  i.hidden = !JULY27_VISIBLE.has(Number(i.id));
-  i.chefPick = [313,315,318].includes(Number(i.id));
+  i.hidden = !JULY26_VISIBLE.has(Number(i.id));
 });
 
 const UNITS = {
@@ -333,23 +332,23 @@ const ZONES = {
 
 /* ────────────────────────────────────────────────────────────────────────
    ANNOUNCE — γιορτινό banner με ημερομηνίες. Εμφανίζεται μόνο μέσα στο
-   παράθυρο [from,to]. Τώρα: ειδική βραδιά σούβλας (Κυρ. 27/7).
+   παράθυρο [from,to]. Τώρα: ειδική βραδιά σούβλας (Κυρ. 26/7).
    ──────────────────────────────────────────────────────────────────────── */
 const ANNOUNCE = {
   on:true, from:'2026-07-26', to:'2026-07-28', emoji:'🔥', targetCat:'spit', specialCats:['spit','meat'],
   t:{
-    el:{ title:'Κυριακή 27 Ιουλίου · Σούβλες στη Τσιγγούρα', body:'Ειδική βραδιά με αρνί σούβλας και κοντοσούβλι. Πατήστε εδώ για να δείτε το σημερινό μενού.' },
-    en:{ title:'Sunday, 27 July · Souvles at Tsigoura', body:'Special night with spit-roasted lamb and kontosouvli. Tap here to see today’s menu.' },
-    de:{ title:'Sonntag, 27. Juli · Souvles im Tsigoura', body:'Spezialabend mit Lamm vom Spieß und Kontosouvli. Tippen Sie hier für das heutige Menü.' },
-    ro:{ title:'Duminică, 27 iulie · Souvles la Tsigoura', body:'Seară specială cu miel la proțap și kontosouvli. Apăsați aici pentru meniul de astăzi.' },
-    sr:{ title:'Недеља, 27. јул · Сувле у Tsigoura', body:'Посебно вече са јагњетом са ражња и контосувлијем. Додирните овде за данашњи мени.' },
-    bg:{ title:'Неделя, 27 юли · Сувлес в Tsigoura', body:'Специална вечер с агне на шиш и контосувли. Докоснете тук за днешното меню.' },
+    el:{ title:'Κυριακή 26 Ιουλίου · Σούβλες στη Τσιγγούρα', body:'Ειδική βραδιά με αρνί σούβλας και κοντοσούβλι. Πατήστε εδώ για να δείτε το σημερινό μενού.' },
+    en:{ title:'Sunday, 26 July · Souvles at Tsigoura', body:'Special night with spit-roasted lamb and kontosouvli. Tap here to see today’s menu.' },
+    de:{ title:'Sonntag, 26. Juli · Souvles im Tsigoura', body:'Spezialabend mit Lamm vom Spieß und Kontosouvli. Tippen Sie hier für das heutige Menü.' },
+    ro:{ title:'Duminică, 26 iulie · Souvles la Tsigoura', body:'Seară specială cu miel la proțap și kontosouvli. Apăsați aici pentru meniul de astăzi.' },
+    sr:{ title:'Недеља, 26. јул · Сувле у Tsigoura', body:'Посебно вече са јагњетом са ражња и контосувлијем. Додирните овде за данашњи мени.' },
+    bg:{ title:'Неделя, 26 юли · Сувлес в Tsigoura', body:'Специална вечер с агне на шиш и контосувли. Докоснете тук за днешното меню.' },
   }
 };
 
 const DEFAULT_SETTINGS = {
   serviceOpen:true, acceptOrders:true, currency:'€', defaultLang:'el',
-  catalogVersion:'event-pricelist-sunday-27-july-special-night-2',
+  catalogVersion:'event-pricelist-sunday-26-july-special-night-4',
   traditionalMenuOnly:true,
   design:{ accent:'#38564F', showVisualRail:true, categoryArt:true, motion:'rich', showFeaturedHero:true },
 };

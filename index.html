@@ -1495,14 +1495,14 @@ body.guided-view .guide-card .mini-actions button{min-height:31px!important;font
 
 <div class="toast" id="toast"></div>
 
-<script src="tsigoura-data.js?v=20260727-sunday-wifi-v2"></script>
+<script src="tsigoura-data.js?v=20260726-sunday-wifi-mythos-admin-v4"></script>
 <script src="tsigoura-menu-icons.js?v=20260726-master-food-icons-8x8"></script>
 <script src="tsigoura-qr.js"></script>
 <script>
 "use strict";
 /* ─── venue config: WiFi + optional media ─── */
 const MEDIA = { hero:'media/hero.jpg', souvles:'media/souvles.jpg', logo:'media/logo-full.jpg', logoFull:'media/logo-full.jpg', mark:'media/mark.png' };
-const WIFI = { ssid:'TSIGOURA 5G', pass:'Tsigoura2023', enc:'WPA' };  /* auto-join QR + copy */
+const WIFI = { ssid:'TSIGOURA 5G', pass:'Tsigoura2023', enc:'WPA' };  /* QR details + copy */
 function normalizeWifiConfig(){
   if(/^TSIGOURA$/i.test(String(WIFI.ssid||'').trim())) WIFI.ssid='TSIGOURA 5G';
   if(String(WIFI.pass||'')==='tsigoura2023') WIFI.pass='Tsigoura2023';
@@ -1564,7 +1564,7 @@ const UI = {
        thankYou:'Ευχαριστούμε!', cartSaved:'Το καλάθι σου αποθηκεύεται αυτόματα', wait:'Μόλις στάλθηκε — περίμενε λίγο',
        tooMany:'Πολλές παραγγελίες. Κάλεσε τον σερβιτόρο 🙏', confirm:'Επιβεβαίωση αποστολής;',
        myOrders:'Οι παραγγελίες μου', nightTotal:'Σύνολο βραδιάς', saveImg:'Αποθήκευση εικόνας', addMore:'Πρόσθεσε κι άλλα', noOrders:'Καμία παραγγελία ακόμη', orderAt:'στις',
-       wifi:'Wi-Fi', wifiSub:'Σύνδεση στο δίκτυο του καταστήματος', wifiScan:'Σκάναρε για αυτόματη σύνδεση', net:'Δίκτυο', pass:'Κωδικός', copy:'Αντιγραφή', copied:'Αντιγράφηκε ✓', wifiJoin:'Αντιγραφή & άνοιγμα Wi-Fi', wifiOpenHint:'Ο κωδικός αντιγράφηκε. Αν δεν άνοιξαν οι ρυθμίσεις, άνοιξε το Wi-Fi από το κινητό και διάλεξε TSIGOURA 5G.', info:'Τι περιέχει', ingredients:'Συστατικά', contains:'Αλλεργιογόνα', askWaiter:'Ρώτησε τον σερβιτόρο', allergyWarn:'⚠ Αν έχεις αλλεργία ή δυσανεξία, ΕΝΗΜΕΡΩΣΕ τον σερβιτόρο ΠΡΙΝ παραγγείλεις.', noInfo:'Ρώτησε τον σερβιτόρο για τα συστατικά.', orderNo:'Αρ. παραγγελίας', showWaiter:'Δείξε το στον σερβιτόρο ή σκάναρέ το', done:'Έτοιμο', cookieTitle:'Απόρρητο & Cookies', cookieText:'Χρησιμοποιούμε μόνο απαραίτητη τοπική αποθήκευση (γλώσσα & καλάθι) στη συσκευή σου. Δεν κάνουμε παρακολούθηση, δεν μοιραζόμαστε δεδομένα.', accept:'Εντάξει', privacy:'Απόρρητο', legalMore:'Νομικά & Απόρρητο' },
+       wifi:'Wi-Fi', wifiSub:'Σύνδεση στο δίκτυο του καταστήματος', wifiScan:'Σκάναρε για τα στοιχεία Wi-Fi', net:'Δίκτυο', pass:'Κωδικός', copy:'Αντιγραφή', copied:'Αντιγράφηκε ✓', wifiJoin:'Αντιγραφή στοιχείων Wi-Fi', wifiOpenHint:'Τα στοιχεία Wi-Fi αντιγράφηκαν.', info:'Τι περιέχει', ingredients:'Συστατικά', contains:'Αλλεργιογόνα', askWaiter:'Ρώτησε τον σερβιτόρο', allergyWarn:'⚠ Αν έχεις αλλεργία ή δυσανεξία, ΕΝΗΜΕΡΩΣΕ τον σερβιτόρο ΠΡΙΝ παραγγείλεις.', noInfo:'Ρώτησε τον σερβιτόρο για τα συστατικά.', orderNo:'Αρ. παραγγελίας', showWaiter:'Δείξε το στον σερβιτόρο ή σκάναρέ το', done:'Έτοιμο', cookieTitle:'Απόρρητο & Cookies', cookieText:'Χρησιμοποιούμε μόνο απαραίτητη τοπική αποθήκευση (γλώσσα & καλάθι) στη συσκευή σου. Δεν κάνουμε παρακολούθηση, δεν μοιραζόμαστε δεδομένα.', accept:'Εντάξει', privacy:'Απόρρητο', legalMore:'Νομικά & Απόρρητο' },
   en:{ search:'Search…', all:'All', allergens:'Allergens', items:'items', item:'item',
        view:'View', order:'Your order', table:'TABLE {t}', total:'Total', subtotal:'Subtotal',
        send:'Send to kitchen', empty:'Basket is empty', emptyHint:'Tap + on anything you like',
@@ -1580,7 +1580,7 @@ const UI = {
        thankYou:'Thank you!', cartSaved:'Your basket is saved automatically', wait:'Just sent — please wait a moment',
        tooMany:'Too many orders. Please call your waiter 🙏', confirm:'Send this order?',
        myOrders:'My orders', nightTotal:'Night total', saveImg:'Save as image', addMore:'Add more', noOrders:'No orders yet', orderAt:'at',
-       wifi:'Wi-Fi', wifiSub:'Connect to our network', wifiScan:'Scan to join automatically', net:'Network', pass:'Password', copy:'Copy', copied:'Copied ✓', wifiJoin:'Copy & open Wi-Fi', wifiOpenHint:'Password copied. If settings did not open, open Wi-Fi on your phone and choose TSIGOURA 5G.', info:'What is in it', ingredients:'Ingredients', contains:'Allergens', askWaiter:'Ask your waiter', allergyWarn:'⚠ If you have an allergy or intolerance, TELL your waiter BEFORE ordering.', noInfo:'Ask your waiter for the ingredients.', orderNo:'Order no.', showWaiter:'Show or scan this at your table', done:'Done', cookieTitle:'Privacy & Cookies', cookieText:'We only use essential local storage (language & basket) on your device. No tracking, no data sharing.', accept:'Got it', privacy:'Privacy', legalMore:'Legal & Privacy' },
+       wifi:'Wi-Fi', wifiSub:'Connect to our network', wifiScan:'Scan for Wi-Fi details', net:'Network', pass:'Password', copy:'Copy', copied:'Copied ✓', wifiJoin:'Copy Wi-Fi details', wifiOpenHint:'Wi-Fi details copied.', info:'What is in it', ingredients:'Ingredients', contains:'Allergens', askWaiter:'Ask your waiter', allergyWarn:'⚠ If you have an allergy or intolerance, TELL your waiter BEFORE ordering.', noInfo:'Ask your waiter for the ingredients.', orderNo:'Order no.', showWaiter:'Show or scan this at your table', done:'Done', cookieTitle:'Privacy & Cookies', cookieText:'We only use essential local storage (language & basket) on your device. No tracking, no data sharing.', accept:'Got it', privacy:'Privacy', legalMore:'Legal & Privacy' },
   de:{ search:'Suchen…', all:'Alle', allergens:'Allergene', items:'Artikel', item:'Artikel',
        view:'Ansehen', order:'Ihre Bestellung', table:'TISCH {t}', total:'Gesamt', subtotal:'Zwischensumme',
        send:'An die Küche', empty:'Korb ist leer', emptyHint:'Tippe + bei allem, was dir gefällt',
@@ -1596,7 +1596,7 @@ const UI = {
        thankYou:'Danke!', cartSaved:'Ihr Korb wird automatisch gespeichert', wait:'Gerade gesendet — bitte warten',
        tooMany:'Zu viele Bestellungen. Bitte den Kellner rufen 🙏', confirm:'Bestellung senden?',
        myOrders:'Meine Bestellungen', nightTotal:'Abendsumme', saveImg:'Als Bild speichern', addMore:'Mehr bestellen', noOrders:'Noch keine Bestellungen', orderAt:'um',
-       wifi:'WLAN', wifiSub:'Mit unserem Netz verbinden', wifiScan:'Scannen zum automatischen Verbinden', net:'Netzwerk', pass:'Passwort', copy:'Kopieren', copied:'Kopiert ✓', wifiJoin:'Kopieren & WLAN öffnen', wifiOpenHint:'Passwort kopiert. Falls die Einstellungen nicht geöffnet wurden, öffnen Sie WLAN am Handy und wählen Sie TSIGOURA 5G.', info:'Was ist drin', ingredients:'Zutaten', contains:'Allergene', askWaiter:'Fragen Sie den Kellner', allergyWarn:'⚠ Bei Allergie oder Unverträglichkeit informieren Sie den Kellner VOR der Bestellung.', noInfo:'Fragen Sie den Kellner nach den Zutaten.', orderNo:'Bestell-Nr.', showWaiter:'Am Tisch zeigen oder scannen', done:'Fertig', cookieTitle:'Datenschutz & Cookies', cookieText:'Wir nutzen nur nötige lokale Speicherung (Sprache & Korb) auf Ihrem Gerät. Kein Tracking, keine Weitergabe.', accept:'OK', privacy:'Datenschutz', legalMore:'Rechtliches & Datenschutz' },
+       wifi:'WLAN', wifiSub:'Mit unserem Netz verbinden', wifiScan:'Scannen für WLAN-Daten', net:'Netzwerk', pass:'Passwort', copy:'Kopieren', copied:'Kopiert ✓', wifiJoin:'WLAN-Daten kopieren', wifiOpenHint:'WLAN-Daten kopiert.', info:'Was ist drin', ingredients:'Zutaten', contains:'Allergene', askWaiter:'Fragen Sie den Kellner', allergyWarn:'⚠ Bei Allergie oder Unverträglichkeit informieren Sie den Kellner VOR der Bestellung.', noInfo:'Fragen Sie den Kellner nach den Zutaten.', orderNo:'Bestell-Nr.', showWaiter:'Am Tisch zeigen oder scannen', done:'Fertig', cookieTitle:'Datenschutz & Cookies', cookieText:'Wir nutzen nur nötige lokale Speicherung (Sprache & Korb) auf Ihrem Gerät. Kein Tracking, keine Weitergabe.', accept:'OK', privacy:'Datenschutz', legalMore:'Rechtliches & Datenschutz' },
   ro:{ search:'Caută…', all:'Toate', allergens:'Alergeni', items:'produse', item:'produs',
        view:'Vezi', order:'Comanda ta', table:'MASA {t}', total:'Total', subtotal:'Subtotal',
        send:'Trimite la bucătărie', empty:'Coș gol', emptyHint:'Apasă + pe ce îți place',
@@ -1612,7 +1612,7 @@ const UI = {
        thankYou:'Mulțumim!', cartSaved:'Coșul tău se salvează automat', wait:'Tocmai trimis — așteaptă puțin',
        tooMany:'Prea multe comenzi. Cheamă ospătarul 🙏', confirm:'Trimiți comanda?',
        myOrders:'Comenzile mele', nightTotal:'Total seară', saveImg:'Salvează ca imagine', addMore:'Adaugă mai mult', noOrders:'Nicio comandă încă', orderAt:'la',
-       wifi:'Wi-Fi', wifiSub:'Conectează-te la rețeaua noastră', wifiScan:'Scanează pentru conectare automată', net:'Rețea', pass:'Parolă', copy:'Copiază', copied:'Copiat ✓', wifiJoin:'Copiază & deschide Wi-Fi', wifiOpenHint:'Parola a fost copiată. Dacă setările nu s-au deschis, deschide Wi-Fi pe telefon și alege TSIGOURA 5G.', info:'Ce conține', ingredients:'Ingrediente', contains:'Alergeni', askWaiter:'Întreabă ospătarul', allergyWarn:'⚠ Dacă ai alergie sau intoleranță, SPUNE ospătarului ÎNAINTE de a comanda.', noInfo:'Întreabă ospătarul despre ingrediente.', orderNo:'Nr. comandă', showWaiter:'Arată sau scanează la masă', done:'Gata', cookieTitle:'Confidențialitate & Cookies', cookieText:'Folosim doar stocare locală esențială (limbă & coș) pe dispozitivul tău. Fără urmărire, fără partajare.', accept:'Am înțeles', privacy:'Confidențialitate', legalMore:'Legal & Confidențialitate' },
+       wifi:'Wi-Fi', wifiSub:'Conectează-te la rețeaua noastră', wifiScan:'Scanează detaliile Wi-Fi', net:'Rețea', pass:'Parolă', copy:'Copiază', copied:'Copiat ✓', wifiJoin:'Copiază detaliile Wi-Fi', wifiOpenHint:'Detaliile Wi-Fi au fost copiate.', info:'Ce conține', ingredients:'Ingrediente', contains:'Alergeni', askWaiter:'Întreabă ospătarul', allergyWarn:'⚠ Dacă ai alergie sau intoleranță, SPUNE ospătarului ÎNAINTE de a comanda.', noInfo:'Întreabă ospătarul despre ingrediente.', orderNo:'Nr. comandă', showWaiter:'Arată sau scanează la masă', done:'Gata', cookieTitle:'Confidențialitate & Cookies', cookieText:'Folosim doar stocare locală esențială (limbă & coș) pe dispozitivul tău. Fără urmărire, fără partajare.', accept:'Am înțeles', privacy:'Confidențialitate', legalMore:'Legal & Confidențialitate' },
   sr:{ search:'Претрага…', all:'Све', allergens:'Алергени', items:'ставки', item:'ставка',
        view:'Погледај', order:'Твоја наруџбина', table:'СТО {t}', total:'Укупно', subtotal:'Међузбир',
        send:'Пошаљи у кухињу', empty:'Корпа је празна', emptyHint:'Додирни + на било шта',
@@ -1628,7 +1628,7 @@ const UI = {
        thankYou:'Хвала!', cartSaved:'Твоја корпа се аутоматски чува', wait:'Управо послато — сачекај мало',
        tooMany:'Превише наруџбина. Позови конобара 🙏', confirm:'Послати наруџбину?',
        myOrders:'Моје наруџбине', nightTotal:'Укупно вечерас', saveImg:'Сачувај као слику', addMore:'Додај још', noOrders:'Још нема наруџбина', orderAt:'у',
-       wifi:'Wi-Fi', wifiSub:'Повежи се на нашу мрежу', wifiScan:'Скенирај за аутоматско повезивање', net:'Мрежа', pass:'Лозинка', copy:'Копирај', copied:'Копирано ✓', wifiJoin:'Копирај и отвори Wi-Fi', wifiOpenHint:'Лозинка је копирана. Ако се подешавања нису отворила, отвори Wi-Fi на телефону и изабери TSIGOURA 5G.', info:'Шта садржи', ingredients:'Састојци', contains:'Алергени', askWaiter:'Питај конобара', allergyWarn:'⚠ Ако имаш алергију или интолеранцију, РЕЦИ конобару ПРЕ наручивања.', noInfo:'Питај конобара за састојке.', orderNo:'Бр. наруџбине', showWaiter:'Покажи или скенирај за столом', done:'Готово', cookieTitle:'Приватност & Колачићи', cookieText:'Користимо само неопходно локално чување (језик & корпа) на твом уређају. Без праћења, без дељења.', accept:'У реду', privacy:'Приватност', legalMore:'Правно & Приватност' },
+       wifi:'Wi-Fi', wifiSub:'Повежи се на нашу мрежу', wifiScan:'Скенирај за Wi-Fi податке', net:'Мрежа', pass:'Лозинка', copy:'Копирај', copied:'Копирано ✓', wifiJoin:'Копирај Wi-Fi податке', wifiOpenHint:'Wi-Fi подаци су копирани.', info:'Шта садржи', ingredients:'Састојци', contains:'Алергени', askWaiter:'Питај конобара', allergyWarn:'⚠ Ако имаш алергију или интолеранцију, РЕЦИ конобару ПРЕ наручивања.', noInfo:'Питај конобара за састојке.', orderNo:'Бр. наруџбине', showWaiter:'Покажи или скенирај за столом', done:'Готово', cookieTitle:'Приватност & Колачићи', cookieText:'Користимо само неопходно локално чување (језик & корпа) на твом уређају. Без праћења, без дељења.', accept:'У реду', privacy:'Приватност', legalMore:'Правно & Приватност' },
   bg:{ search:'Търсене…', all:'Всички', allergens:'Алергени', items:'артикула', item:'артикул',
        view:'Виж', order:'Твоята поръчка', table:'МАСА {t}', total:'Общо', subtotal:'Междинна сума',
        send:'Изпрати в кухнята', empty:'Празна кошница', emptyHint:'Натисни + на каквото харесаш',
@@ -1644,7 +1644,7 @@ const UI = {
        thankYou:'Благодарим!', cartSaved:'Кошницата ти се запазва автоматично', wait:'Току-що изпратено — изчакай малко',
        tooMany:'Твърде много поръчки. Повикай сервитьора 🙏', confirm:'Да изпратя поръчката?',
        myOrders:'Моите поръчки', nightTotal:'Общо за вечерта', saveImg:'Запази като снимка', addMore:'Добави още', noOrders:'Още няма поръчки', orderAt:'в',
-       wifi:'Wi-Fi', wifiSub:'Свържи се с нашата мрежа', wifiScan:'Сканирай за автоматично свързване', net:'Мрежа', pass:'Парола', copy:'Копирай', copied:'Копирано ✓', wifiJoin:'Копирай и отвори Wi-Fi', wifiOpenHint:'Паролата е копирана. Ако настройките не се отвориха, отвори Wi-Fi на телефона и избери TSIGOURA 5G.', info:'Какво съдържа', ingredients:'Съставки', contains:'Алергени', askWaiter:'Питай сервитьора', allergyWarn:'⚠ Ако имаш алергия или непоносимост, КАЖИ на сервитьора ПРЕДИ да поръчаш.', noInfo:'Питай сервитьора за съставките.', orderNo:'№ поръчка', showWaiter:'Покажи или сканирай на масата', done:'Готово', cookieTitle:'Поверителност & Бисквитки', cookieText:'Използваме само необходимо локално съхранение (език & кошница) на устройството ти. Без проследяване, без споделяне.', accept:'Разбрах', privacy:'Поверителност', legalMore:'Правни & Поверителност' },
+       wifi:'Wi-Fi', wifiSub:'Свържи се с нашата мрежа', wifiScan:'Сканирай за Wi-Fi данните', net:'Мрежа', pass:'Парола', copy:'Копирай', copied:'Копирано ✓', wifiJoin:'Копирай Wi-Fi данните', wifiOpenHint:'Wi-Fi данните са копирани.', info:'Какво съдържа', ingredients:'Съставки', contains:'Алергени', askWaiter:'Питай сервитьора', allergyWarn:'⚠ Ако имаш алергия или непоносимост, КАЖИ на сервитьора ПРЕДИ да поръчаш.', noInfo:'Питай сервитьора за съставките.', orderNo:'№ поръчка', showWaiter:'Покажи или сканирай на масата', done:'Готово', cookieTitle:'Поверителност & Бисквитки', cookieText:'Използваме само необходимо локално съхранение (език & кошница) на устройството ти. Без проследяване, без споделяне.', accept:'Разбрах', privacy:'Поверителност', legalMore:'Правни & Поверителност' },
 };
 
 const VIEW_UI = {
@@ -1787,8 +1787,7 @@ function renderHero(){
   if(!slot) return;
   if(q.trim()){ slot.innerHTML=''; return; }
   if(design().showFeaturedHero===false){ slot.innerHTML=''; return; }
-  const pick = S.menu.find(i=>!i.hidden && i.chefPick && i.available && i.price>0)
-            || S.menu.find(i=>!i.hidden && i.cat==='meat' && i.available && i.price>0)
+  const pick = S.menu.find(i=>!i.hidden && i.cat==='meat' && i.available && i.price>0)
             || S.menu.find(i=>!i.hidden && i.available && i.price>0);
   if(!pick){ slot.innerHTML=''; return; }
   const t = tx(pick);
@@ -2103,7 +2102,7 @@ function guidePickerHTML(cats,current,ix){
 }
 function guideSectionHTML(c,ix,cats){
   const items=S.menu.filter(i=>!i.hidden&&i.cat===c.id&&matches(i));
-  const pick=items.find(i=>i.chefPick&&i.available&&i.price>0) || items.find(i=>i.available&&i.price>0) || items[0];
+  const pick=items.find(i=>i.available&&i.price>0) || items[0];
   const rest=items.filter(i=>i!==pick);
   const acc=[c.accent||CAT_ACC[ix%CAT_ACC.length][0], c.tint||CAT_ACC[ix%CAT_ACC.length][1]];
   const prev=cats[ix-1], next=cats[ix+1];
@@ -2184,10 +2183,8 @@ function rowHTML(i){
   const desc=t.d||'';   /* only real descriptions — no redundant English-name subtitle */
   const algs=(i.allergens||[]).map(a=>esc(ALLERGENS[a][lang]||ALLERGENS[a].en)).join(' · ');
   const cust=!isTraditional() && (i.removable||[]).length;
-  const feat=(i.chefPick && i.available)?' feat':'';
   const art=(typeof dishArt==='function'&&dishArt(i)) ? dishArt(i) : '';
-  return `<div class="item${feat} ${i.available?'':'out'}" data-dish="${i.id}">
-    ${feat?`<div class="badge">★ ${esc(T('chefPick'))}</div>`:''}
+  return `<div class="item ${i.available?'':'out'}" data-dish="${i.id}">
     <div class="top">
       ${art
         ? `<button type="button" class="dish-ic photo-b" data-photo="${i.id}" aria-label="${esc(t.n)}"><img src="${art}" alt="" loading="lazy" decoding="async" width="144" height="144"></button>`
@@ -2466,7 +2463,7 @@ document.addEventListener('click', e=>{
   openPhoto(+b.dataset.photo);
 }, true);
 
-/* ─── WiFi (auto-join QR + copy) ─── */
+/* ─── WiFi (plain QR details + copy only) ─── */
 function renderWifi(){
   document.getElementById('wifiEye').textContent='Wi-Fi';
   document.getElementById('wifiT').textContent=T('wifi');
@@ -2478,33 +2475,17 @@ function renderWifi(){
   document.getElementById('wifiPass').textContent=WIFI.pass;
   document.getElementById('wifiCopy').textContent=T('copy');
   document.getElementById('wifiJoin').textContent=T('wifiJoin');
-  // WIFI: string is the standard camera auto-join format (iOS/Android/all)
-  const payload='WIFI:T:'+WIFI.enc+';S:'+wifiEsc(WIFI.ssid)+';P:'+wifiEsc(WIFI.pass)+';;';
+  const payload=`Wi-Fi: ${WIFI.ssid}\nPassword: ${WIFI.pass}`;
   document.getElementById('wifiQR').innerHTML=qrSVG(payload,200);
   document.getElementById('wifiCopy').onclick=()=>{ copyText(WIFI.pass); toast(T('copied')); };
-  document.getElementById('wifiJoin').onclick=openWifiSettings;
+  document.getElementById('wifiJoin').onclick=copyWifiDetails;
 }
-function wifiEsc(s){ return String(s).replace(/([\\;,:"])/g,'\\$1'); }
 function copyText(t){ try{ navigator.clipboard.writeText(t); }catch(e){ const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy');}catch(_){}a.remove(); } }
 
 function safeUrl(u){ try{ const x=new URL(String(u)); return /^https?:$/.test(x.protocol) ? x.href : ''; }catch(e){ return ''; } }
 function copyWifiDetails(){
   copyText(`Wi-Fi: ${WIFI.ssid}\nPassword: ${WIFI.pass}`);
   toast(T('copied'));
-}
-function openWifiSettings(){
-  copyWifiDetails();
-  const ua=navigator.userAgent||'';
-  const isIOS=/iPad|iPhone|iPod/.test(ua) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
-  const isAndroid=/Android/i.test(ua);
-  const tryOpen=url=>{ try{ window.location.href=url; }catch(e){} };
-  if(isIOS){
-    tryOpen('App-Prefs:root=WIFI');
-    setTimeout(()=>{ if(document.visibilityState==='visible') tryOpen('prefs:root=WIFI'); }, 450);
-  }else if(isAndroid){
-    tryOpen('intent:#Intent;action=android.settings.WIFI_SETTINGS;end');
-  }
-  setTimeout(()=>{ if(document.visibilityState==='visible') toast(T('wifiOpenHint')); }, 900);
 }
 function renderSocial(){
   document.getElementById('socialEye').textContent=VENUE.name;
@@ -2708,7 +2689,8 @@ function initCookie(){
   document.getElementById('ckOk').textContent=T('accept');
   document.getElementById('ckMore').onclick=()=>{ renderPriv(); openSheet('privSheet'); };
   document.getElementById('ckOk').onclick=()=>{ safeLS.set('tv_cookie','1'); c.classList.remove('on'); };
-  if(!safeLS.get('tv_cookie')) setTimeout(()=>c.classList.add('on'), 900);
+  c.classList.remove('on');
+  if(!safeLS.get('tv_cookie')) safeLS.set('tv_cookie','1');
 }
 function renderPriv(){
   document.getElementById('privEye').textContent=T('cookieTitle');
@@ -2858,7 +2840,7 @@ function closeSplash(){ clearInterval(splashTimer); const sp=document.getElement
 Object.assign(UI.el, {
   customize:'Προσαρμογή', removeT:'Αφαίρεσε υλικά', removeSub:'Μόνο για πιάτα που φτιάχνονται εκείνη τη στιγμή. Έτοιμα είδη, όπως τζατζίκι ή μπιφτέκι, δεν αλλάζουν.',
   noteT:'Σημείωση για την κουζίνα', noteSub:'Προαιρετικό.', notePlaceholder:'π.χ. λίγο ψημένο, χωρίς λάδι',
-  addToCart:'Πρόσθεσε στο καλάθι', without:'χωρίς', customizable:'προσαρμόζεται', chefPick:'Επιλογή σεφ',
+  addToCart:'Πρόσθεσε στο καλάθι', without:'χωρίς', customizable:'προσαρμόζεται',
   added:'Προστέθηκε ✓', waiterAssigns:'Ο σερβιτόρος θα καταχωρήσει το τραπέζι σου.', tablePending:'Τραπέζι — ο σερβιτόρος',
   introBadge:'Δοκιμαστικό', introT:'Δύο τρόποι — διαλέγετε εσείς',
   introText:'Μπορείτε απλά να δείτε τον κατάλογο και να παραγγείλετε <b>παραδοσιακά</b>, από τον σερβιτόρο σας. Αν θέλετε, δοκιμάστε και την <b>πειραματική online παραγγελία</b>: φτιάχνετε την επιλογή σας, δείχνετε το QR στον σερβιτόρο, και εκείνος τη στέλνει στην κουζίνα.',
@@ -2917,7 +2899,7 @@ Object.assign(UI.en, {
   kitchenDisclaimer:'💡 Note: Your order is sent to the kitchen for preparation. This digital list is not a legal tax receipt or invoice. The official receipt is issued exclusively by our staff.',
   customize:'Customize', removeT:'Remove ingredients', removeSub:'Only for dishes prepared to order. Ready-made items such as tzatziki or patties cannot be changed.',
   noteT:'Note for the kitchen', noteSub:'Optional.', notePlaceholder:'e.g. well done, no oil',
-  addToCart:'Add to cart', without:'without', customizable:'customizable', chefPick:"Chef's pick",
+  addToCart:'Add to cart', without:'without', customizable:'customizable',
   added:'Added ✓', waiterAssigns:'The waiter will assign your table.', tablePending:'Table — waiter',
   introBadge:'Beta', introT:'Two ways — your choice',
   introText:'You can simply browse the menu and order the <b>traditional</b> way through your waiter. Or try the <b>experimental online order</b>: build your order, show the QR to your waiter, and they send it to the kitchen.',
@@ -2948,7 +2930,7 @@ Object.assign(UI.en, {
 Object.assign(UI.de, {
   customize:'Anpassen', removeT:'Zutaten entfernen', removeSub:'Nur bei Gerichten, die frisch auf Bestellung zubereitet werden. Fertige Produkte wie Tzatziki oder Frikadellen können nicht geändert werden.',
   noteT:'Notiz für die Küche', noteSub:'Optional.', notePlaceholder:'z. B. gut durch, ohne Öl',
-  addToCart:'In den Warenkorb', without:'ohne', customizable:'anpassbar', chefPick:'Empfehlung',
+  addToCart:'In den Warenkorb', without:'ohne', customizable:'anpassbar',
   added:'Hinzugefügt ✓', waiterAssigns:'Der Kellner ordnet Ihren Tisch zu.', tablePending:'Tisch — Kellner',
   introBadge:'Beta', introT:'Zwei Wege — Sie entscheiden',
   introText:'Sie können die Karte einfach ansehen und <b>klassisch</b> beim Kellner bestellen. Oder testen Sie die <b>experimentelle Online-Bestellung</b>: Auswahl zusammenstellen, QR dem Kellner zeigen, und er sendet sie an die Küche.',
@@ -2979,7 +2961,7 @@ Object.assign(UI.de, {
 Object.assign(UI.ro, {
   customize:'Personalizează', removeT:'Scoate ingrediente', removeSub:'Doar pentru preparate făcute la comandă. Produsele gata preparate, precum tzatziki sau chiftelele, nu se modifică.',
   noteT:'Notă pentru bucătărie', noteSub:'Opțional.', notePlaceholder:'ex. bine făcut, fără ulei',
-  addToCart:'Adaugă în coș', without:'fără', customizable:'personalizabil', chefPick:'Recomandarea bucătarului',
+  addToCart:'Adaugă în coș', without:'fără', customizable:'personalizabil',
   added:'Adăugat ✓', waiterAssigns:'Ospătarul va atribui masa.', tablePending:'Masă — ospătar',
   introBadge:'Beta', introT:'Două moduri — alegeți',
   introText:'Puteți doar să vedeți meniul și să comandați <b>tradițional</b>, prin ospătar. Sau încercați <b>comanda online experimentală</b>: pregătiți comanda, arătați QR-ul ospătarului, iar el o trimite la bucătărie.',
@@ -3010,7 +2992,7 @@ Object.assign(UI.ro, {
 Object.assign(UI.sr, {
   customize:'Прилагоди', removeT:'Уклони састојке', removeSub:'Само за јела која се припремају по поруџбини. Готови производи као цацики или пљескавица не могу се мењати.',
   noteT:'Напомена за кухињу', noteSub:'Опционо.', notePlaceholder:'нпр. добро печено, без уља',
-  addToCart:'Додај у корпу', without:'без', customizable:'прилагодљиво', chefPick:'Избор шефа',
+  addToCart:'Додај у корпу', without:'без', customizable:'прилагодљиво',
   added:'Додато ✓', waiterAssigns:'Конобар ће доделити ваш сто.', tablePending:'Сто — конобар',
   introBadge:'Бета', introT:'Два начина — ви бирате',
   introText:'Можете само погледати мени и наручити <b>традиционално</b>, преко конобара. Или пробајте <b>експерименталну онлајн наруџбину</b>: саставите поруџбину, покажите QR конобару, а он је шаље у кухињу.',
@@ -3041,7 +3023,7 @@ Object.assign(UI.sr, {
 Object.assign(UI.bg, {
   customize:'Персонализирай', removeT:'Премахни съставки', removeSub:'Само за ястия, които се приготвят по поръчка. Готови продукти като дзадзики или кюфте не могат да се променят.',
   noteT:'Бележка за кухнята', noteSub:'По желание.', notePlaceholder:'напр. добре опечено, без олио',
-  addToCart:'Добави в кошницата', without:'без', customizable:'персонализируемо', chefPick:'Избор на шефа',
+  addToCart:'Добави в кошницата', without:'без', customizable:'персонализируемо',
   added:'Добавено ✓', waiterAssigns:'Сервитьорът ще посочи вашата маса.', tablePending:'Маса — сервитьор',
   introBadge:'Бета', introT:'Два начина — вие избирате',
   introText:'Можете просто да разгледате менюто и да поръчате <b>традиционно</b>, чрез сервитьора. Или опитайте <b>експерименталната онлайн поръчка</b>: изберете, покажете QR кода на сервитьора и той я изпраща в кухнята.',

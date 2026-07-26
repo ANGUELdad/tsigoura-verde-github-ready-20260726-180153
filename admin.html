@@ -547,7 +547,7 @@ nav.tabs button .ico{width:15px;height:15px;stroke-width:1.9;}
     <button class="btn" style="width:100%;margin-top:12px;" id="loginBtn">Είσοδος</button>
     <p style="font-size:10.5px;color:var(--muted);margin-top:14px;line-height:1.5;">
       Στο Vercel ο κωδικός έρχεται από το environment variable <b>ADMIN_PIN</b>.
-      Για απλό local preview χωρίς API, λειτουργεί fallback PIN <b>1234</b>.</p>
+      Για local preview λειτουργεί ο ίδιος κωδικός ιδιοκτήτη ή το fallback PIN <b>1234</b>.</p>
     <p style="font-size:11px;color:var(--muted);margin-top:14px;line-height:1.5;">
       Ο κωδικός δίνεται από τον ιδιοκτήτη. Κρατήστε τον μυστικό.</p>
   </div>
@@ -712,7 +712,7 @@ nav.tabs button .ico{width:15px;height:15px;stroke-width:1.9;}
 
 <div class="toast" id="toast"></div>
 
-<script src="tsigoura-data.js"></script>
+<script src="tsigoura-data.js?v=20260726-sunday-wifi-mythos-admin-v4"></script>
 <script src="tsigoura-icons.js"></script>
 <script>
 let S = loadState();
@@ -827,7 +827,10 @@ function renderDash(){
   MOT.reveal($('panel-dash'));
 }
 
-function persist(){ S=normalizeState(S); saveState(S); }
+function persist(){
+  S=normalizeState(S||defaultState());
+  saveState(S);
+}
 function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('on'); setTimeout(()=>t.classList.remove('on'),2200); }
 function clampPct(n,min,max){ n=Number(n); if(!isFinite(n)) return min; return Math.max(min,Math.min(max,n)); }
 function sketchTables(){
@@ -915,7 +918,7 @@ function unlock(){
 }
 async function checkAdminPin(pin){
   const local=location.protocol==='file:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
-  if(local && pin === '1234') return true;
+  if(local && (pin === '1234' || pin === '@valentina2006!')) return true;
   try{
     const r=await fetch('/api/admin-login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin})});
     if(r.ok) return true;
@@ -1268,7 +1271,7 @@ function renderMenuArea(){
       <p class="hint">Δεν χάθηκε ο κατάλογος. Πατήστε καθαρισμό προβληματικών δεδομένων και ξαναδοκιμάστε.</p>
       <button class="btn sm" id="repairMenuBtn">${ICO.get('check')}Καθαρισμός δεδομένων</button>
     </div>`;
-    $('repairMenuBtn').onclick=()=>{ S=normalizeState(S); persist(); renderMenuArea(); toast('Καθαρίστηκε'); };
+    $('repairMenuBtn').onclick=()=>{ S=normalizeState(S||defaultState()); persist(); renderMenuArea(); toast('Καθαρίστηκε'); };
   }
 }
 
@@ -1723,9 +1726,12 @@ function renderAll(){
 
 /* live sync from the customer menu tab */
 window.addEventListener('storage', e=>{
-  if(e.key===STORAGE_KEY || e.key===STORAGE_KEY+'_ping'){ S=loadState(); renderOrders(); renderTables(); }
+  if(e.key===STORAGE_KEY || e.key===STORAGE_KEY+'_ping'){
+    S=loadState();
+    renderOrders(); renderTables(); renderMenuArea(); renderSettings(); renderServicePill(); renderQR(); renderDash();
+  }
 });
-setInterval(()=>{ const fresh=loadState(); if(fresh.updatedAt!==S.updatedAt){ S=fresh; renderOrders(); } }, 4000);
+setInterval(()=>{ const fresh=loadState(); if(fresh.updatedAt!==S.updatedAt){ S=fresh; renderOrders(); renderTables(); renderMenuArea(); renderSettings(); renderServicePill(); renderQR(); renderDash(); } }, 4000);
 
 /* stay logged in across a QR scan (waiter unlocks once per device) */
 try{ if(localStorage.getItem('tv_admin_ok')==='1') unlock(); }catch(e){}
