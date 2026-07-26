@@ -755,9 +755,9 @@ body.traditional-mode .wrap{padding-bottom:44px;}
 .pin input{flex:1;border:none;background:none;outline:none;font-size:14px;}
 .pin .snd{font-size:19px;color:var(--pine);}
 
-.toast{position:fixed;left:50%;top:20px;transform:translateX(-50%) translateY(-160%);
+.toast{position:fixed;left:50%;top:max(14px,env(safe-area-inset-top));transform:translateX(-50%) translateY(-160%);
   background:var(--pine);color:#F3ECD6;padding:13px 20px;border-radius:13px;font-size:14px;font-weight:500;
-  z-index:60;transition:transform .34s cubic-bezier(.2,.8,.2,1);box-shadow:0 12px 30px rgba(0,0,0,.22);max-width:calc(100% - 40px);text-align:center;}
+  z-index:420;transition:transform .34s cubic-bezier(.2,.8,.2,1);box-shadow:0 12px 30px rgba(0,0,0,.22);max-width:calc(100% - 40px);text-align:center;pointer-events:none;}
 .toast.on{transform:translateX(-50%) translateY(0);}
 
 @media(prefers-reduced-motion:reduce){
@@ -1273,6 +1273,9 @@ body.guided-view .guide-picker{position:relative!important;top:auto!important;}
 .scrim{z-index:240!important;}
 .sheet{z-index:250!important;}
 .cookie{z-index:260!important;}
+.copy-status{min-height:22px;margin:10px 0 2px;text-align:center;color:var(--pine);font-size:13px;font-weight:760;}
+.copy-status:empty{display:none;}
+#wifiPass{user-select:all;-webkit-user-select:all;cursor:text;}
 body.sheet-open{overflow:hidden!important;}
 body.sheet-open .nav{visibility:hidden!important;opacity:0!important;pointer-events:none!important;}
 body.sheet-open .head,body.sheet-open::before{pointer-events:none!important;}
@@ -1434,6 +1437,7 @@ body.sheet-open .head,body.sheet-open::before{pointer-events:none!important;}
   <p class="wifiscan" id="wifiScanT"></p>
   <div class="wrow"><span id="wifiNetL"></span><b id="wifiNet"></b></div>
   <div class="wrow"><span id="wifiPassL"></span><b id="wifiPass"></b><button class="cpy" id="wifiCopy"></button></div>
+  <div class="copy-status" id="wifiCopyStatus" aria-live="polite"></div>
   <button class="cta" id="wifiJoin" style="margin-top:14px;"></button>
 </div>
 
@@ -2518,19 +2522,66 @@ function renderWifi(){
   document.getElementById('wifiPassL').textContent=T('pass');
   document.getElementById('wifiNet').textContent=WIFI.ssid;
   document.getElementById('wifiPass').textContent=WIFI.pass;
+  document.getElementById('wifiPass').onclick=()=>selectNodeText(document.getElementById('wifiPass'));
   document.getElementById('wifiCopy').textContent=T('copy');
   document.getElementById('wifiJoin').textContent=T('wifiJoin');
+  const status=document.getElementById('wifiCopyStatus');
+  if(status) status.textContent='';
   const payload=`Wi-Fi: ${WIFI.ssid}\nPassword: ${WIFI.pass}`;
   document.getElementById('wifiQR').innerHTML=qrSVG(payload,200);
-  document.getElementById('wifiCopy').onclick=()=>{ copyText(WIFI.pass); toast(T('copied')); };
-  document.getElementById('wifiJoin').onclick=copyWifiDetails;
+  document.getElementById('wifiCopy').onclick=()=>copyWifiDetails(WIFI.pass);
+  document.getElementById('wifiJoin').onclick=()=>copyWifiDetails();
 }
-function copyText(t){ try{ navigator.clipboard.writeText(t); }catch(e){ const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy');}catch(_){}a.remove(); } }
+function selectNodeText(el){
+  if(!el || !window.getSelection || !document.createRange) return;
+  const range=document.createRange();
+  range.selectNodeContents(el);
+  const sel=window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+async function copyText(t){
+  const text=String(t||'');
+  let ok=false;
+  try{
+    if(navigator.clipboard && window.isSecureContext){
+      await navigator.clipboard.writeText(text);
+      ok=true;
+    }
+  }catch(e){ ok=false; }
+  if(!ok){
+    try{
+      const a=document.createElement('textarea');
+      a.value=text;
+      a.setAttribute('readonly','');
+      a.style.position='fixed';
+      a.style.top='0';
+      a.style.left='0';
+      a.style.width='1px';
+      a.style.height='1px';
+      a.style.opacity='0';
+      a.style.zIndex='-1';
+      document.body.appendChild(a);
+      a.focus({preventScroll:true});
+      a.select();
+      a.setSelectionRange(0,a.value.length);
+      ok=document.execCommand && document.execCommand('copy');
+      a.remove();
+    }catch(e){ ok=false; }
+  }
+  toast(ok ? T('copied') : (lang==='el'?'Δεν αντιγράφηκε. Κρατήστε πατημένο για αντιγραφή.':'Copy failed. Tap and hold to copy.'));
+  return ok;
+}
 
 function safeUrl(u){ try{ const x=new URL(String(u)); return /^https?:$/.test(x.protocol) ? x.href : ''; }catch(e){ return ''; } }
-function copyWifiDetails(){
-  copyText(`Wi-Fi: ${WIFI.ssid}\nPassword: ${WIFI.pass}`);
-  toast(T('copied'));
+async function copyWifiDetails(value){
+  const text=value || `Wi-Fi: ${WIFI.ssid}\nPassword: ${WIFI.pass}`;
+  const ok=await copyText(text);
+  const status=document.getElementById('wifiCopyStatus');
+  if(status){
+    status.textContent=ok ? T('copied') : (lang==='el'?'Αν δεν αντιγράφηκε, κρατήστε πατημένο τον κωδικό.':'If it did not copy, tap and hold the password.');
+  }
+  return ok;
 }
 function renderSocial(){
   document.getElementById('socialEye').textContent=VENUE.name;
@@ -2850,7 +2901,17 @@ document.getElementById('helpX').onclick=()=>document.getElementById('panel').cl
 document.getElementById('psnd').onclick=sendHelp;
 document.getElementById('pin').onkeydown=e=>{if(e.key==='Enter')sendHelp();};
 document.getElementById('send').onclick=doSend;
-function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2800);}
+function toast(m){
+  const t=document.getElementById('toast');
+  if(!t) return;
+  t.textContent=m;
+  t.classList.remove('on');
+  clearTimeout(toast._t);
+  requestAnimationFrame(()=>{
+    t.classList.add('on');
+    toast._t=setTimeout(()=>t.classList.remove('on'),2600);
+  });
+}
 
 /* cross-tab sync (admin ↔ menu) */
 window.addEventListener('storage',e=>{
