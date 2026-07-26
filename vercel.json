@@ -4,7 +4,25 @@
   "trailingSlash": false,
   "headers": [
     {
-      "source": "/(.*)\\.(js|png|jpg|jpeg|webp|svg|woff2)",
+      "source": "/(index|admin|book).html",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" }
+      ]
+    },
+    {
+      "source": "/tsigoura-data.js",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" }
+      ]
+    },
+    {
+      "source": "/api/public-config",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" }
+      ]
+    },
+    {
+      "source": "/(.*)\\.(png|jpg|jpeg|webp|svg|woff2)",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=86400, must-revalidate" }
       ]

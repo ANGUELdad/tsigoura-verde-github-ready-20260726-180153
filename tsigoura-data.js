@@ -17,7 +17,7 @@
       ελληνικό προϊόν δεν μεταφράζεται καλά, κρατάμε το όνομα και εξηγούμε σύντομα.
    ========================================================================== */
 
-const STORAGE_KEY = 'tsigoura_verde_v6';   /* bumped — Sunday 27 July event copy */
+const STORAGE_KEY = 'tsigoura_verde_v7';   /* bumped — force Sunday 27 July copy after browser cache */
 
 const VENUE = {
   name: 'Tsigoura Verde Resort',
@@ -349,7 +349,7 @@ const ANNOUNCE = {
 
 const DEFAULT_SETTINGS = {
   serviceOpen:true, acceptOrders:true, currency:'€', defaultLang:'el',
-  catalogVersion:'event-pricelist-sunday-27-july-special-night-1',
+  catalogVersion:'event-pricelist-sunday-27-july-special-night-2',
   traditionalMenuOnly:true,
   design:{ accent:'#38564F', showVisualRail:true, categoryArt:true, motion:'rich', showFeaturedHero:true },
 };
