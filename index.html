@@ -1280,17 +1280,23 @@ body.sheet-open{overflow:hidden!important;}
 body.sheet-open .nav{visibility:hidden!important;opacity:0!important;pointer-events:none!important;}
 body.sheet-open .head,body.sheet-open::before{pointer-events:none!important;}
 
-/* Final UI shield: no mobile overflow, and category rail only appears in normal list browsing. */
+/* Final UI shield: no mobile overflow, no accidental text-selection scroll traps. */
 *,*::before,*::after{box-sizing:border-box;}
 img,svg,canvas{max-width:100%;}
-html,body,.wrap,#root{width:100%;max-width:100%;overflow-x:hidden!important;}
+html,body{width:100%;max-width:100%;min-height:100%;overflow-x:hidden!important;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
+.wrap,#root{width:100%;max-width:100%;overflow-x:hidden!important;overflow-y:visible!important;touch-action:pan-y;}
 .head,.search,.view-switch,.updates,.announce,.nav,.sec,.closing,.sheet,.panel{max-width:min(100vw,var(--maxw))!important;}
-.nav{display:block!important;visibility:visible!important;opacity:1!important;contain:layout paint!important;}
+.head,.nav,.view-switch,.updates,.announce,.cat-mosaic,.sec,.closing,.cartbar,.help,.panel,.sheet{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;}
+input,textarea,select,#wifiPass,.copy-status{user-select:text!important;-webkit-user-select:text!important;-webkit-touch-callout:default!important;}
+#wifiPass{user-select:all!important;-webkit-user-select:all!important;}
+button,a,[role="button"]{touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;}
+main,.sec,.item,.guide-card,.guide-hero-dish{touch-action:pan-y;}
+.nav{display:block!important;visibility:visible!important;opacity:1!important;contain:none!important;}
 body.guided-view .nav,
 body.searching .nav,
 body.sheet-open .nav,
 body.no-category-tabs .nav{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important;}
-.nav .row{max-width:100%!important;min-width:0!important;}
+.nav .row{max-width:100%!important;min-width:0!important;touch-action:pan-x pan-y!important;}
 .tab{max-width:calc(100vw - 32px)!important;overflow:hidden!important;text-overflow:ellipsis!important;}
 .sheet{max-height:min(86dvh,86vh)!important;overflow-y:auto!important;overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important;}
 .sheet,.sheet *{overflow-wrap:anywhere;}
@@ -1997,8 +2003,23 @@ function resetPinnedNav(){
   document.body.classList.remove('nav-pinned');
 }
 function syncPinnedNav(){
-  setStickyMetrics();
   resetPinnedNav();
+}
+function clearMenuSelection(){
+  const ae=document.activeElement;
+  if(ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) return;
+  try{
+    const sel=window.getSelection && window.getSelection();
+    if(sel && !sel.isCollapsed) sel.removeAllRanges();
+  }catch(e){}
+}
+function repairScrollAfterTouch(){
+  const anySheet=!!document.querySelector('.sheet.on');
+  if(!anySheet){
+    const scrim=document.getElementById('scrim');
+    if(scrim) scrim.classList.remove('on');
+    unlockPageScroll();
+  }
 }
 function previewScroller(){
   try{
@@ -3463,12 +3484,14 @@ async function boot(){
   }
 }
 boot();
-window.addEventListener('scroll',()=>requestAnimationFrame(syncPinnedNav),{passive:true});
 window.addEventListener('resize',()=>requestAnimationFrame(()=>{ setStickyMetrics(); syncPinnedNav(); }));
 window.addEventListener('orientationchange',()=>setTimeout(()=>{ setStickyMetrics(); syncPinnedNav(); },220));
-window.addEventListener('pageshow',()=>requestAnimationFrame(()=>{ forceCloseFloatingUI(); setStickyMetrics(); syncPinnedNav(); }));
-document.addEventListener('visibilitychange',()=>{ if(!document.hidden) requestAnimationFrame(()=>{ unlockPageScroll(); setStickyMetrics(); syncPinnedNav(); }); });
+window.addEventListener('pageshow',()=>requestAnimationFrame(()=>{ clearMenuSelection(); forceCloseFloatingUI(); setStickyMetrics(); syncPinnedNav(); }));
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) requestAnimationFrame(()=>{ clearMenuSelection(); unlockPageScroll(); setStickyMetrics(); syncPinnedNav(); }); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeSheets(); });
+document.addEventListener('touchend',()=>requestAnimationFrame(()=>{ clearMenuSelection(); repairScrollAfterTouch(); }),{passive:true});
+document.addEventListener('touchcancel',()=>requestAnimationFrame(()=>{ clearMenuSelection(); repairScrollAfterTouch(); }),{passive:true});
+document.addEventListener('pointerup',()=>requestAnimationFrame(()=>{ clearMenuSelection(); repairScrollAfterTouch(); }),{passive:true});
 
 /* ─── scroll reveal: adds .rv to chapter headers + closing as they arrive ───
    html.motion-on is what lets the CSS pre-hide them, so if this script never
