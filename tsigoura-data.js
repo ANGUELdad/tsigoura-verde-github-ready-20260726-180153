@@ -17,7 +17,7 @@
       ελληνικό προϊόν δεν μεταφράζεται καλά, κρατάμε το όνομα και εξηγούμε σύντομα.
    ========================================================================== */
 
-const STORAGE_KEY = 'tsigoura_verde_v4';   /* bumped — real menu Ιουλ. 2026 */
+const STORAGE_KEY = 'tsigoura_verde_v6';   /* bumped — Sunday 27 July event copy */
 
 const VENUE = {
   name: 'Tsigoura Verde Resort',
@@ -338,18 +338,18 @@ const ZONES = {
 const ANNOUNCE = {
   on:true, from:'2026-07-26', to:'2026-07-28', emoji:'🔥', targetCat:'spit',
   t:{
-    el:{ title:'Δευτέρα 27 Ιουλίου · Σούβλες στη Τσιγγούρα', body:'Ειδική βραδιά με αρνί σούβλας και κοντοσούβλι. Πατήστε εδώ για να δείτε το σημερινό μενού.' },
-    en:{ title:'Monday 27 July · Souvles at Tsigoura', body:'Special night with spit-roasted lamb and kontosouvli. Tap here to see today’s menu.' },
-    de:{ title:'Montag, 27. Juli · Souvles im Tsigoura', body:'Spezialabend mit Lamm vom Spieß und Kontosouvli. Tippen Sie hier für das heutige Menü.' },
-    ro:{ title:'Luni, 27 iulie · Souvles la Tsigoura', body:'Seară specială cu miel la proțap și kontosouvli. Apăsați aici pentru meniul de astăzi.' },
-    sr:{ title:'Понедељак, 27. јул · Сувле у Tsigoura', body:'Посебно вече са јагњетом са ражња и контосувлијем. Додирните овде за данашњи мени.' },
-    bg:{ title:'Понеделник, 27 юли · Сувлес в Tsigoura', body:'Специална вечер с агне на шиш и контосувли. Докоснете тук за днешното меню.' },
+    el:{ title:'Κυριακή 27 Ιουλίου · Σούβλες στη Τσιγγούρα', body:'Ειδική βραδιά με αρνί σούβλας και κοντοσούβλι. Πατήστε εδώ για να δείτε το σημερινό μενού.' },
+    en:{ title:'Sunday, 27 July · Souvles at Tsigoura', body:'Special night with spit-roasted lamb and kontosouvli. Tap here to see today’s menu.' },
+    de:{ title:'Sonntag, 27. Juli · Souvles im Tsigoura', body:'Spezialabend mit Lamm vom Spieß und Kontosouvli. Tippen Sie hier für das heutige Menü.' },
+    ro:{ title:'Duminică, 27 iulie · Souvles la Tsigoura', body:'Seară specială cu miel la proțap și kontosouvli. Apăsați aici pentru meniul de astăzi.' },
+    sr:{ title:'Недеља, 27. јул · Сувле у Tsigoura', body:'Посебно вече са јагњетом са ражња и контосувлијем. Додирните овде за данашњи мени.' },
+    bg:{ title:'Неделя, 27 юли · Сувлес в Tsigoura', body:'Специална вечер с агне на шиш и контосувли. Докоснете тук за днешното меню.' },
   }
 };
 
 const DEFAULT_SETTINGS = {
   serviceOpen:true, acceptOrders:true, currency:'€', defaultLang:'el',
-  catalogVersion:'event-pricelist-2026-07-27-special-night-1',
+  catalogVersion:'event-pricelist-sunday-27-july-special-night-1',
   traditionalMenuOnly:true,
   design:{ accent:'#38564F', showVisualRail:true, categoryArt:true, motion:'rich', showFeaturedHero:true },
 };
