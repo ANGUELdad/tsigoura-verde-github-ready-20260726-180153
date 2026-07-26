@@ -1,4 +1,10 @@
 const env = (name, fallback = '') => String(process.env[name] || fallback);
+const wifiValue = (name, fallback) => {
+  const value = env(name, fallback).trim();
+  if (name === 'PUBLIC_WIFI_SSID' && /^TSIGOURA$/i.test(value)) return 'TSIGOURA 5G';
+  if (name === 'PUBLIC_WIFI_PASS' && value === 'tsigoura2023') return 'Tsigoura2023';
+  return value || fallback;
+};
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -6,7 +12,7 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ ok:false, error:'method_not_allowed' });
   }
 
-  res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
   return res.status(200).json({
     ok: true,
     venue: {
@@ -22,8 +28,8 @@ module.exports = async function handler(req, res) {
       website: env('PUBLIC_WEBSITE_URL'),
     },
     wifi: {
-      ssid: env('PUBLIC_WIFI_SSID', 'TSIGOURA 5G'),
-      pass: env('PUBLIC_WIFI_PASS', 'Tsigoura2023'),
+      ssid: wifiValue('PUBLIC_WIFI_SSID', 'TSIGOURA 5G'),
+      pass: wifiValue('PUBLIC_WIFI_PASS', 'Tsigoura2023'),
       enc: env('PUBLIC_WIFI_ENC', 'WPA'),
     },
     legal: {

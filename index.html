@@ -1500,6 +1500,10 @@ body.guided-view .guide-card .mini-actions button{min-height:31px!important;font
 /* ─── venue config: WiFi + optional media ─── */
 const MEDIA = { hero:'media/hero.jpg', souvles:'media/souvles.jpg', logo:'media/logo-full.jpg', logoFull:'media/logo-full.jpg', mark:'media/mark.png' };
 const WIFI = { ssid:'TSIGOURA 5G', pass:'Tsigoura2023', enc:'WPA' };  /* auto-join QR + copy */
+function normalizeWifiConfig(){
+  if(/^TSIGOURA$/i.test(String(WIFI.ssid||'').trim())) WIFI.ssid='TSIGOURA 5G';
+  if(String(WIFI.pass||'')==='tsigoura2023') WIFI.pass='Tsigoura2023';
+}
 const CONTACT = {
   email:'reservations@tsigouraverderesort.gr',
   phone:'',
@@ -1517,6 +1521,7 @@ async function hydratePublicConfig(){
     if(cfg.venue && cfg.venue.name) VENUE.name=String(cfg.venue.name).slice(0,80);
     if(cfg.contact) Object.keys(CONTACT).forEach(k=>{ if(cfg.contact[k]) CONTACT[k]=String(cfg.contact[k]); });
     if(cfg.wifi) Object.keys(WIFI).forEach(k=>{ if(cfg.wifi[k]) WIFI[k]=String(cfg.wifi[k]); });
+    normalizeWifiConfig();
     if(cfg.legal && VENUE.legal) Object.keys(VENUE.legal).forEach(k=>{ if(cfg.legal[k]) VENUE.legal[k]=String(cfg.legal[k]); });
   }catch(e){}
 }
