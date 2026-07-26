@@ -1262,14 +1262,20 @@ html,body{max-width:100%;overflow-x:hidden;}
 body::before{content:'';position:fixed;top:0;left:50%;width:100%;max-width:var(--maxw);height:var(--head-h,92px);transform:translateX(-50%);background:var(--paper);z-index:110;pointer-events:none;}
 .wrap{padding-top:var(--head-h,92px)!important;}
 body.guided-view .head{position:fixed!important;top:0!important;left:50%!important;right:auto!important;width:100%!important;max-width:var(--maxw)!important;transform:translateX(-50%)!important;z-index:120!important;background:var(--paper)!important;}
-.nav{top:var(--head-h,96px)!important;z-index:70!important;background:var(--paper)!important;box-shadow:0 8px 22px rgba(20,40,42,.07)!important;}
-.nav.nav-fixed{position:fixed!important;top:var(--head-h,96px)!important;left:50%!important;right:auto!important;width:100%!important;max-width:var(--maxw)!important;transform:translateX(-50%)!important;margin-top:0!important;}
-body.nav-pinned:not(.guided-view) #root{padding-top:var(--nav-h,58px)!important;}
-.sec{scroll-margin-top:calc(var(--head-h,96px) + var(--nav-h,58px) + 18px)!important;}
+.nav{position:relative!important;top:auto!important;z-index:10!important;background:var(--paper)!important;box-shadow:0 8px 22px rgba(20,40,42,.07)!important;}
+.nav.nav-fixed{position:relative!important;top:auto!important;left:auto!important;width:auto!important;max-width:none!important;transform:none!important;margin-top:12px!important;}
+body.nav-pinned:not(.guided-view) #root{padding-top:0!important;}
+.sec{scroll-margin-top:calc(var(--head-h,96px) + 16px)!important;}
 .guide-picker{top:calc(var(--head-h,96px) + 6px)!important;}
 body.guided-view .guide-picker{position:relative!important;top:auto!important;}
 .cookie:not(.on),.sheet:not(.on){visibility:hidden!important;pointer-events:none!important;}
 .cookie:not(.on){display:none!important;}
+.scrim{z-index:240!important;}
+.sheet{z-index:250!important;}
+.cookie{z-index:260!important;}
+body.sheet-open{overflow:hidden!important;}
+body.sheet-open .nav{visibility:hidden!important;opacity:0!important;pointer-events:none!important;}
+body.sheet-open .head,body.sheet-open::before{pointer-events:none!important;}
 
 </style>
 </head>
@@ -1935,14 +1941,12 @@ function scrollBehavior(){
 function stickyNavOffset(){
   setStickyMetrics();
   const head=document.querySelector('.head');
-  const nav=document.querySelector('.nav');
   const guide=document.querySelector('.guide-picker');
   const extra=12;
   const headH=head ? head.getBoundingClientRect().height : 0;
-  const navH=nav ? nav.getBoundingClientRect().height : 0;
   const guideStyle=guide ? getComputedStyle(guide) : null;
   const guideH=(document.body.classList.contains('guided-view') && guide && guideStyle && /^(sticky|fixed)$/.test(guideStyle.position)) ? guide.getBoundingClientRect().height : 0;
-  return Math.ceil(headH+navH+guideH+extra);
+  return Math.ceil(headH+guideH+extra);
 }
 function setStickyMetrics(){
   const head=document.querySelector('.head');
@@ -1961,21 +1965,8 @@ function resetPinnedNav(){
   document.body.classList.remove('nav-pinned');
 }
 function syncPinnedNav(){
-  const nav=document.querySelector('.nav');
-  const head=document.querySelector('.head');
-  if(!nav || !head || document.body.classList.contains('guided-view') || getComputedStyle(nav).display==='none'){
-    resetPinnedNav();
-    return;
-  }
   setStickyMetrics();
-  const headH=Math.ceil(head.getBoundingClientRect().height);
-  if(!nav.classList.contains('nav-fixed')){
-    nav.dataset.stickAt = String(Math.max(0, window.scrollY + nav.getBoundingClientRect().top - headH));
-  }
-  const stickAt=Number(nav.dataset.stickAt || 0);
-  const shouldPin=window.scrollY >= stickAt;
-  nav.classList.toggle('nav-fixed', shouldPin);
-  document.body.classList.toggle('nav-pinned', shouldPin);
+  resetPinnedNav();
 }
 function previewScroller(){
   try{
@@ -2817,9 +2808,9 @@ function wireTopShortcut(){
 }
 
 /* ═══════════════ sheets / events ═══════════════ */
-function openSheet(id){forceCloseFloatingUI();document.getElementById(id).classList.add('on');document.getElementById('scrim').classList.add('on');}
-function closeSheets(){document.querySelectorAll('.sheet').forEach(s=>s.classList.remove('on'));document.getElementById('scrim').classList.remove('on');}
-function forceCloseFloatingUI(){document.querySelectorAll('.sheet,.scrim,.cookie,.panel').forEach(el=>el.classList.remove('on'));}
+function openSheet(id){forceCloseFloatingUI();document.getElementById(id).classList.add('on');document.getElementById('scrim').classList.add('on');document.body.classList.add('sheet-open');}
+function closeSheets(){document.querySelectorAll('.sheet').forEach(s=>s.classList.remove('on'));document.getElementById('scrim').classList.remove('on');document.body.classList.remove('sheet-open');}
+function forceCloseFloatingUI(){document.querySelectorAll('.sheet,.scrim,.cookie,.panel').forEach(el=>el.classList.remove('on'));document.body.classList.remove('sheet-open');}
 document.getElementById('scrim').onclick=closeSheets;
 document.querySelectorAll('[data-x]').forEach(b=>b.onclick=closeSheets);
 document.getElementById('cart').onclick=()=>{renderCartSheet();openSheet('cartSheet');};
