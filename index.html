@@ -244,8 +244,8 @@ body.traditional-mode .wrap{padding-bottom:44px;}
 /* cookie banner */
 .cookie{position:fixed;left:12px;right:12px;bottom:12px;max-width:var(--maxw);margin:0 auto;z-index:90;
   background:var(--pine);color:#F3ECD6;border-radius:16px;padding:15px 17px;box-shadow:0 14px 34px rgba(20,40,42,.4);
-  transform:translateY(160%);transition:transform .4s cubic-bezier(.2,.8,.2,1);}
-.cookie.on{transform:none;}
+  transform:translateY(calc(160% + 32px));visibility:hidden;pointer-events:none;transition:transform .4s cubic-bezier(.2,.8,.2,1),visibility 0s linear .4s;}
+.cookie.on{transform:none;visibility:visible;pointer-events:auto;transition:transform .4s cubic-bezier(.2,.8,.2,1),visibility 0s;}
 .cookie .ck-t{font-family:Fraunces,serif;font-size:16px;margin-bottom:5px;}
 .cookie .ck-x{font-size:12px;line-height:1.5;color:rgba(243,236,214,.82);}
 .cookie .ck-row{display:flex;gap:9px;margin-top:12px;}
@@ -638,10 +638,11 @@ body.traditional-mode .wrap{padding-bottom:44px;}
 /* ═════════ sheets ═════════ */
 .scrim{position:fixed;inset:0;background:rgba(18,30,20,.45);z-index:40;opacity:0;pointer-events:none;transition:.25s;}
 .scrim.on{opacity:1;pointer-events:auto;}
-.sheet{position:fixed;left:50%;bottom:0;transform:translateX(-50%) translateY(100%);
+.sheet{position:fixed;left:50%;bottom:0;transform:translateX(-50%) translateY(calc(100% + 32px));
   width:100%;max-width:var(--maxw);background:var(--paper);border-radius:20px 20px 0 0;z-index:41;
-  transition:transform .32s cubic-bezier(.2,.8,.2,1);max-height:88vh;overflow-y:auto;padding:12px 26px 28px;}
-.sheet.on{transform:translateX(-50%) translateY(0);}
+  transition:transform .32s cubic-bezier(.2,.8,.2,1),visibility 0s linear .32s;max-height:88vh;overflow-y:auto;padding:12px 26px 28px;
+  visibility:hidden;pointer-events:none;}
+.sheet.on{transform:translateX(-50%) translateY(0);visibility:visible;pointer-events:auto;transition:transform .32s cubic-bezier(.2,.8,.2,1),visibility 0s;}
 .grip{width:36px;height:4px;border-radius:3px;background:var(--line);margin:0 auto 16px;}
 .sheet h2{font-family:Fraunces,serif;font-weight:600;font-size:25px;color:var(--pine);margin:2px 0 3px;}
 .sheet .eyebrow{font-size:11px;letter-spacing:2px;font-weight:600;color:var(--gold);text-transform:uppercase;}
@@ -788,8 +789,8 @@ body.traditional-mode .wrap{padding-bottom:44px;}
   .item .desc{max-width:100%;}
   .item .meta{gap:8px;}
   .info-b,.add-sm{width:38px;height:38px;}
-  .sheet{left:0;right:0;transform:translateY(100%);width:100%;max-width:none;border-radius:18px 18px 0 0;padding-left:18px;padding-right:18px;padding-bottom:max(24px,env(safe-area-inset-bottom));}
-  .sheet.on{transform:translateY(0);}
+  .sheet{left:0;right:0;transform:translateY(calc(100% + 32px));width:100%;max-width:none;border-radius:18px 18px 0 0;padding-left:18px;padding-right:18px;padding-bottom:max(24px,env(safe-area-inset-bottom));}
+  .sheet.on{transform:translateY(0);visibility:visible;pointer-events:auto;}
   .dsh-photo{margin-left:-18px;margin-right:-18px;}
   .checkout-guide{grid-template-columns:1fr;}
   .checkout-card{grid-template-columns:38px minmax(0,1fr);gap:10px;}
@@ -2763,8 +2764,9 @@ function wireTopShortcut(){
 }
 
 /* ═══════════════ sheets / events ═══════════════ */
-function openSheet(id){document.getElementById(id).classList.add('on');document.getElementById('scrim').classList.add('on');}
+function openSheet(id){forceCloseFloatingUI();document.getElementById(id).classList.add('on');document.getElementById('scrim').classList.add('on');}
 function closeSheets(){document.querySelectorAll('.sheet').forEach(s=>s.classList.remove('on'));document.getElementById('scrim').classList.remove('on');}
+function forceCloseFloatingUI(){document.querySelectorAll('.sheet,.scrim,.cookie,.panel').forEach(el=>el.classList.remove('on'));}
 document.getElementById('scrim').onclick=closeSheets;
 document.querySelectorAll('[data-x]').forEach(b=>b.onclick=closeSheets);
 document.getElementById('cart').onclick=()=>{renderCartSheet();openSheet('cartSheet');};
@@ -3287,13 +3289,16 @@ function handleHandoff(){
 
 /* ═══════════════ init ═══════════════ */
 function apply(){
+  forceCloseFloatingUI();
   renderHead();renderStrip();renderAnnounce();renderViewSwitch();renderTabs();renderList();
   renderCartSheet();updateCart();renderLang();renderClosing();resetHelp();initCookie();
+  requestAnimationFrame(forceCloseFloatingUI);
 }
 async function boot(){
   await hydratePublicConfig();
   if(!handleHandoff()){
     
+    forceCloseFloatingUI();
     loadCart();
     apply();
     /* first visit → splash + language pick; returning (saved lang) → skip */
