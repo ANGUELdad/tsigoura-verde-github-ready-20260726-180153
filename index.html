@@ -1155,6 +1155,9 @@ body.guided-view #root{padding-top:6px;}
 .guide-landing-copy small{display:block;font-size:11px;font-weight:850;letter-spacing:2.3px;text-transform:uppercase;color:var(--gold);margin-bottom:5px;}
 .guide-landing-copy h2{font-family:Fraunces,serif;font-size:clamp(31px,9vw,46px);line-height:1;margin:0;color:var(--pine);letter-spacing:0;}
 .guide-landing-copy p{margin:8px 0 0;color:#6A6254;font-size:13px;line-height:1.45;}
+.special-exit{margin-top:13px;min-height:38px;border-radius:999px;padding:0 14px;background:#FFF8EA;border:1px solid rgba(211,186,130,.52);color:var(--pine);font-weight:850;box-shadow:0 6px 14px rgba(20,40,42,.06);}
+body.special-menu .view-switch button[data-view="guide"]{background:linear-gradient(135deg,#B4623A,#7D341C)!important;color:#FFF8EA!important;}
+body.special-menu .announce{box-shadow:0 0 0 3px rgba(211,186,130,.22),0 18px 40px rgba(122,46,18,.34)!important;}
 .guide-menu{display:grid;gap:12px;}
 .guide-menu-card{position:relative;min-height:112px;display:grid;grid-template-columns:74px minmax(0,1fr) 28px;align-items:center;gap:14px;padding:16px;border-radius:24px;text-align:left;overflow:hidden;background:radial-gradient(circle at 86% 10%,color-mix(in srgb,var(--acc) 24%,transparent),transparent 34%),linear-gradient(135deg,#FFFDF8 0%,var(--accbg,#E7EEEA) 100%);border:1px solid rgba(211,186,130,.48);box-shadow:0 16px 36px rgba(20,40,42,.10);animation:guideMenuCardIn .58s cubic-bezier(.34,1.46,.44,1) both;transition:transform .18s ease,box-shadow .22s ease;}
 .guide-menu-card::after{content:'';position:absolute;left:0;right:0;bottom:0;height:4px;background:linear-gradient(90deg,var(--acc),rgba(211,186,130,.36));transform-origin:left;animation:guideRuleIn .72s cubic-bezier(.2,.8,.2,1) both;}
@@ -1391,7 +1394,7 @@ body.guided-view .guide-card .mini-actions button{min-height:31px!important;font
 
 <div class="sheet photo-sheet" id="photoSheet" style="max-height:92vh;">
   <div class="grip"></div><button class="close" data-x>✕</button>
-  <div class="photo-stage"><img id="photoImg" src="" alt=""></div>
+  <div class="photo-stage"><img id="photoImg" src="media/mark.png" alt=""></div>
   <div class="eyebrow" id="photoEye"></div>
   <h2 class="photo-title" id="photoName"></h2>
   <p class="photo-desc" id="photoDesc"></p>
@@ -1675,6 +1678,7 @@ let q = '';
    { lid, id, qty, removed:[idx…] (into item.removable), note:'' } */
 let cart = [];
 let activeCat = null;
+let specialMenuActive = false;
 
 const T = k => (VIEW_UI[lang]&&VIEW_UI[lang][k]) || (VIEW_UI.en&&VIEW_UI.en[k]) || (UI[lang] && UI[lang][k]) || UI.en[k] || k;
 /* robust access to the general-allergen notice (data key may be .allergens or .allergensGeneral) */
@@ -1699,12 +1703,49 @@ const catName = c => {
   return typeof v==='string' ? v : String(v.n||c.id||'');
 };
 const orderedCats = () => S.categories.slice().sort((a,b)=>a.order-b.order);
+const SPECIAL_UI = {
+  el:{special:'Ειδικό μενού', full:'Όλος ο κατάλογος'},
+  en:{special:'Special menu', full:'Full menu'},
+  de:{special:'Spezialmenü', full:'Ganze Speisekarte'},
+  ro:{special:'Meniu special', full:'Meniu complet'},
+  sr:{special:'Посебан мени', full:'Цео мени'},
+  bg:{special:'Специално меню', full:'Пълно меню'}
+};
+function SU(k){ return (SPECIAL_UI[lang]&&SPECIAL_UI[lang][k]) || SPECIAL_UI.en[k] || k; }
+function announceText(){ const A=(typeof ANNOUNCE!=='undefined')?ANNOUNCE:null; return (A&&A.t&&(A.t[lang]||A.t.en)) || null; }
+function specialMenuIds(){
+  const A=(typeof ANNOUNCE!=='undefined')?ANNOUNCE:null;
+  const ids=(A&&Array.isArray(A.specialCats)&&A.specialCats.length) ? A.specialCats : (A&&A.targetCat ? [A.targetCat] : []);
+  return ids.map(String);
+}
+function activeMenuCats(){
+  const cats=orderedCats();
+  if(!specialMenuActive) return cats;
+  const ids=specialMenuIds();
+  return ids.length ? cats.filter(c=>ids.includes(String(c.id))) : cats;
+}
+function openSpecialMenu(){
+  specialMenuActive=true;
+  const search=document.getElementById('q'); if(search) search.value='';
+  q=''; safeLS.set(VIEW_KEY,'guide');
+  activeCat=null;
+  document.body.classList.remove('searching');
+  document.body.classList.add('guided-view','special-menu');
+  renderStrip(); renderAnnounce(); renderViewSwitch(); renderTabs(); renderList();
+  setTimeout(scrollGuideStage,40);
+}
+function exitSpecialMenu(){
+  specialMenuActive=false; activeCat=null; document.body.classList.remove('special-menu');
+  renderAnnounce(); renderViewSwitch(); renderTabs(); renderList(); scrollMenuTop();
+}
 const VIEW_KEY = 'tv_menu_view';
 function menuView(){ return safeLS.get(VIEW_KEY)==='guide' ? 'guide' : 'list'; }
 function setMenuView(v){
   safeLS.set(VIEW_KEY, v==='guide' ? 'guide' : 'list');
   if(v==='guide') activeCat=null;
   document.body.classList.toggle('guided-view', menuView()==='guide' && !cleanSearch(searchValue()));
+  if(v==='list') specialMenuActive=false;
+  document.body.classList.toggle('special-menu', specialMenuActive);
   renderHead();renderViewSwitch();renderTabs();renderList();scrollMenuTop();
 }
 
@@ -1797,7 +1838,7 @@ function renderQuickFlow(){
 function renderCategoryMosaic(){
   const slot=document.getElementById('categoryMosaic'); if(!slot) return;
   if(q.trim()){ slot.className=''; slot.innerHTML=''; return; }
-  const cats=orderedCats().filter(c=>!c.hidden && S.menu.some(i=>i.cat===c.id&&!i.hidden));
+  const cats=activeMenuCats().filter(c=>!c.hidden && S.menu.some(i=>i.cat===c.id&&!i.hidden));
   if(!cats.length){ slot.className=''; slot.innerHTML=''; return; }
   slot.className='cat-mosaic';
   slot.innerHTML=cats.map((c,ix)=>{
@@ -1852,7 +1893,7 @@ function renderViewSwitch(){
 }
 function renderTabs(){
   const row=document.getElementById('tabs'); row.innerHTML='';
-  orderedCats().forEach((c,ix)=>{
+  activeMenuCats().forEach((c,ix)=>{
     if(c.hidden || !S.menu.some(i=>i.cat===c.id&&!i.hidden&&matches(i))) return;
     const b=document.createElement('button');
     b.className='tab'+(activeCat===c.id?' on':''); b.dataset.cat=c.id;
@@ -1949,7 +1990,7 @@ function matches(i){
   return itemSearchHaystack(i).includes(s);
 }
 function firstMatchingCategory(){
-  return orderedCats().find(c=>!c.hidden && S.menu.some(i=>!i.hidden&&i.cat===c.id&&matches(i)));
+  return activeMenuCats().find(c=>!c.hidden && S.menu.some(i=>!i.hidden&&i.cat===c.id&&matches(i))); 
 }
 function syncSearch(force){
   const next=searchValue();
@@ -1962,6 +2003,7 @@ function syncSearch(force){
   if(first && (searching || (menuView()!=='guide' && (!activeCat || !document.getElementById('sec-'+activeCat))))) activeCat=first.id;
   document.body.classList.toggle('searching', searching);
   document.body.classList.toggle('guided-view', menuView()==='guide' && !searching);
+  document.body.classList.toggle('special-menu', specialMenuActive);
   renderStrip();renderAnnounce();renderViewSwitch();renderTabs();renderList();
 }
 function clearSearch(ev){
@@ -1979,9 +2021,10 @@ function wireMenuRootActions(root){
   root.querySelectorAll('[data-guide-pick]').forEach(b=>b.onclick=()=>setGuideCategory(b.dataset.guidePick));
   root.querySelectorAll('[data-guide-jump]').forEach(b=>b.onclick=()=>setGuideCategory(b.dataset.guideJump));
   root.querySelectorAll('[data-guide-home]').forEach(b=>b.onclick=()=>{ activeCat=null; renderTabs(); renderList(); scrollMenuTop(); });
+  root.querySelectorAll('[data-special-exit]').forEach(b=>b.onclick=exitSpecialMenu);
 }
 function guideCategories(){
-  return orderedCats().filter(c=>!c.hidden && S.menu.some(i=>!i.hidden&&i.cat===c.id&&matches(i)));
+  return activeMenuCats().filter(c=>!c.hidden && S.menu.some(i=>!i.hidden&&i.cat===c.id&&matches(i))); 
 }
 function setGuideCategory(id){
   const cats=guideCategories();
@@ -2026,11 +2069,15 @@ function renderGuidedList(){
   setActiveTab();
 }
 function guideLandingHTML(cats){
+  const ann=announceText();
+  const title=specialMenuActive && ann ? ann.title : T('guidePick');
+  const body=specialMenuActive && ann ? ann.body : T('guidePickSub');
   return `<section class="guide-landing" aria-label="${esc(T('viewGuided'))}">
     <div class="guide-landing-copy">
-      <small>${esc(T('viewGuided'))}</small>
-      <h2>${esc(T('guidePick'))}</h2>
-      <p>${esc(T('guidePickSub'))}</p>
+      <small>${esc(specialMenuActive?SU('special'):T('viewGuided'))}</small>
+      <h2>${esc(title)}</h2>
+      <p>${esc(body)}</p>
+      ${specialMenuActive?`<button class="special-exit" type="button" data-special-exit>${esc(SU('full'))}</button>`:''}
     </div>
     <div class="guide-menu">
       ${cats.map((c,k)=>{
@@ -2115,7 +2162,7 @@ function guideCardHTML(i,k){
 function renderList(){
   if(menuView()==='guide' && !cleanSearch(searchValue())) return renderGuidedList();
   const root=document.getElementById('root'); let html='',any=false,num=0;
-  orderedCats().forEach(c=>{
+  activeMenuCats().forEach(c=>{
     if(c.hidden) return;
     const items=S.menu.filter(i=>!i.hidden&&i.cat===c.id&&matches(i)); if(!items.length)return; any=true; num++;
     const n2=String(num).padStart(2,'0');
@@ -2405,6 +2452,13 @@ function openPhoto(id){
   openSheet('photoSheet');
 }
 document.addEventListener('click', e=>{
+  const special=e.target.closest('[data-special-open]');
+  if(special){
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    openSpecialMenu();
+    return;
+  }
   const b=e.target.closest('[data-photo]');
   if(!b) return;
   e.preventDefault();
@@ -3109,13 +3163,13 @@ function renderAnnounce(){
   if((from && today<from) || (to && today>to)){ slot.innerHTML=''; return; }
   const t=(A.t&&(A.t[lang]||A.t.en))||null; if(!t){ slot.innerHTML=''; return; }
   const img = (typeof MEDIA!=='undefined' && (MEDIA.souvles||MEDIA.hero)) ? `url('${MEDIA.souvles||MEDIA.hero}')` : 'none';
-  slot.innerHTML=`<button class="announce" type="button" id="announceGo" style="--ann-img:${img}">
+  slot.innerHTML=`<button class="announce" type="button" id="announceGo" data-special-open style="--ann-img:${img}">
     ${A.emoji?`<span class="em">${A.emoji}</span>`:''}
     <div class="ttl">${esc(t.title||'')}</div>
     ${t.body?`<div class="bd">${esc(t.body)}</div>`:''}
   </button>`;
   const go=document.getElementById('announceGo');
-  if(go) go.onclick=()=>scrollToCategory(A.targetCat||'spit');
+  if(go) go.onclick=openSpecialMenu;
 }
 
 /* ─── smart QR handoff ───

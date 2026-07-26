@@ -333,10 +333,10 @@ const ZONES = {
 
 /* ────────────────────────────────────────────────────────────────────────
    ANNOUNCE — γιορτινό banner με ημερομηνίες. Εμφανίζεται μόνο μέσα στο
-   παράθυρο [from,to]. Τώρα: ειδική βραδιά σούβλας (Δευτ. 27/7).
+   παράθυρο [from,to]. Τώρα: ειδική βραδιά σούβλας (Κυρ. 27/7).
    ──────────────────────────────────────────────────────────────────────── */
 const ANNOUNCE = {
-  on:true, from:'2026-07-26', to:'2026-07-28', emoji:'🔥', targetCat:'spit',
+  on:true, from:'2026-07-26', to:'2026-07-28', emoji:'🔥', targetCat:'spit', specialCats:['spit','meat'],
   t:{
     el:{ title:'Κυριακή 27 Ιουλίου · Σούβλες στη Τσιγγούρα', body:'Ειδική βραδιά με αρνί σούβλας και κοντοσούβλι. Πατήστε εδώ για να δείτε το σημερινό μενού.' },
     en:{ title:'Sunday, 27 July · Souvles at Tsigoura', body:'Special night with spit-roasted lamb and kontosouvli. Tap here to see today’s menu.' },
