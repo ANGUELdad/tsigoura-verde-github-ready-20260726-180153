@@ -378,6 +378,17 @@ nav.tabs button.on{color:var(--cream);border-bottom-color:var(--gold);}
 .setting-row .txt{flex:1;}
 .setting-row .t{font-size:13.5px;font-weight:600;}
 .setting-row .d{font-size:11.5px;color:var(--muted);margin-top:2px;line-height:1.45;}
+.announce-editor{background:linear-gradient(135deg,#fffdf8,#f3ead8);border:1px solid rgba(201,162,39,.28);
+  border-radius:16px;padding:14px;box-shadow:var(--shadow);margin:12px 0;}
+.announce-editor h3{font-size:18px;color:var(--forest);display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+.announce-editor .hint{font-size:11.5px;color:var(--muted);line-height:1.45;margin:0 0 12px;}
+.announce-editor .mini-preview{position:relative;overflow:hidden;border-radius:14px;padding:13px 14px;margin:10px 0 2px;
+  background:linear-gradient(135deg,#5C3728,#243A38);color:#FFF8EA;border:1px solid rgba(201,162,39,.32);}
+.announce-editor .mini-preview b{display:block;font-family:Fraunces,serif;font-size:17px;line-height:1.15;padding-right:34px;}
+.announce-editor .mini-preview span{position:absolute;right:12px;top:10px;font-size:23px;}
+.announce-editor .mini-preview p{font-size:12px;line-height:1.4;margin:5px 0 0;color:rgba(255,248,234,.82);}
+.announce-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+.announce-actions .btn{flex:1 1 150px;justify-content:center;}
 
 .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(160%);background:var(--forest);
   color:var(--cream);padding:13px 22px;border-radius:15px;font-size:13px;font-weight:600;z-index:80;transition:.3s;}
@@ -510,6 +521,7 @@ nav.tabs button .ico{width:15px;height:15px;stroke-width:1.9;}
   .scan-actions .btn:first-child,.phone-actions .btn:first-child{grid-column:1 / -1;}
   .setting-row{align-items:flex-start;flex-wrap:wrap;}
   .setting-row .toggle,.setting-row select{margin-left:auto;}
+  .announce-actions{display:grid;grid-template-columns:1fr;}
   .qr-card .qbox svg{max-width:100%;height:auto;}
   .toast{max-width:calc(100% - 24px);text-align:center;}
 }
@@ -1680,6 +1692,81 @@ function renderQR(){
 $('baseUrl').oninput = ()=>renderQR();
 
 /* ================= SETTINGS ================= */
+function announcementEditorHTML(){
+  if(!S.settings.announcement) S.settings.announcement=normalizeAnnouncement((typeof DEFAULT_ANNOUNCEMENT!=='undefined')?DEFAULT_ANNOUNCEMENT:null);
+  const A=normalizeAnnouncement(S.settings.announcement);
+  const el=A.t.el||{title:'',body:''}, en=A.t.en||{title:'',body:''};
+  const cats=S.categories.slice().sort((a,b)=>a.order-b.order);
+  const chosen=new Set((Array.isArray(A.specialCats)&&A.specialCats.length?A.specialCats:[A.targetCat]).map(String));
+  return `<div class="announce-editor" id="announceEditor">
+    <h3>${ICO.get('star')}Special announcement</h3>
+    <p class="hint">Αυτό είναι το banner πάνω από την αναζήτηση. Μπορεί να κρυφτεί, να αλλάξει, να αφαιρεθεί, ή να ανοίγει συγκεκριμένες κατηγορίες όταν το πατάει ο πελάτης.</p>
+    <div class="mini-preview"><span>${ioEsc(A.emoji||'')}</span><b>${ioEsc(el.title||'Κρυφό / χωρίς τίτλο')}</b><p>${ioEsc(el.body||'Δεν θα εμφανιστεί αν είναι κρυφό ή άδειο.')}</p></div>
+    <div class="setting-row">
+      <div class="txt"><div class="t">Εμφάνιση banner</div><div class="d">Όταν είναι off, εξαφανίζεται τελείως από το menu.</div></div>
+      <div class="toggle ${A.on?'on':''}" id="annOn"></div>
+    </div>
+    <div class="fieldrow">
+      <div><label>Από</label><input type="date" id="annFrom" value="${ioEsc(A.from||'')}"></div>
+      <div><label>Έως</label><input type="date" id="annTo" value="${ioEsc(A.to||'')}"></div>
+      <div><label>Emoji</label><input id="annEmoji" value="${ioEsc(A.emoji||'')}" maxlength="8" placeholder="π.χ. 🔥"></div>
+    </div>
+    <div class="fieldrow">
+      <div><label>Τίτλος EL</label><input id="annTitleEl" value="${ioEsc(el.title||'')}" maxlength="90"></div>
+      <div><label>Title EN</label><input id="annTitleEn" value="${ioEsc(en.title||'')}" maxlength="90"></div>
+    </div>
+    <div class="fieldrow">
+      <div><label>Κείμενο EL</label><textarea id="annBodyEl" rows="3" maxlength="220">${ioEsc(el.body||'')}</textarea></div>
+      <div><label>Text EN</label><textarea id="annBodyEn" rows="3" maxlength="220">${ioEsc(en.body||'')}</textarea></div>
+    </div>
+    <div class="fieldrow">
+      <div><label>Κύρια κατηγορία όταν πατηθεί</label><select id="annTarget">${cats.map(c=>`<option value="${ioEsc(c.id)}" ${String(A.targetCat)===String(c.id)?'selected':''}>${catLabel(c,'el')}</option>`).join('')}</select></div>
+      <div><label>Κατηγορίες ειδικού μενού</label><div class="checks">${cats.map(c=>`<label><input type="checkbox" data-ann-cat value="${ioEsc(c.id)}" ${chosen.has(String(c.id))?'checked':''}>${catLabel(c,'el')}</label>`).join('')}</div></div>
+    </div>
+    <div class="announce-actions">
+      <button class="btn sm pressable" id="annSave">${ICO.get('check')}Αποθήκευση banner</button>
+      <button class="btn ghost sm pressable" id="annHide">${ICO.get('eye')}Κρύψιμο</button>
+      <button class="btn danger sm pressable" id="annRemove">${ICO.get('trash')}Αφαίρεση κειμένου</button>
+      <button class="btn ghost sm pressable" id="annReset">${ICO.get('arrow')}Επαναφορά 26/7</button>
+    </div>
+  </div>`;
+}
+function wireAnnouncementEditor(){
+  const box=$('announceEditor'); if(!box) return;
+  const readAnn=()=>{
+    const cur=normalizeAnnouncement(S.settings.announcement||{});
+    cur.from=$('annFrom').value || cur.from;
+    cur.to=$('annTo').value || cur.to;
+    cur.emoji=$('annEmoji').value.trim().slice(0,8);
+    cur.targetCat=$('annTarget').value;
+    cur.specialCats=[...box.querySelectorAll('[data-ann-cat]')].filter(cb=>cb.checked).map(cb=>cb.value);
+    if(!cur.specialCats.length) cur.specialCats=[cur.targetCat];
+    cur.t=cur.t&&typeof cur.t==='object'?cur.t:{};
+    if(!cur.t.el) cur.t.el={title:'',body:''};
+    if(!cur.t.en) cur.t.en={title:'',body:''};
+    cur.t.el.title=$('annTitleEl').value.trim().slice(0,90);
+    cur.t.el.body=$('annBodyEl').value.trim().slice(0,220);
+    cur.t.en.title=$('annTitleEn').value.trim().slice(0,90);
+    cur.t.en.body=$('annBodyEn').value.trim().slice(0,220);
+    return normalizeAnnouncement(cur);
+  };
+  const saveAnn=(msg)=>{
+    S.settings.announcement=readAnn();
+    persist(); renderSettings(); toast(msg||'Το banner αποθηκεύτηκε');
+  };
+  $('annOn').onclick=()=>{ const A=readAnn(); A.on=!A.on; S.settings.announcement=A; persist(); renderSettings(); toast(A.on?'Το banner εμφανίζεται':'Το banner κρύφτηκε'); };
+  $('annSave').onclick=()=>saveAnn('Το banner αποθηκεύτηκε');
+  $('annHide').onclick=()=>{ const A=readAnn(); A.on=false; S.settings.announcement=A; persist(); renderSettings(); toast('Το banner κρύφτηκε'); };
+  $('annRemove').onclick=()=>{
+    const A=readAnn(); A.on=false;
+    LANGUAGES.forEach(l=>{ A.t[l.code]={title:'',body:''}; });
+    S.settings.announcement=normalizeAnnouncement(A); persist(); renderSettings(); toast('Το κείμενο αφαιρέθηκε');
+  };
+  $('annReset').onclick=()=>{
+    S.settings.announcement=normalizeAnnouncement(JSON.parse(JSON.stringify(DEFAULT_ANNOUNCEMENT)));
+    persist(); renderSettings(); toast('Επανήλθε το banner 26/7');
+  };
+}
 function renderSettings(){
   const rows=[
     { ic:'sun', key:'serviceOpen', t:'Το κατάστημα είναι ανοιχτό', d:'Όταν είναι κλειστό, οι πελάτες βλέπουν το μενού αλλά δεν μπορούν να παραγγείλουν.' },
@@ -1690,7 +1777,7 @@ function renderSettings(){
     <div class="setting-row">
       <div class="txt"><div class="t" style="display:flex;align-items:center;gap:7px;">${r.ic?ICO.get(r.ic):''}${r.t}</div><div class="d">${r.d}</div></div>
       <div class="toggle ${S.settings[r.key]?'on':''}" data-set="${r.key}"></div>
-    </div>`).join('') + `
+    </div>`).join('') + announcementEditorHTML() + `
 
     <div class="setting-row">
       <div class="txt"><div class="t" style="display:flex;align-items:center;gap:7px;">${ICO.get('star')}Πρόταση βραδιάς στο αρχικό</div><div class="d">Κρύβει το μεγάλο “Η πρόταση της βραδιάς” από την αρχική οθόνη του menu. Δεν διαγράφει πιάτα.</div></div>
@@ -1708,6 +1795,7 @@ function renderSettings(){
     const k=el.dataset.designSet; S.settings.design[k]=S.settings.design[k]===false;
     persist(); renderSettings(); });
   $('defLang').onchange=e=>{ S.settings.defaultLang=e.target.value; persist(); };
+  wireAnnouncementEditor();
 }
 $('resetBtn').onclick=()=>{ if(confirm('Επαναφορά όλων των demo δεδομένων;')){ resetState(); S=loadState(); renderAll(); toast('Έγινε επαναφορά'); } };
 

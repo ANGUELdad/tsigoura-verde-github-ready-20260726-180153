@@ -414,7 +414,7 @@ body.traditional-mode .wrap{padding-bottom:44px;}
 .intro{animation:fadeUp .55s cubic-bezier(.2,.8,.2,1) both;}
 
 /* festive announcement banner (e.g. σούβλες night) */
-.announce{appearance:none;-webkit-appearance:none;display:block;width:auto;text-align:left;border:0;position:relative;margin:16px 22px 0;padding:17px 18px;border-radius:20px;overflow:hidden;cursor:pointer;
+.announce{appearance:none;-webkit-appearance:none;display:block;width:auto;text-align:left;border:0;position:relative;margin:14px 20px 8px;padding:16px 18px;border-radius:18px;overflow:hidden;cursor:pointer;
   background:linear-gradient(122deg,#4B1D12,#9A3E1E 52%,#D49A45);color:#FFF3E0;
   border:1px solid rgba(255,220,164,.28);
   box-shadow:0 16px 34px rgba(122,46,18,.31),inset 0 1px 0 rgba(255,255,255,.18);animation:fadeUp .5s cubic-bezier(.2,.8,.2,1) both;}
@@ -428,7 +428,7 @@ body.traditional-mode .wrap{padding-bottom:44px;}
 @keyframes flick{0%,100%{transform:rotate(-4deg) scale(1);}50%{transform:rotate(4deg) scale(1.08);}}
 .announce .ttl,.announce .bd{position:relative;z-index:1;}
 .announce .ttl{font-family:Fraunces,serif;font-weight:700;font-size:18px;line-height:1.12;color:#FFEFD6;padding-right:38px;text-shadow:0 2px 12px rgba(0,0,0,.24);}
-.announce .bd{font-size:12.8px;line-height:1.5;color:rgba(255,238,214,.92);margin-top:5px;max-width:calc(100% - 82px);}
+.announce .bd{font-size:12.8px;line-height:1.45;color:rgba(255,238,214,.92);margin-top:5px;max-width:100%;padding-right:42px;}
 
 /* permanent kitchen-ticket disclaimer (ΑΑΔΕ) under the cart */
 .legal-note{margin-top:12px;padding:11px 13px;border-radius:11px;background:#FBF2DC;border:1px solid #EAD8AE;
@@ -1762,9 +1762,14 @@ const SPECIAL_UI = {
   bg:{special:'Специално меню', full:'Пълно меню'}
 };
 function SU(k){ return (SPECIAL_UI[lang]&&SPECIAL_UI[lang][k]) || SPECIAL_UI.en[k] || k; }
-function announceText(){ const A=(typeof ANNOUNCE!=='undefined')?ANNOUNCE:null; return (A&&A.t&&(A.t[lang]||A.t.en)) || null; }
+function activeAnnouncement(){
+  const fallback=(typeof ANNOUNCE!=='undefined')?ANNOUNCE:null;
+  const A=(S.settings&&S.settings.announcement) || fallback;
+  return (A&&typeof A==='object') ? A : null;
+}
+function announceText(){ const A=activeAnnouncement(); return (A&&A.t&&(A.t[lang]||A.t.en)) || null; }
 function specialMenuIds(){
-  const A=(typeof ANNOUNCE!=='undefined')?ANNOUNCE:null;
+  const A=activeAnnouncement();
   const ids=(A&&Array.isArray(A.specialCats)&&A.specialCats.length) ? A.specialCats : (A&&A.targetCat ? [A.targetCat] : []);
   return ids.map(String);
 }
@@ -2882,9 +2887,31 @@ function wireTopShortcut(){
 }
 
 /* ═══════════════ sheets / events ═══════════════ */
-function openSheet(id){forceCloseFloatingUI();document.getElementById(id).classList.add('on');document.getElementById('scrim').classList.add('on');document.body.classList.add('sheet-open');}
-function closeSheets(){document.querySelectorAll('.sheet').forEach(s=>s.classList.remove('on'));document.getElementById('scrim').classList.remove('on');document.body.classList.remove('sheet-open');}
-function forceCloseFloatingUI(){document.querySelectorAll('.sheet,.scrim,.cookie,.panel').forEach(el=>el.classList.remove('on'));document.body.classList.remove('sheet-open');}
+function unlockPageScroll(){
+  document.body.classList.remove('sheet-open');
+  document.documentElement.style.overflow='';
+  document.body.style.overflow='';
+  document.body.style.position='';
+  document.body.style.touchAction='';
+}
+function openSheet(id){
+  forceCloseFloatingUI();
+  const sheet=document.getElementById(id);
+  if(!sheet) return;
+  sheet.classList.add('on');
+  document.getElementById('scrim').classList.add('on');
+  document.body.classList.add('sheet-open');
+  document.body.style.overflow='hidden';
+}
+function closeSheets(){
+  document.querySelectorAll('.sheet,.scrim').forEach(el=>el.classList.remove('on'));
+  unlockPageScroll();
+  requestAnimationFrame(()=>{ setStickyMetrics(); syncPinnedNav(); });
+}
+function forceCloseFloatingUI(){
+  document.querySelectorAll('.sheet,.scrim,.cookie,.panel').forEach(el=>el.classList.remove('on'));
+  unlockPageScroll();
+}
 document.getElementById('scrim').onclick=closeSheets;
 document.querySelectorAll('[data-x]').forEach(b=>b.onclick=closeSheets);
 document.getElementById('cart').onclick=()=>{renderCartSheet();openSheet('cartSheet');};
@@ -2901,7 +2928,7 @@ function wireHistLink(){
 document.getElementById('langBtn').onclick=()=>{renderLang();openSheet('langSheet');};
 {
   const wb=document.getElementById('wifiBtn');
-  if(wb) wb.onclick=()=>{renderWifi();copyWifiDetails();openSheet('wifiSheet');};
+  if(wb) wb.onclick=()=>{renderWifi();openSheet('wifiSheet');};
 }
 (function(){
   const bb=document.getElementById('bookBtn');
@@ -3268,12 +3295,12 @@ function renderIntro(){
 /* ─── festive announcement (date-gated, e.g. σούβλες for St. Panteleimon eve) ─── */
 function renderAnnounce(){
   const slot=document.getElementById('announceSlot'); if(!slot) return;
-  const A=(typeof ANNOUNCE!=='undefined')?ANNOUNCE:null;
+  const A=activeAnnouncement();
   if(q.trim() || !A || !A.on){ slot.innerHTML=''; return; }
   const today=new Date(); today.setHours(0,0,0,0);
   const from=A.from?new Date(A.from+'T00:00:00'):null, to=A.to?new Date(A.to+'T23:59:59'):null;
   if((from && today<from) || (to && today>to)){ slot.innerHTML=''; return; }
-  const t=(A.t&&(A.t[lang]||A.t.en))||null; if(!t){ slot.innerHTML=''; return; }
+  const t=(A.t&&(A.t[lang]||A.t.en))||null; if(!t || (!String(t.title||'').trim() && !String(t.body||'').trim())){ slot.innerHTML=''; return; }
   const img = (typeof MEDIA!=='undefined' && (MEDIA.souvles||MEDIA.hero)) ? `url('${MEDIA.souvles||MEDIA.hero}')` : 'none';
   slot.innerHTML=`<button class="announce" type="button" id="announceGo" data-special-open style="--ann-img:${img}">
     ${A.emoji?`<span class="em">${A.emoji}</span>`:''}
@@ -3439,7 +3466,9 @@ boot();
 window.addEventListener('scroll',()=>requestAnimationFrame(syncPinnedNav),{passive:true});
 window.addEventListener('resize',()=>requestAnimationFrame(()=>{ setStickyMetrics(); syncPinnedNav(); }));
 window.addEventListener('orientationchange',()=>setTimeout(()=>{ setStickyMetrics(); syncPinnedNav(); },220));
-window.addEventListener('pageshow',()=>requestAnimationFrame(()=>{ setStickyMetrics(); syncPinnedNav(); forceCloseFloatingUI(); }));
+window.addEventListener('pageshow',()=>requestAnimationFrame(()=>{ forceCloseFloatingUI(); setStickyMetrics(); syncPinnedNav(); }));
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) requestAnimationFrame(()=>{ unlockPageScroll(); setStickyMetrics(); syncPinnedNav(); }); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeSheets(); });
 
 /* ─── scroll reveal: adds .rv to chapter headers + closing as they arrive ───
    html.motion-on is what lets the CSS pre-hide them, so if this script never

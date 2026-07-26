@@ -346,12 +346,14 @@ const ANNOUNCE = {
     bg:{ title:'Неделя, 26 юли · Сувлес в Tsigoura', body:'Специална вечер с агне на шиш и контосувли. Докоснете тук за днешното меню.' },
   }
 };
+const DEFAULT_ANNOUNCEMENT = JSON.parse(JSON.stringify(ANNOUNCE));
 
 const DEFAULT_SETTINGS = {
   serviceOpen:true, acceptOrders:true, currency:'€', defaultLang:'el',
   catalogVersion:'event-pricelist-sunday-26-july-special-night-4',
   traditionalMenuOnly:true,
   design:{ accent:'#38564F', showVisualRail:true, categoryArt:true, motion:'rich', showFeaturedHero:true },
+  announcement:JSON.parse(JSON.stringify(DEFAULT_ANNOUNCEMENT)),
 };
 
 /* ---------------- state ---------------- */
@@ -388,6 +390,9 @@ function loadState(){
 }
 function normalizeState(s){
   const base=defaultState();
+  s.settings=Object.assign({}, base.settings, s.settings||{});
+  s.settings.design=Object.assign({}, base.settings.design, s.settings.design||{});
+  s.settings.announcement=normalizeAnnouncement(s.settings.announcement||base.settings.announcement);
   s.menu=Array.isArray(s.menu)?s.menu:base.menu;
   s.categories=(Array.isArray(s.categories)&&s.categories.length)?s.categories:base.categories;
   s.tables=Array.isArray(s.tables)?s.tables:base.tables;
@@ -427,6 +432,27 @@ function normalizeState(s){
     });
   });
   return s;
+}
+function normalizeAnnouncement(a){
+  const base=JSON.parse(JSON.stringify(DEFAULT_ANNOUNCEMENT));
+  a = (a && typeof a==='object') ? a : {};
+  const out=Object.assign({}, base, a);
+  out.on = out.on !== false;
+  out.from = /^\d{4}-\d{2}-\d{2}$/.test(String(out.from||'')) ? String(out.from) : base.from;
+  out.to = /^\d{4}-\d{2}-\d{2}$/.test(String(out.to||'')) ? String(out.to) : base.to;
+  out.emoji = String(out.emoji||'').slice(0,8);
+  out.targetCat = String(out.targetCat||base.targetCat).slice(0,32);
+  out.specialCats = Array.isArray(out.specialCats) ? out.specialCats.map(x=>String(x).slice(0,32)).filter(Boolean).slice(0,8) : base.specialCats.slice();
+  out.t = (out.t && typeof out.t==='object') ? out.t : {};
+  LANGUAGES.forEach(l=>{
+    const cur=(out.t&&out.t[l.code]) || {};
+    const fallback=(base.t&&base.t[l.code]) || base.t.en || {title:'',body:''};
+    out.t[l.code]={
+      title:String(cur.title == null ? (fallback.title || '') : cur.title).slice(0,90),
+      body:String(cur.body == null ? (fallback.body || '') : cur.body).slice(0,220)
+    };
+  });
+  return out;
 }
 function saveState(s){ s.updatedAt=Date.now();
   try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); localStorage.setItem(STORAGE_KEY+'_ping', String(Date.now())); }catch(e){} }
