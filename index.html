@@ -1306,15 +1306,15 @@ body.sheet-open .head,body.sheet-open::before{pointer-events:none!important;}
 /* Final UI shield: no mobile overflow, no accidental text-selection scroll traps. */
 *,*::before,*::after{box-sizing:border-box;}
 img,svg,canvas{max-width:100%;}
-html,body{width:100%;max-width:100%;min-height:100%;overflow-x:hidden!important;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;overscroll-behavior-y:auto;}
-.wrap,#root{width:100%;max-width:100%;overflow-x:hidden!important;overflow-y:visible!important;touch-action:pan-y;}
+html,body{width:100%;max-width:100%;min-height:100%;overflow-x:hidden!important;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:auto;overscroll-behavior-y:auto;}
+.wrap,#root{width:100%;max-width:100%;overflow-x:hidden!important;overflow-y:visible!important;touch-action:auto;}
 .head,.search,.view-switch,.updates,.announce,.nav,.sec,.closing,.sheet,.panel{max-width:min(100vw,var(--maxw))!important;}
 body,body *:not(input):not(textarea):not(select):not(option){user-select:none!important;-webkit-user-select:none!important;-webkit-touch-callout:none!important;}
 input,textarea,select,#wifiPass,.copy-status{user-select:text!important;-webkit-user-select:text!important;-webkit-touch-callout:default!important;}
 #wifiPass{user-select:all!important;-webkit-user-select:all!important;}
 img{user-drag:none;-webkit-user-drag:none;-webkit-user-select:none!important;pointer-events:none;}
 button,a,[role="button"]{touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;}
-main,.sec,.item,.guide-card,.guide-hero-dish{touch-action:pan-y;}
+main,.sec,.item,.guide-card,.guide-hero-dish{touch-action:auto;}
 .nav{display:block!important;visibility:visible!important;opacity:1!important;contain:none!important;}
 body.guided-view .nav,
 body.searching .nav,
@@ -1438,6 +1438,12 @@ body.sheet-open .cat-mosaic{
 .sheet.on{z-index:360!important;}
 .cookie.on{z-index:380!important;}
 .social-ad.on{z-index:520!important;}
+html.scroll-stuck-guard,
+body.scroll-stuck-guard{
+  overflow-y:auto!important;
+  position:static!important;
+  touch-action:auto!important;
+}
 @media(min-width:900px){
   :root{--maxw:min(760px,calc(100vw - 64px));}
   .wrap,.head{margin-left:auto!important;margin-right:auto!important;}
@@ -2189,16 +2195,43 @@ function clearMenuSelection(){
   }catch(e){}
 }
 function repairScrollAfterTouch(){
-  const anySheet=!!document.querySelector('.sheet.on');
-  if(!anySheet){
-    const scrim=document.getElementById('scrim');
-    if(scrim) scrim.classList.remove('on');
-    unlockPageScroll();
-  }
+  repairScrollLock('touch');
 }
 function canSelectTextTarget(node){
   const el=node && node.closest ? node.closest('input,textarea,select,#wifiPass,.copy-status') : null;
   return !!el;
+}
+function hasOpenBlockingSurface(){
+  return !!document.querySelector('.sheet.on,.cookie.on,.panel.on,.social-ad.on');
+}
+function repairScrollLock(reason='auto'){
+  const hasSheet=!!document.querySelector('.sheet.on');
+  const hasBlocking=hasOpenBlockingSurface();
+  const scrim=document.getElementById('scrim');
+  const staleSheetLock=document.body.classList.contains('sheet-open') && !hasSheet;
+  const staleScrim=!!(scrim && scrim.classList.contains('on') && !hasSheet);
+  const staleInlineLock=!hasBlocking && (
+    document.body.style.overflow==='hidden' ||
+    document.documentElement.style.overflow==='hidden' ||
+    document.body.style.position==='fixed'
+  );
+  if(staleSheetLock || staleScrim || staleInlineLock){
+    if(scrim && !hasSheet) scrim.classList.remove('on');
+    document.body.classList.remove('sheet-open');
+    document.documentElement.classList.add('scroll-stuck-guard');
+    document.body.classList.add('scroll-stuck-guard');
+    document.documentElement.style.overflow='';
+    document.body.style.overflow='';
+    document.body.style.position='';
+    document.body.style.touchAction='';
+    requestAnimationFrame(()=>{
+      document.documentElement.classList.remove('scroll-stuck-guard');
+      document.body.classList.remove('scroll-stuck-guard');
+      renderTabs();
+      setStickyMetrics();
+      syncPinnedNav();
+    });
+  }
 }
 function previewScroller(){
   try{
@@ -3141,6 +3174,8 @@ function wireTopShortcut(){
 /* ═══════════════ sheets / events ═══════════════ */
 function unlockPageScroll(){
   document.body.classList.remove('sheet-open');
+  document.documentElement.classList.remove('scroll-stuck-guard');
+  document.body.classList.remove('scroll-stuck-guard');
   document.documentElement.style.overflow='';
   document.body.style.overflow='';
   document.body.style.position='';
@@ -3153,7 +3188,6 @@ function openSheet(id){
   sheet.classList.add('on');
   document.getElementById('scrim').classList.add('on');
   document.body.classList.add('sheet-open');
-  document.body.style.overflow='hidden';
   renderTabs();
 }
 function closeSheets(){
@@ -3163,6 +3197,7 @@ function closeSheets(){
 }
 function forceCloseFloatingUI(){
   document.querySelectorAll('.sheet,.scrim,.cookie,.panel,.social-ad').forEach(el=>el.classList.remove('on'));
+  document.body.classList.remove('social-ad-open');
   unlockPageScroll();
 }
 document.getElementById('scrim').onclick=closeSheets;
@@ -3726,15 +3761,17 @@ async function boot(){
 }
 boot();
 window.addEventListener('resize',()=>requestAnimationFrame(()=>{ setStickyMetrics(); syncPinnedNav(); }));
-window.addEventListener('orientationchange',()=>setTimeout(()=>{ setStickyMetrics(); syncPinnedNav(); },220));
-window.addEventListener('pageshow',()=>requestAnimationFrame(()=>{ clearMenuSelection(); forceCloseFloatingUI(); setStickyMetrics(); syncPinnedNav(); }));
-document.addEventListener('visibilitychange',()=>{ if(!document.hidden) requestAnimationFrame(()=>{ clearMenuSelection(); unlockPageScroll(); setStickyMetrics(); syncPinnedNav(); }); });
+window.addEventListener('orientationchange',()=>setTimeout(()=>{ repairScrollLock('orientation'); setStickyMetrics(); syncPinnedNav(); },220));
+window.addEventListener('pageshow',()=>requestAnimationFrame(()=>{ clearMenuSelection(); forceCloseFloatingUI(); repairScrollLock('pageshow'); setStickyMetrics(); syncPinnedNav(); }));
+window.addEventListener('focus',()=>requestAnimationFrame(()=>repairScrollLock('focus')));
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) requestAnimationFrame(()=>{ clearMenuSelection(); repairScrollLock('visible'); setStickyMetrics(); syncPinnedNav(); }); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeSocialAd(false); closeSheets(); } });
 document.addEventListener('selectstart',e=>{ if(!canSelectTextTarget(e.target)) e.preventDefault(); },{capture:true});
 document.addEventListener('dragstart',e=>e.preventDefault(),{capture:true});
 document.addEventListener('touchend',()=>requestAnimationFrame(()=>{ clearMenuSelection(); repairScrollAfterTouch(); }),{passive:true});
 document.addEventListener('touchcancel',()=>requestAnimationFrame(()=>{ clearMenuSelection(); repairScrollAfterTouch(); }),{passive:true});
 document.addEventListener('pointerup',()=>requestAnimationFrame(()=>{ clearMenuSelection(); repairScrollAfterTouch(); }),{passive:true});
+setInterval(()=>repairScrollLock('interval'),1800);
 
 /* ─── scroll reveal: adds .rv to chapter headers + closing as they arrive ───
    html.motion-on is what lets the CSS pre-hide them, so if this script never
