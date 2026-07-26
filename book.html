@@ -111,6 +111,7 @@ function setLinks(){
   $('callLink').textContent=phone || 'Τηλέφωνο';
 }
 async function loadConfig(){
+  if(['127.0.0.1','localhost','::1'].includes(location.hostname)){ setLinks(); return; }
   try{
     const r=await fetch('/api/public-config',{cache:'no-store'});
     if(!r.ok) return;

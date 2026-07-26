@@ -1355,6 +1355,95 @@ body.sheet-open .panel{visibility:hidden!important;opacity:0!important;pointer-e
   }
 }
 
+/* FINAL UI LAYER 2026-07-26:
+   Category carousel is normal menu content only. It never floats above sheets,
+   popups, search results, or the category-card view. */
+.wrap{
+  width:min(100%,var(--maxw))!important;
+  max-width:var(--maxw)!important;
+  margin-left:auto!important;
+  margin-right:auto!important;
+}
+.head{
+  position:fixed!important;
+  top:0!important;
+  left:50%!important;
+  right:auto!important;
+  width:100%!important;
+  transform:translateX(-50%)!important;
+  max-width:var(--maxw)!important;
+  margin:0 auto!important;
+  z-index:90!important;
+}
+body.guided-view .head,
+body.nav-pinned .head{
+  position:fixed!important;
+  top:0!important;
+  left:50%!important;
+  right:auto!important;
+  width:100%!important;
+  transform:translateX(-50%)!important;
+  max-width:var(--maxw)!important;
+  margin:0 auto!important;
+  z-index:90!important;
+}
+body::before{display:none!important;}
+.wrap{padding-top:calc(var(--head-h,92px) + 10px)!important;}
+.nav{
+  position:relative!important;
+  top:auto!important;
+  left:auto!important;
+  right:auto!important;
+  transform:none!important;
+  z-index:2!important;
+  width:100%!important;
+  max-width:var(--maxw)!important;
+  margin:10px auto 0!important;
+  overflow:hidden!important;
+  contain:paint!important;
+}
+.nav .row{
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  -webkit-overflow-scrolling:touch!important;
+  overscroll-behavior-x:contain!important;
+}
+.tab{min-width:max-content!important;max-width:calc(100vw - 36px)!important;}
+body.guided-view .nav,
+body.searching .nav,
+body.sheet-open .nav,
+body.no-category-tabs .nav,
+body.social-ad-open .nav{
+  display:none!important;
+  visibility:hidden!important;
+  opacity:0!important;
+  pointer-events:none!important;
+}
+body.sheet-open .search,
+body.sheet-open .view-switch,
+body.sheet-open .updates,
+body.sheet-open #stripSlot,
+body.sheet-open .hero,
+body.sheet-open .quick-flow,
+body.sheet-open .visual-rail,
+body.sheet-open .cat-mosaic{
+  visibility:hidden!important;
+  opacity:0!important;
+  pointer-events:none!important;
+}
+.scrim.on{z-index:300!important;}
+.sheet.on{z-index:360!important;}
+.cookie.on{z-index:380!important;}
+.social-ad.on{z-index:520!important;}
+@media(min-width:900px){
+  :root{--maxw:min(760px,calc(100vw - 64px));}
+  .wrap,.head{margin-left:auto!important;margin-right:auto!important;}
+  .search,.view-switch,.updates,.announce,.nav,.sec,.closing{max-width:var(--maxw)!important;}
+}
+
 </style>
 </head>
 <body>
@@ -1632,6 +1721,7 @@ const CONTACT = {
 };
 async function hydratePublicConfig(){
   if(location.protocol==='file:') return;
+  if(['127.0.0.1','localhost','::1'].includes(location.hostname)) return;
   try{
     const r=await fetch('/api/public-config',{cache:'no-store'});
     if(!r.ok) return;
@@ -2034,9 +2124,13 @@ function renderViewSwitch(){
 }
 function renderTabs(){
   resetPinnedNav();
-  const row=document.getElementById('tabs'); row.innerHTML='';
+  const row=document.getElementById('tabs');
+  if(!row) return;
+  row.innerHTML='';
   const cats=activeMenuCats().filter(c=>!c.hidden && S.menu.some(i=>i.cat===c.id&&!i.hidden&&matches(i)));
-  document.body.classList.toggle('no-category-tabs', cats.length < 2);
+  const shouldShow=menuView()==='list' && !cleanSearch(searchValue()) && cats.length > 1 && !document.body.classList.contains('sheet-open');
+  document.body.classList.toggle('no-category-tabs', !shouldShow);
+  if(!shouldShow) return;
   cats.forEach((c,ix)=>{
     const b=document.createElement('button');
     b.className='tab'+(activeCat===c.id?' on':''); b.dataset.cat=c.id;
@@ -2744,6 +2838,8 @@ function socialAdLinks(){
 function closeSocialAd(remember=true){
   const ad=document.getElementById('socialAd');
   if(ad) ad.classList.remove('on');
+  document.body.classList.remove('social-ad-open');
+  renderTabs();
   if(remember) safeLS.set(SOCIAL_AD_KEY, String(Date.now()));
 }
 function canShowSocialAd(){
@@ -2773,6 +2869,8 @@ function showSocialAd(){
     `<a class="${primary?'primary':''}" href="${href}" target="_blank" rel="noopener" data-social-ad-go>${checkoutIcon(ic)}<span>${esc(label)}</span></a>`
   ).join('');
   ad.querySelectorAll('[data-social-ad-go]').forEach(a=>a.addEventListener('click',()=>closeSocialAd(true),{once:true}));
+  document.body.classList.add('social-ad-open');
+  renderTabs();
   ad.classList.add('on');
 }
 function scheduleSocialAd(){
@@ -3056,11 +3154,12 @@ function openSheet(id){
   document.getElementById('scrim').classList.add('on');
   document.body.classList.add('sheet-open');
   document.body.style.overflow='hidden';
+  renderTabs();
 }
 function closeSheets(){
   document.querySelectorAll('.sheet,.scrim').forEach(el=>el.classList.remove('on'));
   unlockPageScroll();
-  requestAnimationFrame(()=>{ setStickyMetrics(); syncPinnedNav(); });
+  requestAnimationFrame(()=>{ renderTabs(); setStickyMetrics(); syncPinnedNav(); });
 }
 function forceCloseFloatingUI(){
   document.querySelectorAll('.sheet,.scrim,.cookie,.panel,.social-ad').forEach(el=>el.classList.remove('on'));
