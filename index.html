@@ -51,7 +51,7 @@ img{display:block;}
 body.traditional-mode .wrap{padding-bottom:44px;}
 
 /* ═════════ SPLASH (first visit) ═════════ */
-.splash{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
+.splash{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;
   background:radial-gradient(120% 90% at 50% 0%,#2C4A4F 0%,#1D3438 55%,#142A2E 100%);color:#F3ECD6;
   transition:opacity .5s ease, transform .5s ease;}
 .splash.gone{opacity:0;transform:scale(1.04);pointer-events:none;}
@@ -1280,6 +1280,28 @@ body.sheet-open{overflow:hidden!important;}
 body.sheet-open .nav{visibility:hidden!important;opacity:0!important;pointer-events:none!important;}
 body.sheet-open .head,body.sheet-open::before{pointer-events:none!important;}
 
+/* Final UI shield: no mobile overflow, and category rail only appears in normal list browsing. */
+*,*::before,*::after{box-sizing:border-box;}
+img,svg,canvas{max-width:100%;}
+html,body,.wrap,#root{width:100%;max-width:100%;overflow-x:hidden!important;}
+.head,.search,.view-switch,.updates,.announce,.nav,.sec,.closing,.sheet,.panel{max-width:min(100vw,var(--maxw))!important;}
+.nav{display:block!important;visibility:visible!important;opacity:1!important;contain:layout paint!important;}
+body.guided-view .nav,
+body.searching .nav,
+body.sheet-open .nav,
+body.no-category-tabs .nav{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important;}
+.nav .row{max-width:100%!important;min-width:0!important;}
+.tab{max-width:calc(100vw - 32px)!important;overflow:hidden!important;text-overflow:ellipsis!important;}
+.sheet{max-height:min(86dvh,86vh)!important;overflow-y:auto!important;overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important;}
+.sheet,.sheet *{overflow-wrap:anywhere;}
+.toast{z-index:420!important;}
+.scrim{z-index:240!important;}
+.sheet{z-index:250!important;}
+.cartbar,.help,.panel{max-width:calc(100vw - 24px)!important;}
+body.sheet-open .cartbar,
+body.sheet-open .help,
+body.sheet-open .panel{visibility:hidden!important;opacity:0!important;pointer-events:none!important;}
+
 </style>
 </head>
 <body>
@@ -1921,8 +1943,9 @@ function renderViewSwitch(){
 function renderTabs(){
   resetPinnedNav();
   const row=document.getElementById('tabs'); row.innerHTML='';
-  activeMenuCats().forEach((c,ix)=>{
-    if(c.hidden || !S.menu.some(i=>i.cat===c.id&&!i.hidden&&matches(i))) return;
+  const cats=activeMenuCats().filter(c=>!c.hidden && S.menu.some(i=>i.cat===c.id&&!i.hidden&&matches(i)));
+  document.body.classList.toggle('no-category-tabs', cats.length < 2);
+  cats.forEach((c,ix)=>{
     const b=document.createElement('button');
     b.className='tab'+(activeCat===c.id?' on':''); b.dataset.cat=c.id;
     const acc=CAT_ACC[ix%CAT_ACC.length]; b.style.setProperty('--tab-acc',acc[0]);
