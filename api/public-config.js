@@ -22,8 +22,8 @@ module.exports = async function handler(req, res) {
       website: env('PUBLIC_WEBSITE_URL'),
     },
     wifi: {
-      ssid: env('PUBLIC_WIFI_SSID', 'TSIGOURA'),
-      pass: env('PUBLIC_WIFI_PASS', 'tsigoura2023'),
+      ssid: env('PUBLIC_WIFI_SSID', 'TSIGOURA 5G'),
+      pass: env('PUBLIC_WIFI_PASS', 'Tsigoura2023'),
       enc: env('PUBLIC_WIFI_ENC', 'WPA'),
     },
     legal: {
