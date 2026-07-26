@@ -1310,6 +1310,28 @@ body.sheet-open .cartbar,
 body.sheet-open .help,
 body.sheet-open .panel{visibility:hidden!important;opacity:0!important;pointer-events:none!important;}
 
+/* Desktop recovery: keep the mobile menu as one centered phone-width column.
+   The mobile shield above must not stretch the content across PC browsers. */
+@media(min-width:601px){
+  .wrap{
+    width:min(100%,var(--maxw))!important;
+    max-width:var(--maxw)!important;
+    margin-left:auto!important;
+    margin-right:auto!important;
+    overflow-x:visible!important;
+  }
+  #root{
+    width:100%!important;
+    max-width:100%!important;
+  }
+  .head,.search,.view-switch,.updates,.announce,.nav,.sec,.closing{
+    max-width:var(--maxw)!important;
+  }
+  .nav .row{
+    max-width:var(--maxw)!important;
+  }
+}
+
 </style>
 </head>
 <body>
