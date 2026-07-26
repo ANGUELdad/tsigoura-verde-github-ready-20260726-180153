@@ -1283,12 +1283,13 @@ body.sheet-open .head,body.sheet-open::before{pointer-events:none!important;}
 /* Final UI shield: no mobile overflow, no accidental text-selection scroll traps. */
 *,*::before,*::after{box-sizing:border-box;}
 img,svg,canvas{max-width:100%;}
-html,body{width:100%;max-width:100%;min-height:100%;overflow-x:hidden!important;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
+html,body{width:100%;max-width:100%;min-height:100%;overflow-x:hidden!important;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;overscroll-behavior-y:auto;}
 .wrap,#root{width:100%;max-width:100%;overflow-x:hidden!important;overflow-y:visible!important;touch-action:pan-y;}
 .head,.search,.view-switch,.updates,.announce,.nav,.sec,.closing,.sheet,.panel{max-width:min(100vw,var(--maxw))!important;}
-.head,.nav,.view-switch,.updates,.announce,.cat-mosaic,.sec,.closing,.cartbar,.help,.panel,.sheet{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;}
+body,body *:not(input):not(textarea):not(select):not(option){user-select:none!important;-webkit-user-select:none!important;-webkit-touch-callout:none!important;}
 input,textarea,select,#wifiPass,.copy-status{user-select:text!important;-webkit-user-select:text!important;-webkit-touch-callout:default!important;}
 #wifiPass{user-select:all!important;-webkit-user-select:all!important;}
+img{user-drag:none;-webkit-user-drag:none;-webkit-user-select:none!important;pointer-events:none;}
 button,a,[role="button"]{touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;}
 main,.sec,.item,.guide-card,.guide-hero-dish{touch-action:pan-y;}
 .nav{display:block!important;visibility:visible!important;opacity:1!important;contain:none!important;}
@@ -1298,7 +1299,8 @@ body.sheet-open .nav,
 body.no-category-tabs .nav{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important;}
 .nav .row{max-width:100%!important;min-width:0!important;touch-action:pan-x pan-y!important;}
 .tab{max-width:calc(100vw - 32px)!important;overflow:hidden!important;text-overflow:ellipsis!important;}
-.sheet{max-height:min(86dvh,86vh)!important;overflow-y:auto!important;overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important;}
+.sheet{max-height:min(86dvh,86vh)!important;overflow-y:auto!important;overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-y!important;}
+.scrim.on{touch-action:none!important;}
 .sheet,.sheet *{overflow-wrap:anywhere;}
 .toast{z-index:420!important;}
 .scrim{z-index:240!important;}
@@ -2020,6 +2022,10 @@ function repairScrollAfterTouch(){
     if(scrim) scrim.classList.remove('on');
     unlockPageScroll();
   }
+}
+function canSelectTextTarget(node){
+  const el=node && node.closest ? node.closest('input,textarea,select,#wifiPass,.copy-status') : null;
+  return !!el;
 }
 function previewScroller(){
   try{
@@ -3489,6 +3495,8 @@ window.addEventListener('orientationchange',()=>setTimeout(()=>{ setStickyMetric
 window.addEventListener('pageshow',()=>requestAnimationFrame(()=>{ clearMenuSelection(); forceCloseFloatingUI(); setStickyMetrics(); syncPinnedNav(); }));
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden) requestAnimationFrame(()=>{ clearMenuSelection(); unlockPageScroll(); setStickyMetrics(); syncPinnedNav(); }); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeSheets(); });
+document.addEventListener('selectstart',e=>{ if(!canSelectTextTarget(e.target)) e.preventDefault(); },{capture:true});
+document.addEventListener('dragstart',e=>e.preventDefault(),{capture:true});
 document.addEventListener('touchend',()=>requestAnimationFrame(()=>{ clearMenuSelection(); repairScrollAfterTouch(); }),{passive:true});
 document.addEventListener('touchcancel',()=>requestAnimationFrame(()=>{ clearMenuSelection(); repairScrollAfterTouch(); }),{passive:true});
 document.addEventListener('pointerup',()=>requestAnimationFrame(()=>{ clearMenuSelection(); repairScrollAfterTouch(); }),{passive:true});
