@@ -126,9 +126,13 @@ nav.tabs button.on{color:var(--cream);border-bottom-color:var(--gold);}
 .io-actions .btn.ghost{flex:0 0 auto;}
 .io-note{font-size:11px;color:var(--muted);line-height:1.5;margin-top:12px;text-align:center;}
 @media(max-width:760px){
-  .io-card{display:block;max-width:460px;overflow:auto;}
-  .io-ticket,.io-side{max-height:none;}
-  .io-side{border-left:none;border-top:1px solid var(--line);}
+  .io-scrim{align-items:flex-start!important;justify-content:center!important;padding:8px;padding-top:max(8px,env(safe-area-inset-top));overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  .io-card{display:block;max-width:460px;max-height:none;min-height:0;overflow:visible;border-radius:18px;}
+  .io-ticket,.io-side{max-height:none;overflow:visible;}
+  .io-ticket{padding:18px 16px 12px;}
+  .io-side{border-left:none;border-top:1px solid var(--line);padding:16px;}
+  .io-plan{min-height:250px;height:250px;}
+  .io-actions{position:sticky;bottom:0;z-index:5;background:linear-gradient(180deg,rgba(247,244,236,0),#F3EBD8 28%);padding-top:18px;padding-bottom:max(8px,env(safe-area-inset-bottom));}
 }
 .btn{background:var(--forest);color:var(--cream);border-radius:12px;padding:10px 16px;font-size:13px;font-weight:700;}
 .btn.ghost{background:var(--paper);border:1px solid var(--line);color:var(--ink);}
@@ -363,6 +367,7 @@ nav.tabs button.on{color:var(--cream);border-bottom-color:var(--gold);}
 .scan-card h3{font-size:19px;color:var(--forest);margin:0;}
 .scan-card p{font-size:12px;color:var(--muted);line-height:1.45;margin:3px 0 0;}
 .scan-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+.scan-file{display:none;}
 .scan-video{display:none;width:100%;max-height:320px;object-fit:cover;border-radius:16px;border:1px solid var(--line);background:#111;margin-top:12px;}
 .scan-video.on{display:block;}
 .scan-note{font-size:11px;color:var(--muted);line-height:1.45;margin-top:8px;}
@@ -509,11 +514,11 @@ nav.tabs button .ico{width:15px;height:15px;stroke-width:1.9;}
   .cat-actions{display:grid;grid-template-columns:repeat(3,1fr);}
   .cat-actions button{width:100%;}
   .phone-frame{height:640px;max-width:360px;border-width:8px;}
-  .io-scrim{padding:10px;align-items:flex-end;}
-  .io-card{max-height:96vh;border-radius:20px 20px 0 0;}
+  .io-scrim{align-items:flex-start!important;justify-content:center!important;padding:8px!important;padding-top:max(8px,env(safe-area-inset-top))!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch;}
+  .io-card{display:block;max-height:none;min-height:0;overflow:visible;border-radius:18px;}
   .io-line{grid-template-columns:auto minmax(0,1fr) auto;gap:8px;}
   .io-editbtn{grid-column:3;}
-  .io-plan{min-height:360px;padding:10px;}
+  .io-plan{min-height:240px;height:240px;padding:10px;}
   .io-tablemap{inset:10px;}
   .io-actions{flex-wrap:wrap;}
   .io-actions .btn{flex:1 1 100%;}
@@ -644,14 +649,17 @@ nav.tabs button .ico{width:15px;height:15px;stroke-width:1.9;}
         </div>
       </div>
       <label>QR link ή περιεχόμενο</label>
-      <textarea id="scanText" rows="2" placeholder="Κάντε paste το link από το QR, ή πατήστε Κάμερα"></textarea>
+      <textarea id="scanText" rows="2" placeholder="Κάντε paste το link από το QR, ή πατήστε Κάμερα / Φωτογραφία QR"></textarea>
       <div class="scan-actions">
         <button class="btn sm" id="scanOpenBtn" data-ico="qr">Άνοιγμα δελτίου</button>
+        <button class="btn ghost sm" id="scanPasteBtn" data-ico="note">Επικόλληση link</button>
         <button class="btn ghost sm" id="scanCameraBtn" data-ico="camera">Κάμερα</button>
+        <button class="btn ghost sm" id="scanPhotoBtn" data-ico="eye">Φωτογραφία QR</button>
         <button class="btn ghost sm" id="scanStopBtn" data-ico="close">Stop</button>
       </div>
+      <input class="scan-file" id="scanFile" type="file" accept="image/*" capture="environment">
       <video class="scan-video" id="scanVideo" playsinline muted></video>
-      <p class="scan-note" id="scanNote">Σε iPhone/Android μπορείτε και απλά να σκανάρετε με την κάμερα του κινητού: αν η admin συσκευή είναι logged in, ανοίγει κατευθείαν εδώ.</p>
+      <p class="scan-note" id="scanNote">Γρήγορη ροή: σκανάρετε το QR του πελάτη. Αν ο browser δεν επιτρέπει κάμερα, σκανάρετε με την κάμερα του κινητού και κάντε επικόλληση το link εδώ.</p>
     </div>
     <div id="ordersArea"></div>
   </section>
@@ -1087,6 +1095,10 @@ function scanExtractRaw(text){
   const s=String(text||'').trim();
   if(!s) return '';
   try{
+    const decoded=decodeURIComponent(s);
+    if(decoded && decoded[0]==='{') return decoded;
+  }catch(e){}
+  try{
     const u=new URL(s, location.href);
     const raw=u.searchParams.get('o') || u.searchParams.get('h') || u.searchParams.get('handoff');
     if(raw) return raw;
@@ -1103,12 +1115,21 @@ function openScannedOrder(text){
 }
 async function startScanCamera(){
   const note=$('scanNote'), video=$('scanVideo');
-  if(!('BarcodeDetector' in window)){ note.textContent='Η κάμερα αυτού του browser δεν υποστηρίζει QR scan. Κάντε paste το QR link στο πεδίο.'; return; }
   try{
-    const detector=new BarcodeDetector({formats:['qr_code']});
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      note.textContent='Αυτός ο browser δεν ανοίγει κάμερα εδώ. Πατήστε Paste link ή Φωτογραφία QR.';
+      $('scanText').focus();
+      return;
+    }
     scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
     video.srcObject=scanStream; video.classList.add('on'); await video.play();
-    scanLoopOn=true; note.textContent='Σκανάρω... δείξτε το QR του πελάτη στην κάμερα.';
+    scanLoopOn=true;
+    if(!('BarcodeDetector' in window)){
+      note.textContent='Η κάμερα άνοιξε, αλλά αυτός ο browser δεν κάνει αυτόματο QR scan. Σκανάρετε με την κανονική κάμερα του κινητού ή πατήστε Paste link.';
+      return;
+    }
+    const detector=new BarcodeDetector({formats:['qr_code']});
+    note.textContent='Σκανάρω... δείξτε το QR του πελάτη στην κάμερα.';
     const loop=async()=>{
       if(!scanLoopOn) return;
       try{
@@ -1118,7 +1139,38 @@ async function startScanCamera(){
       requestAnimationFrame(loop);
     };
     loop();
-  }catch(e){ note.textContent='Δεν άνοιξε η κάμερα. Κάντε paste το QR link στο πεδίο.'; }
+  }catch(e){
+    note.textContent='Δεν άνοιξε η κάμερα. Ελέγξτε άδεια κάμερας/HTTPS ή πατήστε Paste link.';
+    $('scanText').focus();
+  }
+}
+async function pasteScanLink(){
+  const note=$('scanNote'), txt=$('scanText');
+  try{
+    const clip=await navigator.clipboard.readText();
+    txt.value=clip||'';
+    if(!openScannedOrder(txt.value)) note.textContent='Το clipboard δεν είχε έγκυρο QR link. Κάντε paste το link στο πεδίο.';
+  }catch(e){
+    note.textContent='Δεν επιτράπηκε το paste αυτόματα. Κρατήστε πατημένο στο πεδίο και κάντε Paste.';
+    txt.focus();
+  }
+}
+async function scanImageFile(file){
+  const note=$('scanNote');
+  if(!file) return;
+  if(!('BarcodeDetector' in window)){
+    note.textContent='Ο browser δεν μπορεί να διαβάσει QR από φωτογραφία. Ανοίξτε το QR με την κάμερα του κινητού και αντιγράψτε το link.';
+    return;
+  }
+  try{
+    const detector=new BarcodeDetector({formats:['qr_code']});
+    const bitmap=await createImageBitmap(file);
+    const codes=await detector.detect(bitmap);
+    if(codes && codes[0] && openScannedOrder(codes[0].rawValue||'')) return;
+    note.textContent='Δεν βρέθηκε QR στη φωτογραφία. Δοκιμάστε πιο καθαρή φωτογραφία ή paste link.';
+  }catch(e){
+    note.textContent='Δεν διαβάστηκε η φωτογραφία QR. Δοκιμάστε paste link.';
+  }
 }
 function stopScanCamera(){
   scanLoopOn=false;
@@ -1518,6 +1570,15 @@ function moveCategory(from,to){
 
 function itemName(i,code){ return ioEsc(((i.t&&i.t[code]&&i.t[code].n)||(i.t&&i.t.el&&i.t.el.n)||(i.t&&i.t.en&&i.t.en.n)||'Νέο πιάτο')); }
 function catLabel(c,code){ const v=(c.t&&(c.t[code]||c.t.el||c.t.en))||c.id||'Κατηγορία'; return ioEsc(typeof v==='string'?v:(v.n||c.id||'Κατηγορία')); }
+function withMenuMode(url){
+  const fallback=new URL('index.html', location.href).href;
+  const u=new URL(String(url||fallback), location.href);
+  u.searchParams.set('mode', S.settings.traditionalMenuOnly ? 'traditional' : 'order');
+  if(!S.settings.traditionalMenuOnly) u.searchParams.set('order','1');
+  else u.searchParams.delete('order');
+  return u.href;
+}
+const menuPreviewUrl=()=>withMenuMode(new URL('index.html', location.href).href);
 function renderPreview(){
   const area=$('menuArea');
   if(!S.settings.design) S.settings.design={accent:'#38564F',showVisualRail:true,categoryArt:true,motion:'rich',showFeaturedHero:true};
@@ -1550,7 +1611,6 @@ function renderPreview(){
       </div>
     </div>
   </div>`;
-  const menuPreviewUrl=()=>new URL('index.html', location.href).href;
   const saveDesign=()=>{ persist(); renderPreview(); };
   area.querySelectorAll('[data-accent]').forEach(b=>b.onclick=()=>{ D.accent=b.dataset.accent; saveDesign(); });
   area.querySelectorAll('[data-design-bool]').forEach(t=>t.onclick=()=>{ const k=t.dataset.designBool; D[k]=!D[k]; saveDesign(); });
@@ -1558,7 +1618,7 @@ function renderPreview(){
   $('previewRefresh').onclick=refreshPreview;
   $('previewOpen').onclick=()=>window.open(menuPreviewUrl(),'_blank');
   $('previewFallback').onclick=()=>window.open(menuPreviewUrl(),'_blank');
-  $('previewTraditional').onclick=()=>{ S.settings.traditionalMenuOnly=!S.settings.traditionalMenuOnly; persist(); renderServicePill(); renderPreview(); };
+  $('previewTraditional').onclick=()=>{ S.settings.traditionalMenuOnly=!S.settings.traditionalMenuOnly; persist(); renderServicePill(); renderQR(); renderPreview(); };
   function sizePreview(){
     const f=$('menuPreview'), frame=$('previewFrame');
     if(!f || !frame) return;
@@ -1662,6 +1722,9 @@ function initScanPanel(){
   if($('scanIcon')) $('scanIcon').innerHTML=ICO.get('qr');
   if($('scanOpenBtn')) $('scanOpenBtn').onclick=()=>openScannedOrder($('scanText').value);
   if($('scanCameraBtn')) $('scanCameraBtn').onclick=startScanCamera;
+  if($('scanPasteBtn')) $('scanPasteBtn').onclick=pasteScanLink;
+  if($('scanPhotoBtn')) $('scanPhotoBtn').onclick=()=>$('scanFile').click();
+  if($('scanFile')) $('scanFile').onchange=e=>scanImageFile(e.target.files&&e.target.files[0]);
   if($('scanStopBtn')) $('scanStopBtn').onclick=stopScanCamera;
   if($('scanText')) $('scanText').onkeydown=e=>{ if((e.metaKey||e.ctrlKey) && e.key==='Enter') openScannedOrder($('scanText').value); };
 }
@@ -1677,10 +1740,13 @@ function renderQR(){
   const grid=$('qrGrid'); grid.innerHTML='';
   const field=$('baseUrl');
   if(!field.value.trim()){ field.value=defaultMenuBase(); }
-  const base=field.value.trim();
+  const rawBase=field.value.trim();
+  const base=rawBase ? withMenuMode(rawBase) : '';
   if(!base){ grid.innerHTML='<p class="hint">Συμπληρώστε τη διεύθυνση του μενού για να δημιουργηθούν τα QR.</p>'; return; }
   S.tables.forEach(t=>{
-    const url = base + (base.includes('?')?'&':'?') + 't=' + encodeURIComponent(t.id);
+    const u = new URL(base, location.href);
+    u.searchParams.set('t', t.id);
+    const url = u.href;
     const card=document.createElement('div'); card.className='qr-card';
     card.innerHTML=`<div class="lbl">${ICO.get('table')}${t.id}</div>
       <div style="font-size:11px;color:var(--muted);">${ZONES[t.zone]?ZONES[t.zone].el:t.zone} · ${t.seats} άτομα</div>
@@ -1789,7 +1855,7 @@ function renderSettings(){
       <select id="defLang" style="width:160px;">${LANGUAGES.map(l=>`<option value="${l.code}" ${S.settings.defaultLang===l.code?'selected':''}>${l.flag} ${l.label}</option>`).join('')}</select>
     </div>`;
   $('settingsArea').querySelectorAll('[data-set]').forEach(el=>el.onclick=()=>{
-    S.settings[el.dataset.set]=!S.settings[el.dataset.set]; persist(); renderSettings(); renderServicePill(); });
+    S.settings[el.dataset.set]=!S.settings[el.dataset.set]; persist(); renderSettings(); renderServicePill(); renderQR(); renderPreview(); });
   $('settingsArea').querySelectorAll('[data-design-set]').forEach(el=>el.onclick=()=>{
     if(!S.settings.design) S.settings.design={};
     const k=el.dataset.designSet; S.settings.design[k]=S.settings.design[k]===false;

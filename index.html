@@ -1584,7 +1584,28 @@ async function hydratePublicConfig(){
     if(cfg.wifi) Object.keys(WIFI).forEach(k=>{ if(cfg.wifi[k]) WIFI[k]=String(cfg.wifi[k]); });
     normalizeWifiConfig();
     if(cfg.legal && VENUE.legal) Object.keys(VENUE.legal).forEach(k=>{ if(cfg.legal[k]) VENUE.legal[k]=String(cfg.legal[k]); });
+    if(cfg.settings && S && S.settings){
+      ['serviceOpen','acceptOrders','traditionalMenuOnly'].forEach(k=>{
+        if(typeof cfg.settings[k]==='boolean') S.settings[k]=cfg.settings[k];
+      });
+    }
   }catch(e){}
+}
+function applyModeOverride(){
+  let mode='', online='';
+  try{
+    const p=new URLSearchParams(location.search);
+    mode=String(p.get('mode')||'').toLowerCase();
+    online=String(p.get('order')||p.get('cart')||'').toLowerCase();
+  }catch(e){}
+  if(!S || !S.settings) return;
+  if(mode==='order' || mode==='online' || mode==='cart' || online==='1' || online==='true'){
+    S.settings.traditionalMenuOnly=false;
+    S.settings.acceptOrders=true;
+  }
+  if(mode==='traditional' || mode==='view' || mode==='readonly'){
+    S.settings.traditionalMenuOnly=true;
+  }
 }
 /* iPhone-style welcome carousel — ONLY the languages we actually offer,
    word + subtitle always in the SAME language. */
@@ -3479,6 +3500,7 @@ function apply(){
 }
 async function boot(){
   await hydratePublicConfig();
+  applyModeOverride();
   if(!handleHandoff()){
     
     forceCloseFloatingUI();

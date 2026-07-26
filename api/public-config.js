@@ -1,4 +1,9 @@
 const env = (name, fallback = '') => String(process.env[name] || fallback);
+const boolEnv = (name, fallback) => {
+  const raw = process.env[name];
+  if (raw == null || raw === '') return fallback;
+  return /^(1|true|yes|on)$/i.test(String(raw).trim());
+};
 const wifiValue = (name, fallback) => {
   const value = env(name, fallback).trim();
   if (name === 'PUBLIC_WIFI_SSID' && /^TSIGOURA$/i.test(value)) return 'TSIGOURA 5G';
@@ -31,6 +36,11 @@ module.exports = async function handler(req, res) {
       ssid: wifiValue('PUBLIC_WIFI_SSID', 'TSIGOURA 5G'),
       pass: wifiValue('PUBLIC_WIFI_PASS', 'Tsigoura2023'),
       enc: env('PUBLIC_WIFI_ENC', 'WPA'),
+    },
+    settings: {
+      serviceOpen: boolEnv('PUBLIC_SERVICE_OPEN', true),
+      acceptOrders: boolEnv('PUBLIC_ACCEPT_ORDERS', true),
+      traditionalMenuOnly: boolEnv('PUBLIC_TRADITIONAL_MENU_ONLY', true),
     },
     legal: {
       companyName: env('PUBLIC_COMPANY_NAME'),

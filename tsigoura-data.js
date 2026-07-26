@@ -17,7 +17,7 @@
       ελληνικό προϊόν δεν μεταφράζεται καλά, κρατάμε το όνομα και εξηγούμε σύντομα.
    ========================================================================== */
 
-const STORAGE_KEY = 'tsigoura_verde_v8';   /* bumped — force Sunday 26 July copy after browser cache */
+const STORAGE_KEY = 'tsigoura_verde_v9';   /* bumped — clear stale mobile cache/state after QR + Wi-Fi fixes */
 
 const VENUE = {
   name: 'Tsigoura Verde Resort',
