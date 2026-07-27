@@ -55,6 +55,7 @@ body.traditional-mode .wrap{padding-bottom:44px;}
   background:radial-gradient(120% 90% at 50% 0%,#2C4A4F 0%,#1D3438 55%,#142A2E 100%);color:#F3ECD6;
   transition:opacity .5s ease, transform .5s ease;}
 .splash.gone{opacity:0;transform:scale(1.04);pointer-events:none;}
+.splash:not(.gone)~.wrap .head{display:none!important;}
 .sp-inner{text-align:center;padding:30px;max-width:420px;width:100%;}
 .sp-mark{width:110px;height:110px;margin:0 auto 22px;object-fit:contain;
   opacity:0;transform:scale(.6) translateY(10px);animation:spMark .9s cubic-bezier(.2,.8,.2,1) .15s forwards;}
@@ -584,6 +585,11 @@ body.traditional-mode .wrap{padding-bottom:44px;}
   display:flex;align-items:center;justify-content:center;margin-top:1px;box-shadow:0 3px 8px rgba(20,40,42,.06);}
 .item .dish-ic .ic{width:22px;height:22px;color:var(--olive);}
 .item .dish-ic img{width:40px;height:40px;object-fit:contain;display:block;}
+.item .dish-ic.img-failed img,.gphoto.img-failed img,.gthumb.img-failed img,.cat-card .art.img-failed img{display:none!important;}
+.item .dish-ic.img-failed::after,.gphoto.img-failed::after,.gthumb.img-failed::after,.cat-card .art.img-failed::after{
+  content:'';display:block;width:28px;height:28px;border-radius:50%;
+  background:radial-gradient(circle,var(--gold-lt),transparent 62%);
+}
 .item .dish-ic .greek-ic{width:32px;height:32px;}
 .item.out .dish-ic img{opacity:.45;filter:grayscale(.5);}
 .item .desc,.item .meta{margin-left:58px;}
@@ -1308,6 +1314,7 @@ body.sheet-open .head,body.sheet-open::before{pointer-events:none!important;}
 
 /* Final UI shield: no mobile overflow, no accidental text-selection scroll traps. */
 *,*::before,*::after{box-sizing:border-box;}
+[hidden]{display:none!important;}
 img,svg,canvas{max-width:100%;}
 html,body{width:100%;max-width:100%;min-height:100%;overflow-x:hidden!important;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:auto;overscroll-behavior-y:auto;}
 .wrap,#root{width:100%;max-width:100%;overflow-x:hidden!important;overflow-y:visible!important;touch-action:auto;}
@@ -1507,6 +1514,176 @@ body{
   :root{--maxw:min(760px,calc(100vw - 64px));}
   .wrap,.head{margin-left:auto!important;margin-right:auto!important;}
   .search,.view-switch,.updates,.announce,.nav,.sec,.closing{max-width:var(--maxw)!important;}
+}
+
+/* OWNER-CONTROL FINAL LAYOUT v12:
+   One vertical scroll owner. Header stays in normal flow, category rail is
+   horizontal-only content, and floating sheets always sit above everything. */
+html{
+  width:100%!important;
+  max-width:100%!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  height:auto!important;
+  -webkit-overflow-scrolling:touch!important;
+  overscroll-behavior-y:auto!important;
+}
+body{
+  width:100%!important;
+  max-width:100%!important;
+  min-height:100%!important;
+  height:auto!important;
+  overflow-x:hidden!important;
+  overflow-y:visible!important;
+  position:static!important;
+  touch-action:auto!important;
+}
+body::before{display:none!important;}
+.wrap,#root,main,#stripSlot,#announceSlot,#viewSwitch,.updates,.sec,.closing{
+  width:100%!important;
+  max-width:var(--maxw)!important;
+  height:auto!important;
+  max-height:none!important;
+  overflow-y:visible!important;
+  overflow-x:hidden!important;
+  margin-left:auto!important;
+  margin-right:auto!important;
+}
+.wrap{
+  padding-top:0!important;
+  padding-bottom:96px!important;
+}
+.head,
+body.guided-view .head,
+body.nav-pinned .head{
+  position:sticky!important;
+  top:0!important;
+  left:auto!important;
+  right:auto!important;
+  transform:none!important;
+  width:100%!important;
+  max-width:var(--maxw)!important;
+  margin:0 auto!important;
+  z-index:120!important;
+  background:var(--paper)!important;
+  box-shadow:0 8px 20px rgba(20,40,42,.08)!important;
+  isolation:isolate!important;
+}
+.splash:not(.gone)~.wrap .head{display:none!important;}
+.nav,
+.nav.nav-fixed{
+  position:relative!important;
+  top:auto!important;
+  left:auto!important;
+  right:auto!important;
+  transform:none!important;
+  width:100%!important;
+  max-width:var(--maxw)!important;
+  margin:10px auto 0!important;
+  z-index:2!important;
+  display:block!important;
+  visibility:visible!important;
+  opacity:1!important;
+  overflow:hidden!important;
+  contain:paint!important;
+}
+.nav .row{
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  -webkit-overflow-scrolling:touch!important;
+  overscroll-behavior-x:contain!important;
+  overscroll-behavior-y:auto!important;
+  touch-action:pan-x pan-y!important;
+  scroll-snap-type:x proximity!important;
+}
+.tab{
+  flex:0 0 auto!important;
+  max-width:calc(100vw - 36px)!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+body.guided-view .nav,
+body.searching .nav,
+body.sheet-open .nav,
+body.no-category-tabs .nav,
+body.social-ad-open .nav{
+  display:none!important;
+  visibility:hidden!important;
+  opacity:0!important;
+  pointer-events:none!important;
+}
+.guide-picker{
+  position:relative!important;
+  top:auto!important;
+  z-index:2!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  touch-action:pan-x pan-y!important;
+}
+.sec,
+.guide-sec{
+  scroll-margin-top:calc(var(--head-h,96px) + 16px)!important;
+}
+.scrim.on{z-index:300!important;}
+.sheet.on{z-index:360!important;}
+.cookie.on{z-index:380!important;}
+.social-ad.on{z-index:520!important;}
+body.sheet-open{
+  overflow:hidden!important;
+}
+body.sheet-open .search,
+body.sheet-open .view-switch,
+body.sheet-open .updates,
+body.sheet-open #stripSlot,
+body.sheet-open .hero,
+body.sheet-open .quick-flow,
+body.sheet-open .visual-rail,
+body.sheet-open .cat-mosaic{
+  visibility:hidden!important;
+  opacity:0!important;
+  pointer-events:none!important;
+}
+body.sheet-open .head{
+  pointer-events:auto!important;
+}
+.sheet{
+  max-height:min(86dvh,86vh)!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain!important;
+  -webkit-overflow-scrolling:touch!important;
+  touch-action:pan-y!important;
+}
+.wrap,#root,main,#stripSlot,#announceSlot,#viewSwitch,.updates,.announce,.sec,.guide-sec,.closing{
+  height:auto!important;
+  max-height:none!important;
+  overflow-y:visible!important;
+  overflow-x:hidden!important;
+  overscroll-behavior-y:auto!important;
+  -webkit-overflow-scrolling:auto!important;
+}
+#root,.sec,.guide-sec{
+  overflow:visible!important;
+}
+.nav{
+  position:relative!important;
+  top:auto!important;
+  z-index:20!important;
+  overflow:visible!important;
+}
+.nav .row{
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  touch-action:pan-x pan-y!important;
+  -webkit-overflow-scrolling:touch!important;
+}
+@media(min-width:900px){
+  :root{--maxw:760px;}
+  .wrap,.head,.search,.view-switch,.updates,.announce,.nav,.sec,.closing{
+    max-width:760px!important;
+  }
 }
 
 </style>
@@ -1764,8 +1941,8 @@ body{
 
 <div class="toast" id="toast"></div>
 
-<script src="tsigoura-data.js?v=20260726-sunday-wifi-mythos-admin-v4"></script>
-<script src="tsigoura-menu-icons.js?v=20260726-master-food-icons-8x8"></script>
+<script src="tsigoura-data.js?v=20260727-owner-controls-v12"></script>
+<script src="tsigoura-menu-icons.js?v=20260727-owner-media-controls-v2"></script>
 <script src="tsigoura-qr.js"></script>
 <script>
 "use strict";
@@ -1980,6 +2157,10 @@ const unitOf = i => (UNITS[i.unit]||{})[lang] || '';
 const priceDisp = i => i.priceText ? i.priceText : (i.price>0 ? money(i.price)+`<span class="u">${unitOf(i)}</span>` : '—');
 const isTraditional = () => !!(S.settings&&S.settings.traditionalMenuOnly);
 function design(){ return Object.assign({accent:'#38564F',showVisualRail:true,categoryArt:true,motion:'rich',showFeaturedHero:true}, (S.settings&&S.settings.design)||{}); }
+function headerActions(){
+  return Object.assign({booking:false,social:true,wifi:true,language:true}, (S.settings&&S.settings.headerActions)||{});
+}
+function actionEnabled(key){ return headerActions()[key] !== false; }
 const canOrder = () => S.settings.serviceOpen && S.settings.acceptOrders && !isTraditional();
 const canAdd = i => !i.hidden && i.available && canOrder() && i.price>0;
 const tx = i => {
@@ -2121,15 +2302,15 @@ function renderQuickFlow(){
     `<button class="flow-chip" data-flow="cart"><span class="mini">${checkoutIcon('send')}${esc(n?T('order'):T('flowBuild'))}</span><small>${esc(n?money(total()):T('flowBuildD'))}</small></button>`;
   slot.innerHTML=`
     <button class="flow-chip" data-flow="menu"><span class="mini">${checkoutIcon('hand')}${esc(T('flowMenu'))}</span><small>${esc(T('flowMenuD'))}</small></button>
-    <button class="flow-chip" data-flow="book"><span class="mini">${checkoutIcon('calendar')}${esc(T('book'))}</span><small>${esc(T('bookD'))}</small></button>
-    <button class="flow-chip" data-flow="social"><span class="mini">${checkoutIcon('social')}${esc(T('social'))}</span><small>${esc(T('socialD'))}</small></button>
-    <button class="flow-chip" data-flow="wifi"><span class="mini">${checkoutIcon('qr')}${esc(T('wifi'))}</span><small>${esc(T('flowWifiD'))}</small></button>
+    ${actionEnabled('booking')?`<button class="flow-chip" data-flow="book"><span class="mini">${checkoutIcon('calendar')}${esc(T('book'))}</span><small>${esc(T('bookD'))}</small></button>`:''}
+    ${actionEnabled('social')?`<button class="flow-chip" data-flow="social"><span class="mini">${checkoutIcon('social')}${esc(T('social'))}</span><small>${esc(T('socialD'))}</small></button>`:''}
+    ${actionEnabled('wifi')?`<button class="flow-chip" data-flow="wifi"><span class="mini">${checkoutIcon('qr')}${esc(T('wifi'))}</span><small>${esc(T('flowWifiD'))}</small></button>`:''}
     ${orderChip}`;
   slot.querySelector('[data-flow="menu"]').onclick=()=>{ const first=document.querySelector('.sec'); if(first) scrollToCategory(first.id.replace('sec-','')); };
   const cartBtn=slot.querySelector('[data-flow="cart"]'); if(cartBtn) cartBtn.onclick=()=>{ if(count()){ renderCartSheet(); openSheet('cartSheet'); } else toast(T('flowEmpty')); };
-  slot.querySelector('[data-flow="book"]').onclick=()=>{ location.href='book.html'; };
-  slot.querySelector('[data-flow="social"]').onclick=()=>{ renderSocial(); openSheet('socialSheet'); };
-  slot.querySelector('[data-flow="wifi"]').onclick=()=>{ renderWifi(); openSheet('wifiSheet'); };
+  const bookFlow=slot.querySelector('[data-flow="book"]'); if(bookFlow) bookFlow.onclick=()=>{ location.href='book.html'; };
+  const socialFlow=slot.querySelector('[data-flow="social"]'); if(socialFlow) socialFlow.onclick=()=>{ renderSocial(); openSheet('socialSheet'); };
+  const wifiFlow=slot.querySelector('[data-flow="wifi"]'); if(wifiFlow) wifiFlow.onclick=()=>{ renderWifi(); openSheet('wifiSheet'); };
 }
 function renderCategoryMosaic(){
   const slot=document.getElementById('categoryMosaic'); if(!slot) return;
@@ -2143,7 +2324,7 @@ function renderCategoryMosaic(){
     return `<button class="cat-card ${art?'':'no-art'}" data-jump="${esc(c.id)}" style="--acc:${acc[0]};--tint:${acc[1]}">
       <span class="icwrap">${catIcon(c)}</span>
       <b>${esc(catName(c))}</b>
-      ${art?`<i class="art"><img src="${art}" alt="" onerror="this.parentElement.remove()"></i>`:''}
+      ${art?`<i class="art"><img src="${esc(art)}" alt="" onerror="this.parentElement.classList.add('img-failed')"></i>`:''}
     </button>`;
   }).join('');
   slot.querySelectorAll('[data-jump]').forEach(b=>b.onclick=()=>scrollToCategory(b.dataset.jump));
@@ -2169,6 +2350,11 @@ function renderHead(){
   document.getElementById('help').textContent = T('help');
   document.getElementById('helpT').textContent = T('help');
   document.getElementById('pin').placeholder = T('search');
+  const actions=headerActions();
+  [['bookBtn','booking'],['socialBtn','social'],['wifiBtn','wifi'],['langBtn','language']].forEach(([id,key])=>{
+    const el=document.getElementById(id);
+    if(el) el.hidden = actions[key]===false;
+  });
 }
 function renderStrip(){
   /* guest-relevant notices only */
@@ -2493,7 +2679,7 @@ function guideSectionHTML(c,ix,cats){
 }
 function guideVisual(i,cls,large){
   const t=tx(i), art=(typeof dishArt==='function'&&dishArt(i)) ? dishArt(i) : '';
-  if(art) return `<button type="button" class="${cls}" data-admin-dish="${i.id}" data-photo="${i.id}" aria-label="${esc(T('guidePhoto'))}: ${esc(t.n)}"><img src="${art}" alt="" loading="lazy" decoding="async" width="${large?180:120}" height="${large?180:120}"></button>`;
+  if(art) return `<button type="button" class="${cls}" data-admin-dish="${i.id}" data-photo="${i.id}" aria-label="${esc(T('guidePhoto'))}: ${esc(t.n)}"><img src="${esc(art)}" alt="" loading="lazy" decoding="async" width="${large?180:120}" height="${large?180:120}" onerror="this.parentElement.classList.add('img-failed')"></button>`;
   return `<button type="button" class="${cls}" data-admin-dish="${i.id}" data-dish="${i.id}" aria-label="${esc(T('guideInfo'))}: ${esc(t.n)}">${dishIcon(i)}</button>`;
 }
 function guideHeroDishHTML(i){
@@ -2556,7 +2742,7 @@ function rowHTML(i){
   return `<div class="item ${i.available?'':'out'}" data-dish="${i.id}" data-admin-dish="${i.id}">
     <div class="top">
       ${art
-        ? `<button type="button" class="dish-ic photo-b" data-photo="${i.id}" aria-label="${esc(t.n)}"><img src="${art}" alt="" loading="lazy" decoding="async" width="144" height="144"></button>`
+        ? `<button type="button" class="dish-ic photo-b" data-photo="${i.id}" aria-label="${esc(t.n)}"><img src="${esc(art)}" alt="" loading="lazy" decoding="async" width="144" height="144" onerror="this.parentElement.classList.add('img-failed')"></button>`
         : `<span class="dish-ic">${dishIcon(i)}</span>`}
       <span class="nm">${esc(t.n)}</span>
       <span class="lead"></span>
@@ -2824,6 +3010,7 @@ function openPhoto(id){
   const art=(typeof dishArt==='function') ? dishArt(i) : '';
   if(!art){ openInfo(id); return; }
   const t=tx(i), img=document.getElementById('photoImg');
+  img.onerror=()=>{ closeSheets(); openInfo(id); };
   img.src=art; img.alt=t.n;
   document.getElementById('photoEye').textContent=catNameById(i.cat);
   document.getElementById('photoName').textContent=t.n;
@@ -3827,7 +4014,7 @@ async function boot(){
     apply();
     scheduleSocialAd();
     /* first visit → splash + language pick; returning (saved lang) → skip */
-    if(safeLS.get('tv_lang')){ const sp=document.getElementById('splash'); sp.style.display='none'; }
+    if(safeLS.get('tv_lang')){ const sp=document.getElementById('splash'); sp.classList.add('gone'); sp.style.display='none'; }
     else { buildSplash(); }
   }
 }

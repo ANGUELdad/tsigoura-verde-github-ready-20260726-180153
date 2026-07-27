@@ -17,7 +17,7 @@
       ελληνικό προϊόν δεν μεταφράζεται καλά, κρατάμε το όνομα και εξηγούμε σύντομα.
    ========================================================================== */
 
-const STORAGE_KEY = 'tsigoura_verde_v10';  /* bumped — drop stale saved event banner/mobile locks */
+const STORAGE_KEY = 'tsigoura_verde_v12';  /* bumped — drop stale saved header/category/media state */
 
 const VENUE = {
   name: 'Tsigoura Verde Resort',
@@ -90,7 +90,7 @@ const ALLERGENS = {
 const DEFAULT_CATEGORIES = [
   { id:'appetizers', order:1, icon:'dip',   t:{ el:'Ορεκτικά', en:'Appetizers', de:'Vorspeisen', ro:'Aperitive', sr:'Предјела', bg:'Предястия' } },
   { id:'salads',     order:2, icon:'salad', t:{ el:'Σαλάτες',  en:'Salads',     de:'Salate',     ro:'Salate',    sr:'Салате',   bg:'Салати' } },
-  { id:'spit',       order:3, icon:'skewer',accent:'#B4623A', tint:'#F6E6DC', t:{ el:'Σούβλες', en:'On the spit', de:'Vom Spieß', ro:'La proțap', sr:'Са ражња', bg:'На шиш' } },
+  { id:'spit',       order:3, icon:'skewer', hidden:true, accent:'#B4623A', tint:'#F6E6DC', image:'media/dishes/67-lamb-spit-clean.png', t:{ el:'Σούβλες', en:'On the spit', de:'Vom Spieß', ro:'La proțap', sr:'Са ражња', bg:'На шиш' } },
   { id:'meat',       order:4, icon:'meat',  t:{ el:'Της ώρας', en:'Grill dishes',de:'Vom Grill', ro:'La grătar', sr:'Са роштиља', bg:'Скара' } },
   { id:'drinks',     order:5, icon:'wine',  t:{ el:'Ποτά',     en:'Drinks',     de:'Getränke',   ro:'Băuturi',   sr:'Пића',     bg:'Напитки' } },
   { id:'pizza',      order:6, icon:'pizza', hidden:true, t:{ el:'Πίτσες',   en:'Pizzas',     de:'Pizzen',     ro:'Pizza',     sr:'Пице',     bg:'Пици' } },
@@ -350,10 +350,11 @@ const DEFAULT_ANNOUNCEMENT = JSON.parse(JSON.stringify(ANNOUNCE));
 
 const DEFAULT_SETTINGS = {
   serviceOpen:true, acceptOrders:true, currency:'€', defaultLang:'el',
-  catalogVersion:'event-pricelist-sunday-26-july-special-night-5',
+  catalogVersion:'event-pricelist-sunday-26-hidden-spit-booking-media-v2',
   cacheRevision:0,
   cacheSavedAt:0,
   traditionalMenuOnly:true,
+  headerActions:{ booking:false, social:true, wifi:true, language:true },
   design:{ accent:'#38564F', showVisualRail:true, categoryArt:true, motion:'rich', showFeaturedHero:true },
   announcement:JSON.parse(JSON.stringify(DEFAULT_ANNOUNCEMENT)),
 };
@@ -371,6 +372,7 @@ function loadState(){
        const base=defaultState(), saved=JSON.parse(r)||{};
        const merged=Object.assign({}, base, saved);
        merged.settings=Object.assign({}, base.settings, saved.settings||{});
+       merged.settings.headerActions=Object.assign({}, base.settings.headerActions, (saved.settings&&saved.settings.headerActions)||{});
        merged.settings.design=Object.assign({}, base.settings.design, (saved.settings&&saved.settings.design)||{});
        if((saved.settings||{}).catalogVersion !== DEFAULT_SETTINGS.catalogVersion){
          const savedById=new Map((Array.isArray(saved.menu)?saved.menu:[]).map(i=>[String(i.id),i]));
@@ -387,6 +389,7 @@ function loadState(){
          merged.categories=base.categories;
          merged.settings.catalogVersion=DEFAULT_SETTINGS.catalogVersion;
          merged.settings.traditionalMenuOnly=DEFAULT_SETTINGS.traditionalMenuOnly;
+         merged.settings.headerActions=Object.assign({}, DEFAULT_SETTINGS.headerActions);
          merged.settings.announcement=JSON.parse(JSON.stringify(DEFAULT_SETTINGS.announcement));
        }
        return normalizeState(merged); }catch(e){ return defaultState(); }
@@ -394,6 +397,7 @@ function loadState(){
 function normalizeState(s){
   const base=defaultState();
   s.settings=Object.assign({}, base.settings, s.settings||{});
+  s.settings.headerActions=Object.assign({}, base.settings.headerActions, s.settings.headerActions||{});
   s.settings.design=Object.assign({}, base.settings.design, s.settings.design||{});
   s.settings.announcement=normalizeAnnouncement(s.settings.announcement||base.settings.announcement);
   s.menu=Array.isArray(s.menu)?s.menu:base.menu;
@@ -406,6 +410,7 @@ function normalizeState(s){
     c.order=Number.isFinite(Number(c.order))?Number(c.order):ix+1;
     c.icon=c.icon||'bowl';
     c.hidden=c.hidden===true;
+    c.image=cleanAssetPath(c.image);
     c.accent=/^#[0-9a-f]{6}$/i.test(String(c.accent||''))?c.accent:null;
     c.tint=/^#[0-9a-f]{6}$/i.test(String(c.tint||''))?c.tint:null;
     c.t=c.t&&typeof c.t==='object'?c.t:{};
@@ -421,6 +426,7 @@ function normalizeState(s){
     i.price = Math.max(0, Number(i.price)||0);
     i.unit = i.unit || 'portion';
     i.icon = i.icon || i.art || 'bowl';
+    i.image=cleanAssetPath(i.image);
     i.available = i.available!==false;
     i.hidden = i.hidden===true;
     if(FORCE_HIDDEN_MENU_IDS.has(Number(i.id))) i.hidden = true;
@@ -436,11 +442,19 @@ function normalizeState(s){
   });
   return s;
 }
+function cleanAssetPath(v){
+  v=String(v||'').trim();
+  if(!v) return '';
+  if(/^https?:\/\//i.test(v)) return v.slice(0,300);
+  v=v.replace(/^\/+/,'').replace(/\\/g,'/');
+  if(v.includes('..')) return '';
+  return v.slice(0,180);
+}
 function normalizeAnnouncement(a){
   const base=JSON.parse(JSON.stringify(DEFAULT_ANNOUNCEMENT));
   a = (a && typeof a==='object') ? a : {};
   const out=Object.assign({}, base, a);
-  out.on = out.on !== false;
+  out.on = Object.prototype.hasOwnProperty.call(a,'on') ? a.on !== false : base.on !== false;
   out.from = /^\d{4}-\d{2}-\d{2}$/.test(String(out.from||'')) ? String(out.from) : base.from;
   out.to = /^\d{4}-\d{2}-\d{2}$/.test(String(out.to||'')) ? String(out.to) : base.to;
   out.emoji = String(out.emoji||'').slice(0,8);

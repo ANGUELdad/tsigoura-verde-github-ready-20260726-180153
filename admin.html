@@ -349,6 +349,9 @@ nav.tabs button.on{color:var(--cream);border-bottom-color:var(--gold);}
 .cat-edit .cat-preview .ico{width:22px;height:22px;stroke-width:1.9;}
 .cat-edit input,.cat-edit select{min-width:0;}
 .cat-edit input[type="color"]{width:54px;height:42px;padding:4px;border-radius:11px;}
+.cat-media{grid-column:3 / -1;display:grid;grid-template-columns:130px minmax(0,1fr);gap:8px;align-items:center;}
+.cat-media label{font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);}
+.cat-media input{width:100%;}
 .cat-mini{font-size:10.5px;color:var(--muted);line-height:1.3;margin-top:3px;}
 .cat-actions{display:flex;gap:6px;justify-content:flex-end;}
 .cat-actions button{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--cream);color:var(--forest);}
@@ -360,6 +363,7 @@ nav.tabs button.on{color:var(--cream);border-bottom-color:var(--gold);}
   .easy-row .soldlabel{text-align:left;width:auto;}
   .cat-edit{grid-template-columns:28px 42px minmax(0,1fr);align-items:start;}
   .cat-edit select,.cat-edit input[type="color"],.cat-actions{grid-column:3 / 4;}
+  .cat-media{grid-column:1 / -1;grid-template-columns:1fr;}
   .cat-actions{justify-content:flex-start;}
 }
 
@@ -744,7 +748,8 @@ nav.tabs button .ico{width:15px;height:15px;stroke-width:1.9;}
 
 <div class="toast" id="toast"></div>
 
-<script src="tsigoura-data.js?v=20260726-sunday-wifi-mythos-admin-v4"></script>
+<script src="tsigoura-data.js?v=20260727-owner-controls-v12"></script>
+<script src="tsigoura-menu-icons.js?v=20260727-owner-media-controls-v2"></script>
 <script src="tsigoura-icons.js"></script>
 <script>
 let S = loadState();
@@ -753,8 +758,42 @@ let proLang = 'el';
 let selectedTableId = '';
 let previewSelection = null;
 const $ = (id) => document.getElementById(id);
+const MENU_ICON_KEYS = ['dip','cheese','pot','fries','zucchini','fish','salad','meat','chop','burger','shank','chicken','drumstick','skewer','spit','pizza','wine','beer','mug','soda','juice','bottle','carafe','ouzo','pepper','star','leaf'];
+const HEADER_ACTIONS = [
+  ['booking','Κράτηση τραπεζιού','Κρύβει/εμφανίζει το κουμπί κράτησης και το shortcut.'],
+  ['social','Social','Κουμπί για Instagram/Facebook.'],
+  ['wifi','Wi‑Fi','Κουμπί QR/αντιγραφής Wi‑Fi.'],
+  ['language','Γλώσσα','Επιλογή γλώσσας στο πάνω μέρος.'],
+];
 
 /* Icons, charts and motion helpers come from tsigoura-icons.js. */
+function cleanAdminPath(v){
+  v=String(v||'').trim();
+  if(!v) return '';
+  if(/^https?:\/\//i.test(v)) return v.slice(0,300);
+  v=v.replace(/^\/+/,'').replace(/\\/g,'/');
+  return v.includes('..') ? '' : v.slice(0,180);
+}
+function knownDishImagePath(i){
+  if(i&&i.image) return i.image;
+  if(typeof dishArt==='function') return dishArt(i)||'';
+  return '';
+}
+function knownCategoryImagePath(c){
+  if(c&&c.image) return c.image;
+  if(typeof catArtSrc==='function') return catArtSrc(c)||'';
+  return '';
+}
+function imageOptionList(){
+  const files=new Set();
+  try{ Object.values(DISH_ART||{}).forEach(f=>files.add('media/dishes/'+f+'.png')); }catch(e){}
+  try{ Object.values(CAT_ART||{}).forEach(f=>files.add('media/dishes/'+f+'.png')); }catch(e){}
+  return [...files].sort();
+}
+function iconOptions(selected){
+  selected=String(selected||'');
+  return MENU_ICON_KEYS.map(k=>`<option value="${ioEsc(k)}" ${k===selected?'selected':''}>${ioEsc(k)}</option>`).join('');
+}
 
 /* offline QR (same lib as the guest menu — no CDN, works with no internet) */
 function qrSVG(text, size){
@@ -1401,6 +1440,8 @@ function renderEasy(){
 
 function renderPro(){
   const area = $('menuArea'); area.innerHTML='';
+  const imageOptions=imageOptionList();
+  area.insertAdjacentHTML('beforeend', `<datalist id="mediaPathList">${imageOptions.map(p=>`<option value="${ioEsc(p)}"></option>`).join('')}</datalist>`);
   renderCategoryManager(area);
   const orderMenu=()=>{ S.menu.sort((a,b)=>{
     const ca=S.categories.find(c=>c.id===a.cat), cb=S.categories.find(c=>c.id===b.cat);
@@ -1416,7 +1457,7 @@ function renderPro(){
   addBtn.onclick=()=>{
     const id = Math.max(0,...S.menu.map(m=>m.id))+1;
     const blank = { el:{n:'Νέο πιάτο',d:''}, en:{n:'New dish',d:''}, de:{n:'',d:''}, ro:{n:'',d:''}, sr:{n:'',d:''}, bg:{n:'',d:''} };
-    S.menu.push({ id, cat:S.categories[0].id, price:0, unit:'portion', icon:'salad', available:true, popular:false, chefPick:false,
+    S.menu.push({ id, cat:S.categories[0].id, price:0, unit:'portion', icon:'salad', image:'', available:true, popular:false, chefPick:false,
       veg:false, spicy:false, prepMin:15, allergens:[], removable:[], t:blank });
     persist(); renderPro();
   };
@@ -1443,6 +1484,11 @@ function renderPro(){
           <div><label>Τιμή €</label><input type="number" step="0.10" data-price value="${i.price}"></div>
           <div><label>Κατηγορία</label><select data-cat>${S.categories.map(c=>`<option value="${c.id}" ${c.id===i.cat?'selected':''}>${catLabel(c,'el')}</option>`).join('')}</select></div>
         </div>
+        <div class="fieldrow">
+          <div><label>Icon</label><select data-icon>${iconOptions(i.icon||'bowl')}</select></div>
+          <div><label>Εικόνα πιάτου</label><input data-image list="mediaPathList" value="${ioEsc(knownDishImagePath(i))}" placeholder="media/dishes/01-tzatziki.png ή https://..."></div>
+        </div>
+        <div class="cat-mini">Αν η εικόνα λείπει ή είναι λάθος, ο πελάτης βλέπει καθαρό fallback αντί για σπασμένο icon.</div>
         <div class="field"><label>Σημάνσεις</label>
           <div class="checks">
             <label><input type="checkbox" data-flag="available" ${i.available?'checked':''}> Διαθέσιμο</label>
@@ -1480,6 +1526,9 @@ function renderPro(){
       i.t[proLang].d = box.querySelector('[data-d]').value;
       i.price = parseFloat(box.querySelector('[data-price]').value)||0;
       i.cat = box.querySelector('[data-cat]').value;
+      i.icon = box.querySelector('[data-icon]').value || 'bowl';
+      i.iconOverride = true;
+      i.image = cleanAdminPath(box.querySelector('[data-image]').value);
       box.querySelectorAll('[data-flag]').forEach(cb=> i[cb.dataset.flag] = cb.checked );
       i.allergens = [...box.querySelectorAll('[data-alg]')].filter(cb=>cb.checked).map(cb=>cb.dataset.alg);
       persist(); renderPro(); toast('Αποθηκεύτηκε');
@@ -1490,7 +1539,7 @@ function renderPro(){
 }
 
 function renderCategoryManager(area){
-  const icons=['bowl','salad','meat','pizza','wine','coffee','fish','star','leaf','flame','icecream','bread'];
+  const icons=MENU_ICON_KEYS;
   const accents=['#38564F','#A07E3C','#B4623A','#2C4A4E','#6E5A2E','#8A4B3A'];
   const wrap=document.createElement('div');
   wrap.className='cat-manager reveal';
@@ -1523,7 +1572,8 @@ function renderCategoryManager(area){
         <button data-cat-hide title="${c.hidden?'Εμφάνιση':'Απόκρυψη'}">${ICO.get(c.hidden?'eye':'eye')}</button>
         <button data-cat-save title="Αποθήκευση">${ICO.get('check')}</button>
         <button class="danger" data-cat-del title="Διαγραφή">${ICO.get('trash')}</button>
-      </div>`;
+      </div>
+      <div class="cat-media"><label>Εικόνα κατηγορίας</label><input data-cat-image list="mediaPathList" value="${ioEsc(knownCategoryImagePath(c))}" placeholder="media/dishes/05-bougiourdi.png ή https://..."></div>`;
     if(c.hidden) row.classList.add('hidden');
     row.addEventListener('dragstart',e=>{ row.classList.add('dragging'); e.dataTransfer.setData('text/plain',String(c.id)); });
     row.addEventListener('dragend',()=>row.classList.remove('dragging'));
@@ -1536,6 +1586,7 @@ function renderCategoryManager(area){
     row.querySelector('[data-cat-save]').onclick=()=>saveCategoryRow(c,row);
     row.querySelector('[data-cat-name]').onchange=()=>saveCategoryRow(c,row);
     row.querySelector('[data-cat-icon]').onchange=()=>saveCategoryRow(c,row);
+    row.querySelector('[data-cat-image]').onchange=()=>saveCategoryRow(c,row);
     row.querySelector('[data-cat-accent]').onchange=()=>saveCategoryRow(c,row);
     row.querySelector('[data-cat-hide]').onclick=()=>{ c.hidden=!c.hidden; persist(); renderPro(); toast(c.hidden?'Η κατηγορία κρύφτηκε':'Η κατηγορία εμφανίζεται'); };
     row.querySelector('[data-cat-del]').onclick=()=>deleteCategory(c);
@@ -1549,6 +1600,7 @@ function saveCategoryRow(c,row){
   const name=row.querySelector('[data-cat-name]').value.trim().slice(0,40) || 'Νέα κατηγορία';
   const icon=row.querySelector('[data-cat-icon]').value || 'bowl';
   const accent=row.querySelector('[data-cat-accent]').value || '#38564F';
+  const image=cleanAdminPath(row.querySelector('[data-cat-image]').value);
   if(!c.t || typeof c.t!=='object') c.t={};
   LANGUAGES.forEach(l=>{
     const cur=c.t[l.code];
@@ -1556,7 +1608,7 @@ function saveCategoryRow(c,row){
   });
   c.t.el=name;
   if(!c.t.en || c.t.en===c.id) c.t.en=name;
-  c.icon=icon; c.accent=accent;
+  c.icon=icon; c.accent=accent; c.image=image;
   persist(); renderPro(); toast('Η κατηγορία αποθηκεύτηκε');
 }
 function addCategory(){
@@ -1991,16 +2043,28 @@ function wireAnnouncementEditor(){
   };
 }
 function renderSettings(){
+  if(!S.settings.headerActions) S.settings.headerActions={booking:false,social:true,wifi:true,language:true};
   const rows=[
     { ic:'sun', key:'serviceOpen', t:'Το κατάστημα είναι ανοιχτό', d:'Όταν είναι κλειστό, οι πελάτες βλέπουν το μενού αλλά δεν μπορούν να παραγγείλουν.' },
     { ic:'qr', key:'acceptOrders', t:'Δέχεται παραγγελίες από QR', d:'Κλείστε το σε ώρες αιχμής ή αν θέλετε το μενού μόνο για ανάγνωση.' },
     { ic:'note', key:'traditionalMenuOnly', t:'Παραδοσιακό e-menu μόνο', d:'Κρύβει καλάθι, online παραγγελία, handoff QR και help system. Μένει ένας καθαρός ψηφιακός κατάλογος που συνεχίζει να αλλάζει από εδώ.' },
   ];
+  const actionRows=HEADER_ACTIONS.map(([key,title,desc])=>`
+    <div class="setting-row">
+      <div class="txt"><div class="t" style="display:flex;align-items:center;gap:7px;">${ICO.get(key==='booking'?'calendar':key==='social'?'share':key==='wifi'?'wifi':'language')}${title}</div><div class="d">${desc}</div></div>
+      <div class="toggle ${S.settings.headerActions[key]!==false?'on':''}" data-action-set="${key}"></div>
+    </div>`).join('');
   $('settingsArea').innerHTML = rows.map(r=>`
     <div class="setting-row">
       <div class="txt"><div class="t" style="display:flex;align-items:center;gap:7px;">${r.ic?ICO.get(r.ic):''}${r.t}</div><div class="d">${r.d}</div></div>
       <div class="toggle ${S.settings[r.key]?'on':''}" data-set="${r.key}"></div>
-    </div>`).join('') + announcementEditorHTML() + `
+    </div>`).join('') + `
+
+    <div class="announce-editor">
+      <h3>${ICO.get('settings')}Κουμπιά πάνω στο menu</h3>
+      <p class="hint">Αλλάζει τι φαίνεται στο πάνω μέρος του πελάτη. Η κράτηση μένει κρυφή μέχρι να την ανοίξετε.</p>
+      ${actionRows}
+    </div>` + announcementEditorHTML() + `
 
     <div class="setting-row">
       <div class="txt"><div class="t" style="display:flex;align-items:center;gap:7px;">${ICO.get('star')}Πρόταση βραδιάς στο αρχικό</div><div class="d">Κρύβει το μεγάλο “Η πρόταση της βραδιάς” από την αρχική οθόνη του menu. Δεν διαγράφει πιάτα.</div></div>
@@ -2013,6 +2077,12 @@ function renderSettings(){
     </div>`;
   $('settingsArea').querySelectorAll('[data-set]').forEach(el=>el.onclick=()=>{
     S.settings[el.dataset.set]=!S.settings[el.dataset.set]; persist(); renderSettings(); renderServicePill(); renderQR(); renderPreview(); });
+  $('settingsArea').querySelectorAll('[data-action-set]').forEach(el=>el.onclick=()=>{
+    if(!S.settings.headerActions) S.settings.headerActions={};
+    const k=el.dataset.actionSet;
+    S.settings.headerActions[k]=S.settings.headerActions[k]===false;
+    persist(); renderSettings(); renderPreview(); toast('Το κουμπί ενημερώθηκε');
+  });
   $('settingsArea').querySelectorAll('[data-design-set]').forEach(el=>el.onclick=()=>{
     if(!S.settings.design) S.settings.design={};
     const k=el.dataset.designSet; S.settings.design[k]=S.settings.design[k]===false;

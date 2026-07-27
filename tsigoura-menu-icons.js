@@ -127,8 +127,15 @@ const CAT_ART = {
   appetizers:'01-tzatziki', salads:'16-horiatiki-salad',
   spit:'67-lamb-spit-clean', meat:'65-gyros', pizza:'35-margherita', drinks:'53-house-red',
 };
-function dishArt(i){ const f=i&&DISH_ART[i.id]; return f?ART_DIR+f+'.png':''; }
-function catArtSrc(c){ const f=c&&CAT_ART[c.id]; return f?ART_DIR+f+'.png':''; }
+function safeMediaPath(v){
+  v=String(v||'').trim();
+  if(!v) return '';
+  if(/^https?:\/\//i.test(v)) return v;
+  v=v.replace(/^\/+/,'').replace(/\\/g,'/');
+  return v.includes('..') ? '' : v;
+}
+function dishArt(i){ const custom=safeMediaPath(i&&i.image); if(custom) return custom; const f=i&&DISH_ART[i.id]; return f?ART_DIR+f+'.png':''; }
+function catArtSrc(c){ const custom=safeMediaPath(c&&c.image); if(custom) return custom; const f=c&&CAT_ART[c.id]; return f?ART_DIR+f+'.png':''; }
 
 const GREEK_FOOD_BASE = 'media/dishes/';
 const GREEK_FOOD_ICON = {
@@ -173,5 +180,5 @@ function svgFor(src){
   return PACK[src] || PACK.dish;
 }
 function pngIcon(file){ return `<span class="greek-ic" style="--food:url('${GREEK_FOOD_BASE}${file}')" aria-hidden="true"></span>`; }
-function dishIcon(i){ return (i&&GREEK_FOOD_ICON[i.id]) ? pngIcon(GREEK_FOOD_ICON[i.id]) : svgFor(DISH_ICON[i.icon]); }
-function catIcon(c){ return (c&&GREEK_CAT_ICON[c.id]) ? pngIcon(GREEK_CAT_ICON[c.id]) : svgFor(CAT_ICON[c.id] || 'dish'); }
+function dishIcon(i){ return (i&&GREEK_FOOD_ICON[i.id]&&!i.iconOverride) ? pngIcon(GREEK_FOOD_ICON[i.id]) : svgFor(DISH_ICON[i&&i.icon] || i&&i.icon || 'dish'); }
+function catIcon(c){ return (c&&c.imageIcon) ? pngIcon(c.imageIcon) : svgFor(DISH_ICON[c&&c.icon] || CAT_ICON[c&&c.id] || c&&c.icon || 'dish'); }
