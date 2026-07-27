@@ -748,7 +748,7 @@ nav.tabs button .ico{width:15px;height:15px;stroke-width:1.9;}
 
 <div class="toast" id="toast"></div>
 
-<script src="tsigoura-data.js?v=20260727-owner-controls-v12"></script>
+<script src="tsigoura-data.js?v=20260727-supabase-v13"></script>
 <script src="tsigoura-menu-icons.js?v=20260727-owner-media-controls-v2"></script>
 <script src="tsigoura-icons.js"></script>
 <script>
@@ -903,6 +903,7 @@ function persist(){
   S=normalizeState(S||defaultState());
   saveState(S);
   notifyFreshMenu();
+  scheduleRemoteSave();
 }
 function notifyFreshMenu(){
   try{
@@ -911,6 +912,48 @@ function notifyFreshMenu(){
   }catch(e){}
 }
 function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('on'); setTimeout(()=>t.classList.remove('on'),2200); }
+function adminPin(){ try{return sessionStorage.getItem('tv_admin_pin')||'';}catch(e){return '';} }
+let remoteSaveTimer=null;
+function scheduleRemoteSave(){
+  clearTimeout(remoteSaveTimer);
+  remoteSaveTimer=setTimeout(()=>saveRemoteMenu({silent:true}),900);
+}
+async function loadRemoteMenu({silent=false}={}){
+  try{
+    const r=await fetch('/api/menu',{cache:'no-store'});
+    const data=await r.json().catch(()=>null);
+    if(!r.ok || !data || !data.ok || !data.state){
+      if(!silent && data && data.error==='supabase_not_configured') toast('Δεν έχει συνδεθεί Supabase ακόμα');
+      else if(!silent) toast('Δεν βρέθηκε μενού στη βάση');
+      return false;
+    }
+    S=normalizeState(data.state);
+    if(data.revision && S.settings) S.settings.cacheRevision=Number(data.revision)||S.settings.cacheRevision;
+    saveState(S);
+    renderAll();
+    if(!silent) toast('Φορτώθηκε από Supabase');
+    return true;
+  }catch(e){ if(!silent) toast('Δεν μπόρεσε να φορτώσει από Supabase'); return false; }
+}
+async function saveRemoteMenu({silent=false}={}){
+  const pin=adminPin();
+  if(!pin){ if(!silent) toast('Ξανακάντε είσοδο για αποθήκευση στη βάση'); return false; }
+  try{
+    const r=await fetch('/api/admin-menu',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({pin,state:normalizeState(S),revision:(S&&S.updatedAt)||Date.now()})
+    });
+    const data=await r.json().catch(()=>null);
+    if(!r.ok || !data || !data.ok){
+      if(!silent && data && data.error==='supabase_not_configured') toast('Βάλτε Supabase env στο Vercel');
+      else if(!silent) toast('Δεν αποθηκεύτηκε στη βάση');
+      return false;
+    }
+    if(!silent) toast('Αποθηκεύτηκε στη Supabase');
+    return true;
+  }catch(e){ if(!silent) toast('Σφάλμα σύνδεσης Supabase'); return false; }
+}
 function clampPct(n,min,max){ n=Number(n); if(!isFinite(n)) return min; return Math.max(min,Math.min(max,n)); }
 function sketchTables(){
   return [
@@ -994,10 +1037,11 @@ function unlock(){
   renderAll();
   const w = $('warnIco'); if(w) w.innerHTML = ICO.get('warn');
   handleIncomingOrder();
+  loadRemoteMenu({silent:true});
 }
 async function checkAdminPin(pin){
   const local=location.protocol==='file:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
-  if(local && (pin === '1234' || pin === '@valentina2006!')) return true;
+  if(local && pin === '1234') return true;
   try{
     const r=await fetch('/api/admin-login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin})});
     if(r.ok) return true;
@@ -1010,7 +1054,7 @@ $('loginBtn').onclick = async () => {
   btn.disabled=true; btn.textContent='Έλεγχος...';
   const ok=await checkAdminPin(pin);
   btn.disabled=false; btn.textContent='Είσοδος';
-  if(ok){ try{localStorage.setItem('tv_admin_ok','1');}catch(e){} unlock(); }
+  if(ok){ try{localStorage.setItem('tv_admin_ok','1');sessionStorage.setItem('tv_admin_pin',pin);}catch(e){} unlock(); }
   else { input.value=''; input.placeholder='Λάθος κωδικός'; }
 };
 $('pinInput').onkeydown = e => { if(e.key==='Enter') $('loginBtn').click(); };
@@ -2064,6 +2108,15 @@ function renderSettings(){
       <h3>${ICO.get('settings')}Κουμπιά πάνω στο menu</h3>
       <p class="hint">Αλλάζει τι φαίνεται στο πάνω μέρος του πελάτη. Η κράτηση μένει κρυφή μέχρι να την ανοίξετε.</p>
       ${actionRows}
+    </div>
+
+    <div class="announce-editor">
+      <h3>${ICO.get('save')}Supabase βάση δεδομένων</h3>
+      <p class="hint">Όταν βάλετε τα Supabase env στο Vercel, οι αλλαγές στο admin αποθηκεύονται στη βάση και φορτώνονται από όλα τα κινητά. Αν δεν έχει ρυθμιστεί ακόμα, το menu συνεχίζει να δουλεύει τοπικά.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn sm pressable" id="dbPull">${ICO.get('download')}Φόρτωση από βάση</button>
+        <button class="btn sm pressable" id="dbPush">${ICO.get('save')}Αποθήκευση στη βάση</button>
+      </div>
     </div>` + announcementEditorHTML() + `
 
     <div class="setting-row">
@@ -2087,6 +2140,8 @@ function renderSettings(){
     if(!S.settings.design) S.settings.design={};
     const k=el.dataset.designSet; S.settings.design[k]=S.settings.design[k]===false;
     persist(); renderSettings(); });
+  const dbPull=$('dbPull'); if(dbPull) dbPull.onclick=()=>loadRemoteMenu({silent:false});
+  const dbPush=$('dbPush'); if(dbPush) dbPush.onclick=()=>saveRemoteMenu({silent:false});
   $('defLang').onchange=e=>{ S.settings.defaultLang=e.target.value; persist(); };
   wireAnnouncementEditor();
 }

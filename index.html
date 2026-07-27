@@ -1941,7 +1941,7 @@ body.sheet-open .head{
 
 <div class="toast" id="toast"></div>
 
-<script src="tsigoura-data.js?v=20260727-owner-controls-v12"></script>
+<script src="tsigoura-data.js?v=20260727-supabase-v13"></script>
 <script src="tsigoura-menu-icons.js?v=20260727-owner-media-controls-v2"></script>
 <script src="tsigoura-qr.js"></script>
 <script>
@@ -2146,6 +2146,20 @@ let q = '';
 /* cart is now an array of configurable LINES:
    { lid, id, qty, removed:[idx…] (into item.removable), note:'' } */
 let cart = [];
+
+async function hydrateRemoteMenu(){
+  try{
+    const r=await fetch('/api/menu',{cache:'no-store'});
+    if(!r.ok) return false;
+    const data=await r.json();
+    if(!data || !data.ok || !data.state) return false;
+    const remote=normalizeState(data.state);
+    if(data.revision && remote.settings) remote.settings.cacheRevision=Number(data.revision)||remote.settings.cacheRevision;
+    S=remote;
+    saveState(S);
+    return true;
+  }catch(e){ return false; }
+}
 let activeCat = null;
 let specialMenuActive = false;
 
@@ -4006,6 +4020,7 @@ function apply(){
 }
 async function boot(){
   await hydratePublicConfig();
+  await hydrateRemoteMenu();
   applyModeOverride();
   if(!handleHandoff()){
     

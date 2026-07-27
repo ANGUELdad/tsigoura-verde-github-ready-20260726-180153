@@ -17,7 +17,7 @@
       ελληνικό προϊόν δεν μεταφράζεται καλά, κρατάμε το όνομα και εξηγούμε σύντομα.
    ========================================================================== */
 
-const STORAGE_KEY = 'tsigoura_verde_v12';  /* bumped — drop stale saved header/category/media state */
+const STORAGE_KEY = 'tsigoura_verde_v13';  /* bumped — Supabase-backed owner controls */
 
 const VENUE = {
   name: 'Tsigoura Verde Resort',
@@ -350,7 +350,7 @@ const DEFAULT_ANNOUNCEMENT = JSON.parse(JSON.stringify(ANNOUNCE));
 
 const DEFAULT_SETTINGS = {
   serviceOpen:true, acceptOrders:true, currency:'€', defaultLang:'el',
-  catalogVersion:'event-pricelist-sunday-26-hidden-spit-booking-media-v2',
+  catalogVersion:'event-pricelist-sunday-26-hidden-spit-booking-media-supabase-v3',
   cacheRevision:0,
   cacheSavedAt:0,
   traditionalMenuOnly:true,
