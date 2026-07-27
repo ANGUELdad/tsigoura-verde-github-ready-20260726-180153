@@ -1410,7 +1410,11 @@ body::before{display:none!important;}
   overflow-y:hidden!important;
   -webkit-overflow-scrolling:touch!important;
   overscroll-behavior-x:contain!important;
+  touch-action:pan-y!important;
 }
+.nav,.tab,.view-switch,.search,.announce{touch-action:pan-y!important;}
+.tab,button,a,[role="button"]{touch-action:manipulation;}
+.nav .tab,.nav button{touch-action:pan-y!important;}
 .tab{min-width:max-content!important;max-width:calc(100vw - 36px)!important;}
 body.guided-view .nav,
 body.searching .nav,
@@ -1443,6 +1447,14 @@ body.scroll-stuck-guard{
   overflow-y:auto!important;
   position:static!important;
   touch-action:auto!important;
+}
+body:not(.sheet-open) .scrim:not(.on),
+body:not(.sheet-open) .sheet:not(.on),
+body:not(.social-ad-open) .social-ad:not(.on){
+  display:none!important;
+  visibility:hidden!important;
+  opacity:0!important;
+  pointer-events:none!important;
 }
 @media(min-width:900px){
   :root{--maxw:min(760px,calc(100vw - 64px));}

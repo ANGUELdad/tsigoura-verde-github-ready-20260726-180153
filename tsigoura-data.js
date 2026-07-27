@@ -17,7 +17,7 @@
       ελληνικό προϊόν δεν μεταφράζεται καλά, κρατάμε το όνομα και εξηγούμε σύντομα.
    ========================================================================== */
 
-const STORAGE_KEY = 'tsigoura_verde_v9';   /* bumped — clear stale mobile cache/state after QR + Wi-Fi fixes */
+const STORAGE_KEY = 'tsigoura_verde_v10';  /* bumped — drop stale saved event banner/mobile locks */
 
 const VENUE = {
   name: 'Tsigoura Verde Resort',
@@ -336,7 +336,7 @@ const ZONES = {
    παράθυρο [from,to]. Τώρα: ειδική βραδιά σούβλας (Κυρ. 26/7).
    ──────────────────────────────────────────────────────────────────────── */
 const ANNOUNCE = {
-  on:true, from:'2026-07-26', to:'2026-07-28', emoji:'🔥', targetCat:'spit', specialCats:['spit','meat'],
+  on:false, from:'2026-07-26', to:'2026-07-26', emoji:'🔥', targetCat:'spit', specialCats:['spit','meat'],
   t:{
     el:{ title:'Κυριακή 26 Ιουλίου · Σούβλες στη Τσιγγούρα', body:'Ειδική βραδιά με αρνί σούβλας και κοντοσούβλι. Πατήστε εδώ για να δείτε το σημερινό μενού.' },
     en:{ title:'Sunday, 26 July · Souvles at Tsigoura', body:'Special night with spit-roasted lamb and kontosouvli. Tap here to see today’s menu.' },
@@ -350,7 +350,7 @@ const DEFAULT_ANNOUNCEMENT = JSON.parse(JSON.stringify(ANNOUNCE));
 
 const DEFAULT_SETTINGS = {
   serviceOpen:true, acceptOrders:true, currency:'€', defaultLang:'el',
-  catalogVersion:'event-pricelist-sunday-26-july-special-night-4',
+  catalogVersion:'event-pricelist-sunday-26-july-special-night-5',
   traditionalMenuOnly:true,
   design:{ accent:'#38564F', showVisualRail:true, categoryArt:true, motion:'rich', showFeaturedHero:true },
   announcement:JSON.parse(JSON.stringify(DEFAULT_ANNOUNCEMENT)),
@@ -385,6 +385,7 @@ function loadState(){
          merged.categories=base.categories;
          merged.settings.catalogVersion=DEFAULT_SETTINGS.catalogVersion;
          merged.settings.traditionalMenuOnly=DEFAULT_SETTINGS.traditionalMenuOnly;
+         merged.settings.announcement=JSON.parse(JSON.stringify(DEFAULT_SETTINGS.announcement));
        }
        return normalizeState(merged); }catch(e){ return defaultState(); }
 }
