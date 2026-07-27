@@ -2198,7 +2198,7 @@ function renderTabs(){
   if(!shouldShow) return;
   cats.forEach((c,ix)=>{
     const b=document.createElement('button');
-    b.className='tab'+(activeCat===c.id?' on':''); b.dataset.cat=c.id;
+    b.className='tab'+(activeCat===c.id?' on':''); b.dataset.cat=c.id; b.dataset.adminCat=c.id;
     const acc=CAT_ACC[ix%CAT_ACC.length]; b.style.setProperty('--tab-acc',acc[0]);
     b.innerHTML=`<span style="display:inline-flex">${catIcon(c)}</span>${esc(catName(c))}`;
     b.onclick=()=>scrollToCategory(c.id);
@@ -2475,8 +2475,8 @@ function guideSectionHTML(c,ix,cats){
   const rest=items.filter(i=>i!==pick);
   const acc=[c.accent||CAT_ACC[ix%CAT_ACC.length][0], c.tint||CAT_ACC[ix%CAT_ACC.length][1]];
   const prev=cats[ix-1], next=cats[ix+1];
-  return `<section class="sec guide-sec guide-stage ${esc(c.id)}" id="sec-${c.id}" style="--stage:${ix}">
-    <div class="guide-chapter" style="--acc:${acc[0]};--accbg:${acc[1]}">
+  return `<section class="sec guide-sec guide-stage ${esc(c.id)}" id="sec-${c.id}" data-admin-cat="${esc(c.id)}" style="--stage:${ix}">
+    <div class="guide-chapter" data-admin-cat="${esc(c.id)}" style="--acc:${acc[0]};--accbg:${acc[1]}">
       <span class="gicon">${catIcon(c)}</span>
       <button type="button" class="guide-home" data-guide-home="1">‹ ${esc(T('guideBackCats'))}</button>
       <small>${esc(T('guideBadge'))}</small>
@@ -2493,12 +2493,12 @@ function guideSectionHTML(c,ix,cats){
 }
 function guideVisual(i,cls,large){
   const t=tx(i), art=(typeof dishArt==='function'&&dishArt(i)) ? dishArt(i) : '';
-  if(art) return `<button type="button" class="${cls}" data-photo="${i.id}" aria-label="${esc(T('guidePhoto'))}: ${esc(t.n)}"><img src="${art}" alt="" loading="lazy" decoding="async" width="${large?180:120}" height="${large?180:120}"></button>`;
-  return `<button type="button" class="${cls}" data-dish="${i.id}" aria-label="${esc(T('guideInfo'))}: ${esc(t.n)}">${dishIcon(i)}</button>`;
+  if(art) return `<button type="button" class="${cls}" data-admin-dish="${i.id}" data-photo="${i.id}" aria-label="${esc(T('guidePhoto'))}: ${esc(t.n)}"><img src="${art}" alt="" loading="lazy" decoding="async" width="${large?180:120}" height="${large?180:120}"></button>`;
+  return `<button type="button" class="${cls}" data-admin-dish="${i.id}" data-dish="${i.id}" aria-label="${esc(T('guideInfo'))}: ${esc(t.n)}">${dishIcon(i)}</button>`;
 }
 function guideHeroDishHTML(i){
   const t=tx(i), desc=t.d||'';
-  return `<article class="guide-hero-dish ${i.available?'':'out'}">
+  return `<article class="guide-hero-dish ${i.available?'':'out'}" data-admin-dish="${i.id}">
     ${guideVisual(i,'gphoto',true)}
     <div>
       <h3>${esc(t.n)}</h3>
@@ -2514,7 +2514,7 @@ function guideHeroDishHTML(i){
 }
 function guideCardHTML(i,k){
   const t=tx(i), desc=t.d||'';
-  return `<article class="guide-card ${i.available?'':'out'}" style="animation-delay:${Math.min(k,8)*38}ms">
+  return `<article class="guide-card ${i.available?'':'out'}" data-admin-dish="${i.id}" style="animation-delay:${Math.min(k,8)*38}ms">
     ${guideVisual(i,'gthumb',false)}
     <div>
       <h3>${esc(t.n)}</h3>
@@ -2535,8 +2535,8 @@ function renderList(){
     const items=S.menu.filter(i=>!i.hidden&&i.cat===c.id&&matches(i)); if(!items.length)return; any=true; num++;
     const n2=String(num).padStart(2,'0');
     const acc=[c.accent||CAT_ACC[(num-1)%CAT_ACC.length][0], c.tint||CAT_ACC[(num-1)%CAT_ACC.length][1]];
-    html+=`<section class="sec ${esc(c.id)}" id="sec-${c.id}">
-      <div class="sec-h" style="--acc:${acc[0]};--accbg:${acc[1]}">
+    html+=`<section class="sec ${esc(c.id)}" id="sec-${c.id}" data-admin-cat="${esc(c.id)}">
+      <div class="sec-h" data-admin-cat="${esc(c.id)}" style="--acc:${acc[0]};--accbg:${acc[1]}">
         <span class="sic">${catIcon(c)}</span>
         <div class="sh-txt"><span class="num">${n2}</span><span class="t">${esc(catName(c))}</span></div>
       </div>`+
@@ -2553,7 +2553,7 @@ function rowHTML(i){
   const algs=(i.allergens||[]).map(a=>esc(ALLERGENS[a][lang]||ALLERGENS[a].en)).join(' · ');
   const cust=!isTraditional() && (i.removable||[]).length;
   const art=(typeof dishArt==='function'&&dishArt(i)) ? dishArt(i) : '';
-  return `<div class="item ${i.available?'':'out'}" data-dish="${i.id}">
+  return `<div class="item ${i.available?'':'out'}" data-dish="${i.id}" data-admin-dish="${i.id}">
     <div class="top">
       ${art
         ? `<button type="button" class="dish-ic photo-b" data-photo="${i.id}" aria-label="${esc(t.n)}"><img src="${art}" alt="" loading="lazy" decoding="async" width="144" height="144"></button>`
@@ -3669,7 +3669,7 @@ function renderAnnounce(){
   if((from && today<from) || (to && today>to)){ slot.innerHTML=''; return; }
   const t=(A.t&&(A.t[lang]||A.t.en))||null; if(!t || (!String(t.title||'').trim() && !String(t.body||'').trim())){ slot.innerHTML=''; return; }
   const img = (typeof MEDIA!=='undefined' && (MEDIA.souvles||MEDIA.hero)) ? `url('${MEDIA.souvles||MEDIA.hero}')` : 'none';
-  slot.innerHTML=`<button class="announce" type="button" id="announceGo" data-special-open style="--ann-img:${img}">
+  slot.innerHTML=`<button class="announce" type="button" id="announceGo" data-special-open data-admin-announcement="1" style="--ann-img:${img}">
     ${A.emoji?`<span class="em">${A.emoji}</span>`:''}
     <div class="ttl">${esc(t.title||'')}</div>
     ${t.body?`<div class="bd">${esc(t.body)}</div>`:''}

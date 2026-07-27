@@ -351,6 +351,8 @@ const DEFAULT_ANNOUNCEMENT = JSON.parse(JSON.stringify(ANNOUNCE));
 const DEFAULT_SETTINGS = {
   serviceOpen:true, acceptOrders:true, currency:'€', defaultLang:'el',
   catalogVersion:'event-pricelist-sunday-26-july-special-night-5',
+  cacheRevision:0,
+  cacheSavedAt:0,
   traditionalMenuOnly:true,
   design:{ accent:'#38564F', showVisualRail:true, categoryArt:true, motion:'rich', showFeaturedHero:true },
   announcement:JSON.parse(JSON.stringify(DEFAULT_ANNOUNCEMENT)),
@@ -456,5 +458,14 @@ function normalizeAnnouncement(a){
   return out;
 }
 function saveState(s){ s.updatedAt=Date.now();
-  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); localStorage.setItem(STORAGE_KEY+'_ping', String(Date.now())); }catch(e){} }
+  if(s.settings){
+    s.settings.cacheRevision=s.updatedAt;
+    s.settings.cacheSavedAt=s.updatedAt;
+  }
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+    localStorage.setItem(STORAGE_KEY+'_ping', String(s.updatedAt));
+    localStorage.setItem(STORAGE_KEY+'_revision', String(s.updatedAt));
+  }catch(e){}
+}
 function resetState(){ try{ localStorage.removeItem(STORAGE_KEY); }catch(e){} }

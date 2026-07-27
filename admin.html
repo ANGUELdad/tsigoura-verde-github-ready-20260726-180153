@@ -171,6 +171,18 @@ nav.tabs button.on{color:var(--cream);border-bottom-color:var(--gold);}
 .preview-state b{display:block;font-family:Fraunces,serif;font-size:19px;color:var(--forest);margin-bottom:6px;}
 .preview-state span{display:block;font-size:12px;line-height:1.45;color:var(--muted);}
 .preview-state .btn{margin-top:12px;}
+.preview-edit-dock{margin-top:12px;border:1px solid rgba(211,186,130,.48);border-radius:16px;background:linear-gradient(135deg,#FFFDF8,#F4EDDC);box-shadow:0 10px 24px rgba(20,40,42,.08);padding:13px;display:grid;gap:10px;}
+.preview-edit-dock.empty{color:var(--muted);font-size:12.5px;line-height:1.45;text-align:center;padding:12px 14px;}
+.preview-edit-dock .ptop{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+.preview-edit-dock .ey{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:900;}
+.preview-edit-dock .ttl{font-family:Fraunces,serif;color:var(--forest);font-size:18px;line-height:1.1;margin-top:2px;}
+.preview-edit-dock .sub{font-size:12px;color:var(--muted);margin-top:2px;}
+.preview-edit-dock .pill{border-radius:999px;padding:6px 9px;font-size:11px;font-weight:900;background:#EEF5EF;color:var(--forest);white-space:nowrap;}
+.preview-edit-dock .pill.off{background:#F8E5DE;color:var(--bad);}
+.preview-edit-dock .pactions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+.preview-edit-dock .pactions .btn{min-height:39px;justify-content:center;}
+.preview-edit-dock .price-mini{display:grid;grid-template-columns:42px 1fr 42px;gap:8px;align-items:center;}
+.preview-edit-dock .price-mini strong{text-align:center;font-family:Fraunces,serif;font-size:20px;color:var(--gold);}
 .phone-actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px;}
 @media(max-width:860px){.designer{grid-template-columns:1fr}.phone-frame{height:680px;}}
 
@@ -739,6 +751,7 @@ let S = loadState();
 let editMode = 'easy';
 let proLang = 'el';
 let selectedTableId = '';
+let previewSelection = null;
 const $ = (id) => document.getElementById(id);
 
 /* Icons, charts and motion helpers come from tsigoura-icons.js. */
@@ -850,6 +863,13 @@ function renderDash(){
 function persist(){
   S=normalizeState(S||defaultState());
   saveState(S);
+  notifyFreshMenu();
+}
+function notifyFreshMenu(){
+  try{
+    localStorage.setItem(STORAGE_KEY+'_admin_revision', String((S&&S.updatedAt)||Date.now()));
+    if($('menuPreview') && editMode==='preview') renderPreviewDock();
+  }catch(e){}
 }
 function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('on'); setTimeout(()=>t.classList.remove('on'),2200); }
 function clampPct(n,min,max){ n=Number(n); if(!isFinite(n)) return min; return Math.max(min,Math.min(max,n)); }
@@ -1576,9 +1596,16 @@ function withMenuMode(url){
   u.searchParams.set('mode', S.settings.traditionalMenuOnly ? 'traditional' : 'order');
   if(!S.settings.traditionalMenuOnly) u.searchParams.set('order','1');
   else u.searchParams.delete('order');
+  u.searchParams.set('rev', String((S.settings&&S.settings.cacheRevision)||S.updatedAt||Date.now()));
   return u.href;
 }
 const menuPreviewUrl=()=>withMenuMode(new URL('index.html', location.href).href);
+function noStoreUrl(url,key){
+  const u=new URL(url, location.href);
+  u.searchParams.set(key||'fresh', String(Date.now()));
+  u.searchParams.set('rev', String((S.settings&&S.settings.cacheRevision)||S.updatedAt||Date.now()));
+  return u.href;
+}
 function renderPreview(){
   const area=$('menuArea');
   if(!S.settings.design) S.settings.design={accent:'#38564F',showVisualRail:true,categoryArt:true,motion:'rich',showFeaturedHero:true};
@@ -1609,6 +1636,7 @@ function renderPreview(){
       <div class="phone-actions">
         <button class="btn ghost sm" id="previewTraditional">${ICO.get('note')}${S.settings.traditionalMenuOnly?'Online options on/off':'Traditional on/off'}</button>
       </div>
+      <div class="preview-edit-dock empty" id="previewEditDock">Πατήστε πάνω σε πιάτο, κατηγορία ή banner μέσα στο preview για γρήγορη αλλαγή.</div>
     </div>
   </div>`;
   const saveDesign=()=>{ persist(); renderPreview(); };
@@ -1649,7 +1677,7 @@ function renderPreview(){
     if(text) text.textContent='Ετοιμάζουμε την προσομοίωση του πελάτη.';
     const url=menuPreviewUrl();
     try{
-      const res=await fetch(url+'?preview_src='+Date.now(),{cache:'no-store'});
+      const res=await fetch(noStoreUrl(url,'preview_src'),{cache:'no-store'});
       if(!res.ok) throw new Error('HTTP '+res.status);
       let html=await res.text();
       const base=`<base href="${url.replace(/[^/]*$/,'')}">`;
@@ -1663,6 +1691,16 @@ function renderPreview(){
           window.addEventListener('touchstart',function(e){if(e.touches&&e.touches[0])lastY=e.touches[0].clientY;},{passive:true});
           window.addEventListener('touchmove',function(e){var s=shell(); if(!s||!e.touches||!e.touches[0])return; var y=e.touches[0].clientY; s.scrollTop+=lastY-y; lastY=y; e.preventDefault();},{passive:false});
           window.addEventListener('keydown',function(e){var s=shell(); if(!s)return; var d=0; if(e.key==='ArrowDown')d=54; else if(e.key==='ArrowUp')d=-54; else if(e.key==='PageDown')d=s.clientHeight*.82; else if(e.key==='PageUp')d=-s.clientHeight*.82; else if(e.key==='Home'){s.scrollTop=0; e.preventDefault(); return;} else if(e.key==='End'){s.scrollTop=s.scrollHeight; e.preventDefault(); return;} if(d){s.scrollTop+=d; e.preventDefault();}},{passive:false});
+          document.addEventListener('click',function(e){
+            var el=e.target&&e.target.closest&&e.target.closest('[data-admin-dish],[data-admin-cat],[data-admin-announcement],[data-dish]');
+            if(!el) return;
+            var payload={tvPreviewEdit:1};
+            if(el.dataset.adminAnnouncement){payload.type='announcement';}
+            else if(el.dataset.adminDish||el.dataset.dish){payload.type='dish';payload.id=el.dataset.adminDish||el.dataset.dish;}
+            else if(el.dataset.adminCat){payload.type='category';payload.id=el.dataset.adminCat;}
+            try{parent.postMessage(payload,'*');}catch(err){}
+            e.preventDefault(); e.stopPropagation(); if(e.stopImmediatePropagation)e.stopImmediatePropagation();
+          },true);
         })();
       }catch(e){}<\/script>`;
       html=html.replace(/<head([^>]*)>/i,`<head$1>${base}`);
@@ -1673,7 +1711,7 @@ function renderPreview(){
       setTimeout(()=>{ frame.classList.remove('loading'); sizePreview(); },900);
     }catch(err){
       f.removeAttribute('srcdoc');
-      f.src=url+'?preview='+Date.now();
+      f.src=noStoreUrl(url,'preview');
       f.onload=()=>{ frame.classList.remove('loading','fail'); sizePreview(); setTimeout(sizePreview,450); };
       setTimeout(()=>{
         if(frame.classList.contains('loading')){
@@ -1685,7 +1723,126 @@ function renderPreview(){
     }
   }
   refreshPreview();
+  renderPreviewDock();
 }
+function previewRefreshSoon(){
+  if(editMode==='preview' && $('menuPreview')) setTimeout(()=>{ try{ renderPreview(); }catch(e){} }, 60);
+}
+function switchAdminTab(tab){
+  const b=document.querySelector(`#tabs button[data-tab="${tab}"]`);
+  if(b) b.click();
+}
+function setEditMode(mode){
+  editMode=mode;
+  $('modeSwitch').querySelectorAll('button').forEach(x=>x.classList.toggle('on', x.dataset.mode===mode));
+  renderMenuArea();
+}
+function cssId(s){
+  s=String(s);
+  return (window.CSS&&CSS.escape) ? CSS.escape(s) : s.replace(/["\\]/g,'\\$&');
+}
+function openProDish(id){
+  switchAdminTab('menu');
+  setEditMode('pro');
+  requestAnimationFrame(()=>{
+    const box=document.querySelector(`.pro-item[data-id="${cssId(id)}"]`);
+    if(box){ box.classList.add('open'); box.scrollIntoView({block:'center',behavior:'smooth'}); }
+  });
+}
+function openProCategory(id){
+  switchAdminTab('menu');
+  setEditMode('pro');
+  requestAnimationFrame(()=>{
+    const row=document.querySelector(`.cat-edit[data-id="${cssId(id)}"]`);
+    if(row){ row.scrollIntoView({block:'center',behavior:'smooth'}); row.animate([{transform:'scale(1)'},{transform:'scale(1.018)'},{transform:'scale(1)'}],{duration:420,easing:'ease-out'}); }
+  });
+}
+function openAnnouncementSettings(){
+  switchAdminTab('settings');
+  requestAnimationFrame(()=>{
+    const box=$('announceEditor');
+    if(box){ box.scrollIntoView({block:'center',behavior:'smooth'}); box.animate([{transform:'scale(1)'},{transform:'scale(1.018)'},{transform:'scale(1)'}],{duration:420,easing:'ease-out'}); }
+  });
+}
+function renderPreviewDock(){
+  const dock=$('previewEditDock');
+  if(!dock) return;
+  const sel=previewSelection;
+  if(!sel){
+    dock.className='preview-edit-dock empty';
+    dock.innerHTML='Πατήστε πάνω σε πιάτο, κατηγορία ή banner μέσα στο preview για γρήγορη αλλαγή.';
+    return;
+  }
+  if(sel.type==='dish'){
+    const i=S.menu.find(x=>String(x.id)===String(sel.id));
+    if(!i){ previewSelection=null; renderPreviewDock(); return; }
+    dock.className='preview-edit-dock';
+    dock.innerHTML=`
+      <div class="ptop">
+        <div><div class="ey">Πιάτο από preview</div><div class="ttl">${itemName(i,'el')}</div><div class="sub">${catLabel(S.categories.find(c=>c.id===i.cat)||{},'el')}</div></div>
+        <span class="pill ${(!i.available||i.hidden)?'off':''}">${i.hidden?'Κρυφό':(i.available?'Διαθέσιμο':'Τελείωσε')}</span>
+      </div>
+      <div class="price-mini">
+        <button class="btn ghost sm" data-prev-minus>${ICO.get('minus')}</button>
+        <strong>${S.settings.currency}${Number(i.price||0).toFixed(2)}</strong>
+        <button class="btn ghost sm" data-prev-plus>${ICO.get('plus')}</button>
+      </div>
+      <div class="pactions">
+        <button class="btn sm" data-prev-available>${ICO.get('check')}${i.available?'Τελείωσε':'Διαθέσιμο'}</button>
+        <button class="btn ghost sm" data-prev-hide>${ICO.get('eye')}${i.hidden?'Εμφάνιση':'Απόκρυψη'}</button>
+        <button class="btn ghost sm" data-prev-pro>${ICO.get('edit')}Edit όλα</button>
+        <button class="btn danger sm" data-prev-delete>${ICO.get('trash')}Διαγραφή</button>
+      </div>`;
+    dock.querySelector('[data-prev-minus]').onclick=()=>{ i.price=Math.max(0,+(Number(i.price||0)-0.5).toFixed(2)); persist(); previewRefreshSoon(); };
+    dock.querySelector('[data-prev-plus]').onclick=()=>{ i.price=+(Number(i.price||0)+0.5).toFixed(2); persist(); previewRefreshSoon(); };
+    dock.querySelector('[data-prev-available]').onclick=()=>{ i.available=!i.available; persist(); toast(i.available?'Διαθέσιμο':'Τελείωσε'); previewRefreshSoon(); };
+    dock.querySelector('[data-prev-hide]').onclick=()=>{ i.hidden=!i.hidden; persist(); toast(i.hidden?'Κρύφτηκε από το menu':'Εμφανίζεται στο menu'); previewRefreshSoon(); };
+    dock.querySelector('[data-prev-pro]').onclick=()=>openProDish(i.id);
+    dock.querySelector('[data-prev-delete]').onclick=()=>{ if(confirm('Διαγραφή «'+itemName(i,'el')+'»;')){ S.menu=S.menu.filter(x=>x!==i); previewSelection=null; persist(); previewRefreshSoon(); } };
+    return;
+  }
+  if(sel.type==='category'){
+    const c=S.categories.find(x=>String(x.id)===String(sel.id));
+    if(!c){ previewSelection=null; renderPreviewDock(); return; }
+    const used=S.menu.filter(i=>i.cat===c.id&&!i.hidden).length;
+    dock.className='preview-edit-dock';
+    dock.innerHTML=`
+      <div class="ptop">
+        <div><div class="ey">Κατηγορία από preview</div><div class="ttl">${catLabel(c,'el')}</div><div class="sub">${used} ορατά πιάτα</div></div>
+        <span class="pill ${c.hidden?'off':''}">${c.hidden?'Κρυφή':'Ορατή'}</span>
+      </div>
+      <div class="pactions">
+        <button class="btn sm" data-prev-cat-hide>${ICO.get('eye')}${c.hidden?'Εμφάνιση':'Απόκρυψη'}</button>
+        <button class="btn ghost sm" data-prev-cat-pro>${ICO.get('edit')}Edit κατηγορίας</button>
+      </div>`;
+    dock.querySelector('[data-prev-cat-hide]').onclick=()=>{ c.hidden=!c.hidden; persist(); toast(c.hidden?'Η κατηγορία κρύφτηκε':'Η κατηγορία εμφανίζεται'); previewRefreshSoon(); };
+    dock.querySelector('[data-prev-cat-pro]').onclick=()=>openProCategory(c.id);
+    return;
+  }
+  if(sel.type==='announcement'){
+    const A=normalizeAnnouncement(S.settings.announcement||{});
+    const t=(A.t&&A.t.el)||{title:'Special announcement',body:''};
+    dock.className='preview-edit-dock';
+    dock.innerHTML=`
+      <div class="ptop">
+        <div><div class="ey">Banner</div><div class="ttl">${ioEsc(t.title||'Announcement')}</div><div class="sub">${ioEsc(t.body||'')}</div></div>
+        <span class="pill ${A.on?'':'off'}">${A.on?'Ορατό':'Κρυφό'}</span>
+      </div>
+      <div class="pactions">
+        <button class="btn sm" data-prev-ann-toggle>${ICO.get('eye')}${A.on?'Απόκρυψη':'Εμφάνιση'}</button>
+        <button class="btn ghost sm" data-prev-ann-edit>${ICO.get('edit')}Edit banner</button>
+      </div>`;
+    dock.querySelector('[data-prev-ann-toggle]').onclick=()=>{ A.on=!A.on; S.settings.announcement=normalizeAnnouncement(A); persist(); toast(A.on?'Το banner εμφανίζεται':'Το banner κρύφτηκε'); previewRefreshSoon(); };
+    dock.querySelector('[data-prev-ann-edit]').onclick=openAnnouncementSettings;
+  }
+}
+window.addEventListener('message',e=>{
+  const f=$('menuPreview');
+  if(!f || e.source!==f.contentWindow || !e.data || !e.data.tvPreviewEdit) return;
+  previewSelection={type:e.data.type,id:e.data.id||''};
+  renderPreviewDock();
+  toast('Άνοιξε γρήγορη αλλαγή από preview');
+});
 
 $('exportBtn').onclick=()=>{
   const blob=new Blob([JSON.stringify({menu:S.menu,categories:S.categories,tables:S.tables,settings:S.settings},null,2)],{type:'application/json'});
