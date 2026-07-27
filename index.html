@@ -301,6 +301,8 @@ body.traditional-mode .wrap{padding-bottom:44px;}
 .social-card{display:flex;align-items:center;gap:10px;min-height:54px;border:1px solid var(--line);background:var(--card);border-radius:14px;
   padding:12px;color:var(--pine);text-decoration:none;font-weight:800;font-size:13px;box-shadow:0 7px 18px rgba(20,40,42,.05);}
 .social-card .ic{width:19px;height:19px;color:var(--gold);}
+.social-img{display:block;width:20px;height:20px;object-fit:contain;flex:0 0 auto;}
+.wifibtn .social-img{width:20px;height:20px;}
 .social-card.disabled{opacity:.5;pointer-events:none;}
 .social-ad{position:fixed;inset:0;z-index:520;display:flex;align-items:center;justify-content:center;padding:18px;
   background:rgba(20,32,35,.42);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
@@ -323,6 +325,7 @@ body.traditional-mode .wrap{padding-bottom:44px;}
   text-decoration:none;font-size:13px;font-weight:850;border:1px solid var(--line);background:var(--card);color:var(--pine);}
 .social-ad-actions a.primary{grid-column:1 / -1;background:linear-gradient(135deg,var(--pine),var(--olive));border-color:transparent;color:#fffaf0;box-shadow:0 14px 28px rgba(23,63,42,.18);}
 .social-ad-actions .ic{width:18px;height:18px;color:currentColor;}
+.social-ad-actions .social-img{width:19px;height:19px;}
 .social-ad-later{width:100%;margin-top:9px;color:var(--muted);background:rgba(255,253,248,.58);}
 .social-ad-actions a:active,.social-ad-later:active,.social-ad-x:active{transform:scale(.96);}
 .book-form{display:grid;gap:10px;margin-top:14px;}
@@ -1491,7 +1494,7 @@ body:not(.social-ad-open) .social-ad:not(.on){
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M8 3v4M16 3v4M3 10h18"/><path d="M9 14.5h2.5"/></svg>
     </button>
     <button type="button" class="wifibtn" id="socialBtn" aria-label="social">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3.5 9h17M3.5 15h17"/><path d="M12 3c2.5 3 2.5 15 0 18M12 3c-2.5 3-2.5 15 0 18"/></svg>
+      <img class="social-img" src="media/social/social.svg" alt="" aria-hidden="true">
     </button>
     <button type="button" class="wifibtn" id="wifiBtn" aria-label="wifi">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8.5a15 15 0 0 1 20 0"/><path d="M5 12a10 10 0 0 1 14 0"/><path d="M8.5 15.5a5 5 0 0 1 7 0"/><circle cx="12" cy="19" r="1"/></svg>
@@ -2661,6 +2664,19 @@ function checkoutIcon(kind){
   };
   return `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${(paths[kind]||paths.send).split('|').map(d=>`<path d="${d}"/>`).join('')}</svg>`;
 }
+const SOCIAL_ICON_SRC = {
+  instagram:'media/social/instagram.svg',
+  facebook:'media/social/facebook.svg',
+  maps:'media/social/maps.svg',
+  website:'media/social/website.svg',
+  whatsapp:'media/social/whatsapp.svg',
+  telegram:'media/social/telegram.svg',
+  social:'media/social/social.svg'
+};
+function socialIcon(kind){
+  const src=SOCIAL_ICON_SRC[kind] || SOCIAL_ICON_SRC.social;
+  return `<img class="social-img ic" src="${src}" alt="" aria-hidden="true" loading="lazy">`;
+}
 
 /* ═══════════════ send to kitchen (guarded) ═══════════════ */
 let sendBusy=false;
@@ -2861,23 +2877,23 @@ function renderSocial(){
   document.getElementById('socialT').textContent=T('social');
   document.getElementById('socialSub').textContent=T('socialSub');
   const links=[
-    ['Instagram', CONTACT.instagram, 'social'],
-    ['Facebook', CONTACT.facebook, 'social'],
-    [T('maps'), CONTACT.maps, 'qr'],
-    [T('website'), CONTACT.website, 'hand'],
+    ['Instagram', CONTACT.instagram, 'instagram'],
+    ['Facebook', CONTACT.facebook, 'facebook'],
+    [T('maps'), CONTACT.maps, 'maps'],
+    [T('website'), CONTACT.website, 'website'],
   ];
   const cards=links.map(([label,url,ic])=>[label,safeUrl(url),ic]).filter(([,href])=>href);
-  document.getElementById('socialGrid').innerHTML=(cards.length?cards:[[T('maps'), safeUrl(CONTACT.maps), 'qr']]).filter(([,href])=>href).map(([label,href,ic])=>{
+  document.getElementById('socialGrid').innerHTML=(cards.length?cards:[[T('maps'), safeUrl(CONTACT.maps), 'maps']]).filter(([,href])=>href).map(([label,href,ic])=>{
     return `<a class="social-card" href="${href}" target="_blank" rel="noopener">
-      ${checkoutIcon(ic)}<span>${esc(label)}</span>
+      ${socialIcon(ic)}<span>${esc(label)}</span>
     </a>`;
   }).join('');
 }
 function socialAdLinks(){
   return [
-    ['Instagram', CONTACT.instagram, 'social', true],
-    ['Facebook', CONTACT.facebook, 'social', false],
-    [T('maps'), CONTACT.maps, 'qr', false],
+    ['Instagram', CONTACT.instagram, 'instagram', true],
+    ['Facebook', CONTACT.facebook, 'facebook', false],
+    [T('maps'), CONTACT.maps, 'maps', false],
   ].map(([label,url,ic,primary])=>[label,safeUrl(url),ic,primary]).filter(([,href])=>href);
 }
 function closeSocialAd(remember=true){
@@ -2911,7 +2927,7 @@ function showSocialAd(){
   const links=socialAdLinks();
   if(!links.length) return;
   document.getElementById('socialAdActions').innerHTML=links.map(([label,href,ic,primary])=>
-    `<a class="${primary?'primary':''}" href="${href}" target="_blank" rel="noopener" data-social-ad-go>${checkoutIcon(ic)}<span>${esc(label)}</span></a>`
+    `<a class="${primary?'primary':''}" href="${href}" target="_blank" rel="noopener" data-social-ad-go>${socialIcon(ic)}<span>${esc(label)}</span></a>`
   ).join('');
   ad.querySelectorAll('[data-social-ad-go]').forEach(a=>a.addEventListener('click',()=>closeSocialAd(true),{once:true}));
   document.body.classList.add('social-ad-open');
