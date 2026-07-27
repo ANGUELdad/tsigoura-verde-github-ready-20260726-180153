@@ -1459,6 +1459,50 @@ body:not(.social-ad-open) .social-ad:not(.on){
   opacity:0!important;
   pointer-events:none!important;
 }
+/* SINGLE VERTICAL SCROLL OWNER:
+   The document scrolls. The menu root, wrappers, and category area do not
+   become their own vertical scroll panes. This prevents the mobile “stuck
+   between category rail and menu” gesture bug. */
+html{
+  overflow-x:clip!important;
+  overflow-y:auto!important;
+  overscroll-behavior-y:auto!important;
+  -webkit-overflow-scrolling:touch!important;
+}
+body{
+  overflow-x:clip!important;
+  overflow-y:visible!important;
+  min-height:100%!important;
+  height:auto!important;
+  overscroll-behavior-y:auto!important;
+}
+.wrap,#root,main,#stripSlot,#announceSlot,#viewSwitch,.updates,.sec,.closing{
+  height:auto!important;
+  max-height:none!important;
+  min-height:0!important;
+  overflow-y:visible!important;
+  overflow-x:clip!important;
+  overscroll-behavior:initial!important;
+  -webkit-overflow-scrolling:auto!important;
+}
+.nav{
+  overflow:visible!important;
+  overflow-x:clip!important;
+  overflow-y:visible!important;
+  contain:none!important;
+}
+.nav .row{
+  overflow-x:auto!important;
+  overflow-y:clip!important;
+  overscroll-behavior-x:contain!important;
+  overscroll-behavior-y:auto!important;
+  -webkit-overflow-scrolling:touch!important;
+  touch-action:pan-y!important;
+}
+.sheet,.panel .pbody{
+  overflow-y:auto!important;
+  -webkit-overflow-scrolling:touch!important;
+}
 @media(min-width:900px){
   :root{--maxw:min(760px,calc(100vw - 64px));}
   .wrap,.head{margin-left:auto!important;margin-right:auto!important;}
