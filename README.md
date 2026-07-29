@@ -14,9 +14,7 @@ Ready to upload to **Vercel**. No build step. The menu works as a static site; b
 | `api/book.js` | `/api/book` | Booking email endpoint via Resend |
 | `api/admin-login.js` | `/api/admin-login` | Admin PIN check from Vercel env |
 | `api/public-config.js` | `/api/public-config` | Public contact/Wi-Fi/legal config from env |
-| `api/menu.js` | `/api/menu` | Public menu snapshot from Supabase |
-| `api/admin-menu.js` | `/api/admin-menu` | Admin save/load endpoint for Supabase |
-| `supabase/schema.sql` | — | Supabase tables + RLS setup |
+| `menu-live.js` | — | **The published menu.** Generated from /admin |
 | `.env.example` | — | Environment variable template |
 | `vercel.json` | — | Clean URLs + cache headers |
 
@@ -33,23 +31,56 @@ Add these in Vercel: **Project → Settings → Environment Variables**. Use `.e
 - `BOOKING_TO_EMAIL` or `BOOKING_EMAIL` — where booking requests should arrive
 - `BOOKING_FROM_EMAIL` or `RESEND_FROM_EMAIL` — verified sender, e.g. `Tsigoura Verde Resort <bookings@yourdomain.gr>`
 - `ADMIN_PIN` — the real admin/waiter PIN
-- `SUPABASE_URL` — your Supabase project URL
-- `SUPABASE_SERVICE_ROLE_KEY` — server-only Supabase service role/secret key
-- `SUPABASE_MENU_TABLE` — default: `tv_menu_state`
 - `PUBLIC_PHONE`, `PUBLIC_BOOKING_EMAIL`, `PUBLIC_INSTAGRAM`, `PUBLIC_FACEBOOK`, `PUBLIC_MAPS_URL`, `PUBLIC_WEBSITE_URL`
 - `PUBLIC_WIFI_SSID`, `PUBLIC_WIFI_PASS`, `PUBLIC_WIFI_ENC`
 - `PUBLIC_COMPANY_NAME`, `PUBLIC_AFM`, `PUBLIC_DOY`, `PUBLIC_GEMI`, `PUBLIC_ADDRESS`, `PUBLIC_MHTE`, `PUBLIC_AGORANOMIKOS`
 
 If Resend is not configured yet, `/book` falls back to a prefilled email draft so customers are not trapped on a dead form.
 
-## Supabase menu database
-1. Create a Supabase project.
-2. Open **SQL Editor** and run `supabase/schema.sql`.
-3. In Vercel, add `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `ADMIN_PIN`.
-4. Open `/admin`, log in, go to **Ρυθμίσεις → Supabase βάση δεδομένων**, and press **Αποθήκευση στη βάση** once. That seeds the database with the current menu.
-5. After that, customer `/` loads the menu from `/api/menu`, and admin edits auto-save to `/api/admin-menu`.
+## Live menu database (no keys to copy)
 
-The browser never receives the Supabase service role key; it stays inside Vercel functions.
+Admin changes reach every phone **immediately, with no redeploy**. Setup is three
+clicks and you never handle a secret:
+
+1. Vercel → your project → **Storage** tab
+2. **Create Database** → choose **KV** → attach it to this project
+3. **Redeploy** once
+
+Vercel injects `KV_REST_API_URL` and `KV_REST_API_TOKEN` automatically — there is
+nothing to copy or paste.
+
+Then set **`ADMIN_PIN`** in *Settings → Environment Variables*. This one is
+required: without it live saving is blocked, otherwise anyone who found the URL
+could rewrite your menu.
+
+Open **`/api/status`** at any time — it tells you exactly what is still missing.
+
+### How it behaves
+| | What customers get |
+|---|---|
+| KV attached + `ADMIN_PIN` set | Every admin edit is live on the next page load |
+| No KV attached | The published `menu-live.js` file, else the built-in catalogue |
+
+The badge in the admin header always says which mode you are in:
+
+| Badge | Meaning |
+|---|---|
+| **Ζωντανά σε όλες τις συσκευές** (green) | Saving to the database. Customers see changes immediately. |
+| **⚠ Λείπει ADMIN_PIN** (red) | Database is connected but writes are blocked. Set `ADMIN_PIN`. |
+| **⚠ Χωρίς βάση · μόνο τοπικά** (amber) | No database. Publish with *Κατέβασμα menu-live.js* instead. |
+
+### Fallback: publishing by file (works with zero setup)
+If you never attach a database, you can still publish:
+**/admin → Ρυθμίσεις → «Κατέβασμα menu-live.js»** → replace `menu-live.js` in the
+project → redeploy. Slower, but needs no account and no configuration.
+
+### Menu resolution order
+1. `/api/menu` — the live database
+2. `menu-live.js` — the published file
+3. `tsigoura-data.js` — the built-in catalogue
+
+If the database is unreachable the menu silently falls back, so guests never see
+a blank page.
 
 ## Booking page
 Share this link anywhere:
@@ -70,6 +101,6 @@ Guests tap the Wi-Fi icon in the menu header → a **join QR** (camera auto-conn
 
 ## Important notes
 - This package ships in **traditional e-menu mode by default** for today's upload: guests see menu, availability, event banner, booking, socials, Wi-Fi, and legal info. The ordering systems can be re-enabled from `/admin → Ρυθμίσεις`.
-- Without Supabase env vars, menu/admin edits still fall back to each device's `localStorage`. With Supabase configured, the database becomes the shared source of truth.
+- Menu edits live in `menu-live.js`. Until you publish it, admin changes stay on the device that made them.
 - Set the real business/legal details, phone, Wi-Fi, booking email, and admin PIN in Vercel env before going public.
 - Local preview fallback admin PIN is `1234`; production should use `ADMIN_PIN`.

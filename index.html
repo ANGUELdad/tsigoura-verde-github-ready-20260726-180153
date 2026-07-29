@@ -958,7 +958,11 @@ body{background:var(--paper)!important;}
 .tab{background:none!important;border:1px solid var(--line)!important;box-shadow:none!important;font-weight:500!important;}
 .tab.on{background:var(--pine)!important;border-color:var(--pine)!important;color:#F3ECD6!important;font-weight:600!important;}
 .search{background:var(--card)!important;box-shadow:none!important;border:1px solid var(--line)!important;border-radius:12px!important;}
-.cta{background:var(--pine)!important;box-shadow:none!important;}
+.cta{box-shadow:none!important;}
+/* only flatten CTAs that do not declare their own inline background —
+   secondary buttons (e.g. "add more") set background+color inline and must
+   keep both, or the text ends up the same colour as the fill. */
+.cta:not([style*="background"]){background:var(--pine)!important;}
 .sheet{box-shadow:0 -10px 40px rgba(20,40,42,.18)!important;}
 .closing .box{background:none!important;border:0!important;border-top:1px solid var(--line)!important;
   border-radius:0!important;padding:14px 0 0!important;}
@@ -1941,7 +1945,8 @@ body.sheet-open .head{
 
 <div class="toast" id="toast"></div>
 
-<script src="tsigoura-data.js?v=20260727-supabase-v13"></script>
+<script src="tsigoura-data.js?v=20260727-script-publish-v1"></script>
+<script src="menu-live.js?v=20260727-script-publish-v1"></script>
 <script src="tsigoura-menu-icons.js?v=20260727-owner-media-controls-v2"></script>
 <script src="tsigoura-qr.js"></script>
 <script>
@@ -1973,12 +1978,18 @@ async function hydratePublicConfig(){
     if(cfg.wifi) Object.keys(WIFI).forEach(k=>{ if(cfg.wifi[k]) WIFI[k]=String(cfg.wifi[k]); });
     normalizeWifiConfig();
     if(cfg.legal && VENUE.legal) Object.keys(VENUE.legal).forEach(k=>{ if(cfg.legal[k]) VENUE.legal[k]=String(cfg.legal[k]); });
-    if(cfg.settings && S && S.settings){
-      ['serviceOpen','acceptOrders','traditionalMenuOnly'].forEach(k=>{
-        if(typeof cfg.settings[k]==='boolean') S.settings[k]=cfg.settings[k];
-      });
-    }
+    /* Env settings are DEFAULTS only. The published menu (menu-live.js) must
+       win, otherwise a guest's phone always falls back to the env value and
+       the cart never appears no matter what the admin publishes. */
+    if(cfg.settings) ENV_SETTINGS=cfg.settings;
   }catch(e){}
+}
+let ENV_SETTINGS=null;
+function applyEnvSettings(){
+  if(!ENV_SETTINGS || !S || !S.settings) return;
+  ['serviceOpen','acceptOrders','traditionalMenuOnly'].forEach(k=>{
+    if(typeof ENV_SETTINGS[k]==='boolean') S.settings[k]=ENV_SETTINGS[k];
+  });
 }
 function applyModeOverride(){
   let mode='', online='';
@@ -2147,18 +2158,34 @@ let q = '';
    { lid, id, qty, removed:[idx…] (into item.removable), note:'' } */
 let cart = [];
 
-async function hydrateRemoteMenu(){
+/* Live menu resolution, best source first:
+     1. /api/menu      — the shared store (admin changes appear immediately)
+     2. menu-live.js   — the published file (works with zero setup)
+     3. tsigoura-data.js — the built-in catalogue
+*/
+function usePublishedFile(){
   try{
-    const r=await fetch('/api/menu',{cache:'no-store'});
-    if(!r.ok) return false;
-    const data=await r.json();
-    if(!data || !data.ok || !data.state) return false;
-    const remote=normalizeState(data.state);
-    if(data.revision && remote.settings) remote.settings.cacheRevision=Number(data.revision)||remote.settings.cacheRevision;
-    S=remote;
+    const published = (typeof window!=='undefined') ? window.TV_MENU_STATE : null;
+    if(!published || !Array.isArray(published.menu) || !published.menu.length) return false;
+    S = normalizeState(JSON.parse(JSON.stringify(published)));
     saveState(S);
     return true;
   }catch(e){ return false; }
+}
+async function hydrateRemoteMenu(){
+  try{
+    const r=await fetch('/api/menu',{cache:'no-store'});
+    if(r.ok){
+      const data=await r.json();
+      if(data && data.ok && data.state && Array.isArray(data.state.menu) && data.state.menu.length){
+        S=normalizeState(data.state);
+        if(data.revision && S.settings) S.settings.cacheRevision=Number(data.revision)||S.settings.cacheRevision;
+        saveState(S);
+        return true;
+      }
+    }
+  }catch(e){}
+  return usePublishedFile();
 }
 let activeCat = null;
 let specialMenuActive = false;
@@ -3865,9 +3892,14 @@ function renderAnnounce(){
   const slot=document.getElementById('announceSlot'); if(!slot) return;
   const A=activeAnnouncement();
   if(q.trim() || !A || !A.on){ slot.innerHTML=''; return; }
-  const today=new Date(); today.setHours(0,0,0,0);
-  const from=A.from?new Date(A.from+'T00:00:00'):null, to=A.to?new Date(A.to+'T23:59:59'):null;
-  if((from && today<from) || (to && today>to)){ slot.innerHTML=''; return; }
+  /* Compare plain YYYY-MM-DD in the VENUE's local time. Building Dates from
+     UTC-derived strings shifted the window by a day in Greece (UTC+3), which
+     silently hid announcements on the day they were meant to run. */
+  const pad=n=>String(n).padStart(2,'0');
+  const now=new Date();
+  const todayStr=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());
+  const fromStr=String(A.from||'').slice(0,10), toStr=String(A.to||'').slice(0,10);
+  if((fromStr && todayStr<fromStr) || (toStr && todayStr>toStr)){ slot.innerHTML=''; return; }
   const t=(A.t&&(A.t[lang]||A.t.en))||null; if(!t || (!String(t.title||'').trim() && !String(t.body||'').trim())){ slot.innerHTML=''; return; }
   const img = (typeof MEDIA!=='undefined' && (MEDIA.souvles||MEDIA.hero)) ? `url('${MEDIA.souvles||MEDIA.hero}')` : 'none';
   slot.innerHTML=`<button class="announce" type="button" id="announceGo" data-special-open data-admin-announcement="1" style="--ann-img:${img}">
@@ -4020,7 +4052,8 @@ function apply(){
 }
 async function boot(){
   await hydratePublicConfig();
-  await hydrateRemoteMenu();
+  const remoteOk = await hydrateRemoteMenu();
+  if(!remoteOk) applyEnvSettings();   /* fallback only — menu-live.js is the source of truth */
   applyModeOverride();
   if(!handleHandoff()){
     

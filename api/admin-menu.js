@@ -1,61 +1,50 @@
-const { configured, readMenuState, writeMenuState, adminPinOk, clean } = require('./_supabase');
+const { configured, readMenu, writeMenu, adminPinOk, adminPinConfigured, clean } = require('./_store');
 
-const attempts = globalThis.__tvAdminMenuAttempts || (globalThis.__tvAdminMenuAttempts = new Map());
+const attempts = globalThis.__tvMenuAttempts || (globalThis.__tvMenuAttempts = new Map());
 const ipOf = req => clean((req.headers && (req.headers['x-forwarded-for'] || req.headers['x-real-ip'])) || 'local', 120).split(',')[0].trim() || 'local';
 
-function tooManyAttempts(key) {
-  const now = Date.now();
-  const windowMs = 5 * 60 * 1000;
+function tooMany(key) {
+  const now = Date.now(), windowMs = 5 * 60 * 1000;
   const recent = (attempts.get(key) || []).filter(t => now - t < windowMs);
-  recent.push(now);
-  attempts.set(key, recent);
-  return recent.length > 30;
+  recent.push(now); attempts.set(key, recent);
+  return recent.length > 60;
 }
 
-function payload(req) {
+function body(req) {
   return typeof req.body === 'object' && req.body ? req.body : JSON.parse(req.body || '{}');
 }
 
-function smallState(state) {
-  const text = JSON.stringify(state || {});
-  if (text.length > 2_000_000) {
-    const err = new Error('state_too_large');
-    err.status = 413;
-    throw err;
-  }
-  return JSON.parse(text);
-}
-
+/* GET  /api/admin-menu — read back (PIN)
+   POST /api/admin-menu — save the live menu (PIN). Takes effect immediately. */
 module.exports = async function handler(req, res) {
-  if (!['GET', 'POST'].includes(req.method)) {
+  if (!['GET','POST'].includes(req.method)) {
     res.setHeader('Allow', 'GET, POST');
     return res.status(405).json({ ok:false, error:'method_not_allowed' });
   }
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
   try {
-    if (!configured()) return res.status(503).json({ ok:false, configured:false, error:'supabase_not_configured' });
+    if (!configured()) return res.status(503).json({ ok:false, configured:false, error:'store_not_configured' });
+    if (!adminPinConfigured()) return res.status(503).json({ ok:false, configured:true, error:'admin_pin_not_set' });
 
-    const body = req.method === 'POST' ? payload(req) : req.query || {};
-    const ip = ipOf(req);
-    if (tooManyAttempts(ip)) return res.status(429).json({ ok:false, error:'too_many_attempts' });
-    if (!adminPinOk(body.pin || body.password)) return res.status(401).json({ ok:false, error:'wrong_pin' });
+    const data = req.method === 'POST' ? body(req) : (req.query || {});
+    if (tooMany(ipOf(req))) return res.status(429).json({ ok:false, error:'too_many_attempts' });
+    if (!adminPinOk(data.pin || data.password)) return res.status(401).json({ ok:false, error:'wrong_pin' });
 
     if (req.method === 'GET') {
-      const row = await readMenuState();
-      return res.status(200).json({ ok:true, configured:true, state:row && row.state, revision:row && row.revision, updatedAt:row && row.updated_at });
+      const doc = await readMenu();
+      return res.status(200).json({ ok:true, configured:true, state:doc && doc.state, revision:doc && doc.revision, updatedAt:doc && doc.updatedAt });
     }
 
-    const state = smallState(body.state);
+    const state = data.state;
     if (!state || !Array.isArray(state.menu) || !Array.isArray(state.categories) || !state.settings) {
       return res.status(400).json({ ok:false, error:'invalid_state' });
     }
-    const row = await writeMenuState(state, { revision:body.revision || Date.now(), updatedBy:ip });
-    return res.status(200).json({ ok:true, configured:true, revision:row.revision, updatedAt:row.updated_at });
+    if (JSON.stringify(state).length > 2_000_000) {
+      return res.status(413).json({ ok:false, error:'state_too_large' });
+    }
+    const doc = await writeMenu(state, { revision:data.revision, updatedBy:ipOf(req) });
+    return res.status(200).json({ ok:true, configured:true, revision:doc.revision, updatedAt:doc.updatedAt });
   } catch (err) {
-    return res.status(err.status || 500).json({
-      ok:false,
-      error:err.message || 'server_error',
-      detail:String(err.detail || '').slice(0, 300),
-    });
+    return res.status(err.status || 500).json({ ok:false, error:err.message || 'server_error', detail:String(err.detail||'').slice(0,200) });
   }
 };

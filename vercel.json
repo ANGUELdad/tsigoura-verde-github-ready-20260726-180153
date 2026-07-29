@@ -22,13 +22,13 @@
       ]
     },
     {
-      "source": "/tsigoura-data.js",
+      "source": "/(tsigoura-data|menu-live).js",
       "headers": [
         { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" }
       ]
     },
     {
-      "source": "/api/(public-config|menu|admin-menu)",
+      "source": "/api/(public-config|status|menu|admin-menu)",
       "headers": [
         { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" }
       ]
