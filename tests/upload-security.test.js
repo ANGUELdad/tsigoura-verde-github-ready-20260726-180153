@@ -56,6 +56,16 @@ const upload = require('../api/admin-upload');
   assert.equal(result.body.error,'image_too_large');
 
   delete process.env.BLOB_READ_WRITE_TOKEN;
+  process.env.BLOB_STORE_ID='store_oidc_test';
+  result=await invoke(upload,{headers:{
+    'x-admin-pin':process.env.ADMIN_PIN,
+    'content-type':'application/pdf',
+    'content-length':'100'
+  }});
+  assert.equal(result.status,415);
+  assert.equal(result.body.error,'unsupported_image_type');
+
+  delete process.env.BLOB_STORE_ID;
   delete process.env.ADMIN_PIN;
   result=await invoke(upload,{headers:{
     'x-admin-pin':'anything',
@@ -65,7 +75,7 @@ const upload = require('../api/admin-upload');
   assert.equal(result.status,503);
   assert.equal(result.body.error,'admin_pin_not_set');
 
-  console.log('upload-security: 10/10 assertions passed');
+  console.log('upload-security: 12/12 assertions passed');
 })().catch(error=>{
   console.error(error);
   process.exitCode=1;

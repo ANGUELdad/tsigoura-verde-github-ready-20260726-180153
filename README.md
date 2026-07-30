@@ -114,9 +114,11 @@ required: without it live saving is blocked, otherwise anyone who found the URL
 could rewrite your menu.
 
 For uploads from a phone or computer, add **Blob** from the same Vercel Storage
-tab and redeploy. Vercel injects `BLOB_READ_WRITE_TOKEN`; the owner then picks a
-JPG, PNG, WebP, or AVIF directly in **Μενού → Pro**. Local paths and full URLs
-remain available beside the upload control.
+tab and redeploy. New stores use Vercel's automatically rotating OIDC
+authentication (`BLOB_STORE_ID`); older stores using `BLOB_READ_WRITE_TOKEN`
+remain supported. The owner then picks a JPG, PNG, WebP, or AVIF directly in
+**Μενού → Pro**. Local paths and full URLs remain available beside the upload
+control.
 
 Open **`/api/status`** at any time — it tells you exactly what is still missing.
 

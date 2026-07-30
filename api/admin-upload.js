@@ -54,7 +54,7 @@ module.exports = async function handler(req, res) {
     record(ip);
     return res.status(401).json({ ok:false, error:'wrong_pin' });
   }
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+  if (!process.env.BLOB_READ_WRITE_TOKEN && !process.env.BLOB_STORE_ID) {
     return res.status(503).json({ ok:false, error:'blob_not_configured' });
   }
 
@@ -73,7 +73,6 @@ module.exports = async function handler(req, res) {
       access: 'public',
       addRandomSuffix: true,
       contentType: type,
-      token: process.env.BLOB_READ_WRITE_TOKEN,
     });
     record(ip);
     return res.status(201).json({ ok:true, url:blob.url, pathname:blob.pathname });

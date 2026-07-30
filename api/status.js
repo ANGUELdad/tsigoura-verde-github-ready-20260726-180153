@@ -32,9 +32,10 @@ module.exports = async function handler(req, res) {
     },
     adminPinSet: present('ADMIN_PIN') || present('ADMIN_PASSWORD') || present('TSIGOURA_ADMIN_PIN'),
     imageUploads: {
-      configured: present('BLOB_READ_WRITE_TOKEN'),
+      configured: present('BLOB_READ_WRITE_TOKEN') || present('BLOB_STORE_ID'),
       kind: 'vercel-blob',
-      howToEnable: 'Vercel → Storage → Create → Blob. The token is added automatically; redeploy once.',
+      auth: present('BLOB_STORE_ID') ? 'oidc' : present('BLOB_READ_WRITE_TOKEN') ? 'read-write-token' : 'not-configured',
+      howToEnable: 'Vercel → Storage → Create → Blob. Vercel connects it with short-lived OIDC credentials automatically; redeploy once.',
     },
     menuMode: {
       serviceOpen: String(process.env.PUBLIC_SERVICE_OPEN ?? 'true'),
