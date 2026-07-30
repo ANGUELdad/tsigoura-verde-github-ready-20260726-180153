@@ -35,6 +35,22 @@ Ready to upload to **Vercel**. No build step. The menu works as a static site; b
   leaves a blank icon.
 - Guest phones already open on the menu check for live revisions in the
   background and refresh when the guest is not interacting with a sheet.
+- Pro mode can schedule any dish for an inclusive **from / until** date window.
+  Outside that window the dish disappears everywhere—list, search,
+  recommendations, and cart—and an empty category hides automatically.
+- **Ρυθμίσεις → Event presets** saves the complete current menu as a named
+  scenario, including hidden/available states, dish schedules, categories, and
+  announcement. Applying a preset is one click, confirmed, and fully undoable.
+- Phones left open across midnight re-evaluate schedules automatically, using
+  the restaurant's local date rather than UTC.
+
+### Owner workflow for events
+
+1. In **Μενού → Pro**, set each event dish's visibility dates and save it.
+2. In **Ρυθμίσεις → Event presets**, name and save the complete setup.
+3. Save the normal everyday menu as another preset.
+4. Apply either preset before service. If anything looks wrong, press
+   **Αναίρεση** immediately.
 
 ## Deploy (2 minutes)
 1. Install once: `npm i -g vercel`

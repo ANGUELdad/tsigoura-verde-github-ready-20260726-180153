@@ -2219,7 +2219,8 @@ function headerActions(){
 }
 function actionEnabled(key){ return headerActions()[key] !== false; }
 const canOrder = () => S.settings.serviceOpen && S.settings.acceptOrders && !isTraditional();
-const canAdd = i => !i.hidden && i.available && canOrder() && i.price>0;
+const isGuestVisible = i => dishGuestVisible(i);
+const canAdd = i => isGuestVisible(i) && i.available && canOrder() && i.price>0;
 const tx = i => {
   const t=(i&&i.t)||{};
   const v=t[lang]||t.en||t.el||{};
@@ -2322,8 +2323,8 @@ function renderHero(){
   if(!slot) return;
   if(q.trim()){ slot.innerHTML=''; return; }
   if(design().showFeaturedHero===false){ slot.innerHTML=''; return; }
-  const pick = S.menu.find(i=>!i.hidden && i.cat==='meat' && i.available && i.price>0)
-            || S.menu.find(i=>!i.hidden && i.available && i.price>0);
+  const pick = S.menu.find(i=>isGuestVisible(i) && i.cat==='meat' && i.available && i.price>0)
+            || S.menu.find(i=>isGuestVisible(i) && i.available && i.price>0);
   if(!pick){ slot.innerHTML=''; return; }
   const t = tx(pick);
   const sub = t.d ? esc(t.d) : '';
@@ -2372,7 +2373,7 @@ function renderQuickFlow(){
 function renderCategoryMosaic(){
   const slot=document.getElementById('categoryMosaic'); if(!slot) return;
   if(q.trim()){ slot.className=''; slot.innerHTML=''; return; }
-  const cats=activeMenuCats().filter(c=>!c.hidden && S.menu.some(i=>i.cat===c.id&&!i.hidden));
+  const cats=activeMenuCats().filter(c=>!c.hidden && S.menu.some(i=>i.cat===c.id&&isGuestVisible(i)));
   if(!cats.length){ slot.className=''; slot.innerHTML=''; return; }
   slot.className='cat-mosaic';
   slot.innerHTML=cats.map((c,ix)=>{
@@ -2435,7 +2436,7 @@ function renderTabs(){
   const row=document.getElementById('tabs');
   if(!row) return;
   row.innerHTML='';
-  const cats=activeMenuCats().filter(c=>!c.hidden && S.menu.some(i=>i.cat===c.id&&!i.hidden&&matches(i)));
+  const cats=activeMenuCats().filter(c=>!c.hidden && S.menu.some(i=>i.cat===c.id&&isGuestVisible(i)&&matches(i)));
   const shouldShow=menuView()==='list' && !cleanSearch(searchValue()) && cats.length > 1 && !document.body.classList.contains('sheet-open');
   document.body.classList.toggle('no-category-tabs', !shouldShow);
   if(!shouldShow) return;
@@ -2601,7 +2602,7 @@ function matches(i){
   return itemSearchHaystack(i).includes(s);
 }
 function firstMatchingCategory(){
-  return activeMenuCats().find(c=>!c.hidden && S.menu.some(i=>!i.hidden&&i.cat===c.id&&matches(i))); 
+  return activeMenuCats().find(c=>!c.hidden && S.menu.some(i=>isGuestVisible(i)&&i.cat===c.id&&matches(i)));
 }
 function syncSearch(force){
   const next=searchValue();
@@ -2635,7 +2636,7 @@ function wireMenuRootActions(root){
   root.querySelectorAll('[data-special-exit]').forEach(b=>b.onclick=exitSpecialMenu);
 }
 function guideCategories(){
-  return activeMenuCats().filter(c=>!c.hidden && S.menu.some(i=>!i.hidden&&i.cat===c.id&&matches(i))); 
+  return activeMenuCats().filter(c=>!c.hidden && S.menu.some(i=>isGuestVisible(i)&&i.cat===c.id&&matches(i)));
 }
 function setGuideCategory(id){
   const cats=guideCategories();
@@ -2713,7 +2714,7 @@ function guidePickerHTML(cats,current,ix){
   </div>`;
 }
 function guideSectionHTML(c,ix,cats){
-  const items=S.menu.filter(i=>!i.hidden&&i.cat===c.id&&matches(i));
+  const items=S.menu.filter(i=>isGuestVisible(i)&&i.cat===c.id&&matches(i));
   const pick=items.find(i=>i.available&&i.price>0) || items[0];
   const rest=items.filter(i=>i!==pick);
   const acc=[c.accent||CAT_ACC[ix%CAT_ACC.length][0], c.tint||CAT_ACC[ix%CAT_ACC.length][1]];
@@ -2775,7 +2776,7 @@ function renderList(){
   const root=document.getElementById('root'); let html='',any=false,num=0;
   activeMenuCats().forEach(c=>{
     if(c.hidden) return;
-    const items=S.menu.filter(i=>!i.hidden&&i.cat===c.id&&matches(i)); if(!items.length)return; any=true; num++;
+    const items=S.menu.filter(i=>isGuestVisible(i)&&i.cat===c.id&&matches(i)); if(!items.length)return; any=true; num++;
     const n2=String(num).padStart(2,'0');
     const acc=[c.accent||CAT_ACC[(num-1)%CAT_ACC.length][0], c.tint||CAT_ACC[(num-1)%CAT_ACC.length][1]];
     html+=`<section class="sec ${esc(c.id)}" id="sec-${c.id}" data-admin-cat="${esc(c.id)}">
@@ -2970,7 +2971,7 @@ let sendBusy=false;
 function recentSends(){ try{ const a=JSON.parse(safeLS.get(SENDS_KEY)||'[]'); const now=Date.now(); const f=a.filter(t=>now-t<LIMITS.sendsWindowMs); safeLS.set(SENDS_KEY,JSON.stringify(f)); return f; }catch(e){ return []; } }
 function hasRealTable(){ return !!(tableId && tableId!=='—'); }
 function buildCartOrder(){
-  const lines=cart.map(l=>{ const i=itemOf(l.id); if(!(i&&!i.hidden&&i.available&&i.price>0)) return null;
+  const lines=cart.map(l=>{ const i=itemOf(l.id); if(!(i&&isGuestVisible(i)&&i.available&&i.price>0)) return null;
     const maxRem=(i.removable||[]).length;
     return { id:i.id, qty:clampInt(l.qty,1,LIMITS.qtyPerItem),
              removed:(l.removed||[]).filter(x=>x>=0&&x<maxRem),
@@ -3443,10 +3444,10 @@ function answer(s0){
   if(/αλλεργ|allerg|алерг|alerg/i.test(s)) return NOTE('allergensGeneral');
   const pq=s.match(/(\d{1,3})/);
   if(pq && /€|евр|euro|ευρ|под|sub|under|έως/i.test(s)){const lim=parseFloat(pq[1]);
-    const hits=S.menu.filter(i=>!i.hidden&&i.available&&i.price>0&&i.price<=lim).map(i=>`• ${tx(i).n} ${money(i.price)}`);return hits.length?hits.slice(0,10).join('\n'):T('ask');}
+    const hits=S.menu.filter(i=>isGuestVisible(i)&&i.available&&i.price>0&&i.price<=lim).map(i=>`• ${tx(i).n} ${money(i.price)}`);return hits.length?hits.slice(0,10).join('\n'):T('ask');}
   const c=S.categories.find(c=>Object.values(c.t).some(v=>s.includes(String(v).toLowerCase())));
-  if(c){const hits=S.menu.filter(i=>!i.hidden&&i.cat===c.id&&i.available).map(i=>`• ${tx(i).n} ${i.priceText||money(i.price)+unitOf(i)}`);return hits.length?hits.join('\n'):T('ask');}
-  const d=S.menu.find(i=>!i.hidden&&Object.values(i.t).some(v=>v.n&&s.includes(v.n.toLowerCase())));
+  if(c){const hits=S.menu.filter(i=>isGuestVisible(i)&&i.cat===c.id&&i.available).map(i=>`• ${tx(i).n} ${i.priceText||money(i.price)+unitOf(i)}`);return hits.length?hits.join('\n'):T('ask');}
+  const d=S.menu.find(i=>isGuestVisible(i)&&Object.values(i.t).some(v=>v.n&&s.includes(v.n.toLowerCase())));
   if(d) return `${tx(d).n} — ${d.priceText||money(d.price)+unitOf(d)}`+(d.available?'':` (${T('soldOut')})`);
   return T('ask');
 }
@@ -3473,7 +3474,7 @@ function scrollMenuTop(){
     setTimeout(setActiveTab,220);
     return;
   }
-  const first=orderedCats().find(c=>!c.hidden&&S.menu.some(i=>!i.hidden&&i.cat===c.id));
+  const first=orderedCats().find(c=>!c.hidden&&S.menu.some(i=>isGuestVisible(i)&&i.cat===c.id));
   if(first){ activeCat=first.id; setTimeout(setActiveTab,220); }
 }
 function wireTopShortcut(){
@@ -3574,6 +3575,15 @@ function toast(m){
    dish, using the cart, or interacting with another sheet. */
 let lastLiveCheckAt=0;
 let liveCheckBusy=false;
+let renderedScheduleDate=localDateKey();
+function checkScheduleDate(){
+  const today=localDateKey();
+  if(today===renderedScheduleDate) return false;
+  renderedScheduleDate=today;
+  cart=cart.filter(l=>{ const i=itemOf(l.id); return i&&isGuestVisible(i)&&i.available&&i.price>0; });
+  saveCart(); apply();
+  return true;
+}
 function guestIsBusy(){
   return !!document.querySelector('.sheet.on,.scrim.on,#panel.on');
 }
@@ -3593,7 +3603,7 @@ async function checkLiveMenuUpdate(force){
     S=normalizeState(data.state);
     if(S.settings) S.settings.cacheRevision=revision;
     saveState(S);
-    cart=cart.filter(l=>{ const i=itemOf(l.id); return i&&!i.hidden&&i.available&&i.price>0; });
+    cart=cart.filter(l=>{ const i=itemOf(l.id); return i&&isGuestVisible(i)&&i.available&&i.price>0; });
     saveCart();
     apply();
     requestAnimationFrame(()=>window.scrollTo(0,Math.min(y,Math.max(0,document.documentElement.scrollHeight-innerHeight))));
@@ -3609,7 +3619,7 @@ async function checkLiveMenuUpdate(force){
 /* cross-tab sync (admin ↔ menu) */
 window.addEventListener('storage',e=>{
   if(e.key===STORAGE_KEY||e.key===STORAGE_KEY+'_ping'){ S=loadState();
-    cart=cart.filter(l=>{const i=itemOf(l.id);return i&&!i.hidden&&i.available&&i.price>0;}); saveCart(); apply(); }
+    cart=cart.filter(l=>{const i=itemOf(l.id);return i&&isGuestVisible(i)&&i.available&&i.price>0;}); saveCart(); apply(); }
 });
 
 /* ═══════════════ splash (first visit) ═══════════════ */
@@ -4116,15 +4126,15 @@ async function boot(){
     /* first visit → splash + language pick; returning (saved lang) → skip */
     if(safeLS.get('tv_lang')){ const sp=document.getElementById('splash'); sp.classList.add('gone'); sp.style.display='none'; }
     else { buildSplash(); }
-    setInterval(()=>checkLiveMenuUpdate(false),45000);
+    setInterval(()=>{ checkScheduleDate(); checkLiveMenuUpdate(false); },45000);
   }
 }
 boot();
 window.addEventListener('resize',()=>requestAnimationFrame(()=>{ setStickyMetrics(); syncPinnedNav(); }));
 window.addEventListener('orientationchange',()=>setTimeout(()=>{ repairScrollLock('orientation'); setStickyMetrics(); syncPinnedNav(); },220));
 window.addEventListener('pageshow',()=>requestAnimationFrame(()=>{ clearMenuSelection(); forceCloseFloatingUI(); repairScrollLock('pageshow'); setStickyMetrics(); syncPinnedNav(); }));
-window.addEventListener('focus',()=>requestAnimationFrame(()=>{ repairScrollLock('focus'); checkLiveMenuUpdate(false); }));
-document.addEventListener('visibilitychange',()=>{ if(!document.hidden) requestAnimationFrame(()=>{ clearMenuSelection(); repairScrollLock('visible'); setStickyMetrics(); syncPinnedNav(); checkLiveMenuUpdate(false); }); });
+window.addEventListener('focus',()=>requestAnimationFrame(()=>{ repairScrollLock('focus'); checkScheduleDate(); checkLiveMenuUpdate(false); }));
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) requestAnimationFrame(()=>{ clearMenuSelection(); repairScrollLock('visible'); setStickyMetrics(); syncPinnedNav(); checkScheduleDate(); checkLiveMenuUpdate(false); }); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeSocialAd(false); closeSheets(); } });
 document.addEventListener('selectstart',e=>{ if(!canSelectTextTarget(e.target)) e.preventDefault(); },{capture:true});
 document.addEventListener('dragstart',e=>e.preventDefault(),{capture:true});

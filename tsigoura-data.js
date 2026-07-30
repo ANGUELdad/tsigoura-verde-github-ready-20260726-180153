@@ -359,6 +359,7 @@ const DEFAULT_SETTINGS = {
   headerActions:{ booking:false, social:true, wifi:true, language:true },
   design:{ accent:'#38564F', showVisualRail:true, categoryArt:true, motion:'rich', showFeaturedHero:true },
   announcement:JSON.parse(JSON.stringify(DEFAULT_ANNOUNCEMENT)),
+  eventPresets:[],
 };
 
 /* ---------------- state ---------------- */
@@ -402,6 +403,7 @@ function normalizeState(s){
   s.settings.headerActions=Object.assign({}, base.settings.headerActions, s.settings.headerActions||{});
   s.settings.design=Object.assign({}, base.settings.design, s.settings.design||{});
   s.settings.announcement=normalizeAnnouncement(s.settings.announcement||base.settings.announcement);
+  s.settings.eventPresets=normalizeEventPresets(s.settings.eventPresets);
   s.menu=Array.isArray(s.menu)?s.menu:base.menu;
   s.categories=(Array.isArray(s.categories)&&s.categories.length)?s.categories:base.categories;
   s.tables=Array.isArray(s.tables)?s.tables:base.tables;
@@ -431,6 +433,7 @@ function normalizeState(s){
     i.image=cleanAssetPath(i.image);
     i.available = i.available!==false;
     i.hidden = i.hidden===true;   /* the admin panel is authoritative — never force this */
+    i.schedule = normalizeDishSchedule(i.schedule);
     i.allergens = Array.isArray(i.allergens)?i.allergens:[];
     i.removable = Array.isArray(i.removable)?i.removable:[];
     i.t = i.t&&typeof i.t==='object'?i.t:{};
@@ -450,6 +453,59 @@ function cleanAssetPath(v){
   v=v.replace(/^\/+/,'').replace(/\\/g,'/');
   if(v.includes('..')) return '';
   return v.slice(0,180);
+}
+function localDateKey(d){
+  d=d instanceof Date?d:new Date(d||Date.now());
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function cleanDateKey(v){
+  v=String(v||'').trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(v)?v:'';
+}
+function normalizeDishSchedule(v){
+  v=(v&&typeof v==='object')?v:{};
+  let from=cleanDateKey(v.from), to=cleanDateKey(v.to);
+  if(from&&to&&from>to){ const swap=from; from=to; to=swap; }
+  return {enabled:v.enabled===true&&!!(from||to),from,to};
+}
+function dishScheduleStatus(i,at){
+  const schedule=normalizeDishSchedule(i&&i.schedule);
+  const today=localDateKey(at);
+  if(!schedule.enabled) return {enabled:false,active:true,upcoming:false,expired:false,today,schedule};
+  const upcoming=!!(schedule.from&&today<schedule.from);
+  const expired=!!(schedule.to&&today>schedule.to);
+  return {enabled:true,active:!upcoming&&!expired,upcoming,expired,today,schedule};
+}
+function dishGuestVisible(i,at){
+  return !!i&&!i.hidden&&dishScheduleStatus(i,at).active;
+}
+function normalizeEventPresets(value){
+  if(!Array.isArray(value)) return [];
+  const seen=new Set();
+  return value.map((p,ix)=>{
+    if(!p||typeof p!=='object') return null;
+    let id=String(p.id||('preset-'+(ix+1))).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,48);
+    if(!id||seen.has(id)) id='preset-'+(ix+1)+'-'+Date.now().toString(36);
+    seen.add(id);
+    const itemStates=Array.isArray(p.items)?p.items.map(x=>({
+      id:String((x&&x.id)||'').slice(0,40),
+      hidden:!!(x&&x.hidden),
+      available:!(x&&x.available===false),
+      schedule:normalizeDishSchedule(x&&x.schedule)
+    })).filter(x=>x.id):[];
+    const categoryStates=Array.isArray(p.categories)?p.categories.map(x=>({
+      id:String((x&&x.id)||'').slice(0,32),
+      hidden:!!(x&&x.hidden)
+    })).filter(x=>x.id):[];
+    return {
+      id,
+      name:String(p.name||('Preset '+(ix+1))).trim().slice(0,50),
+      createdAt:Number(p.createdAt)||Date.now(),
+      items:itemStates,
+      categories:categoryStates,
+      announcement:normalizeAnnouncement(p.announcement||DEFAULT_ANNOUNCEMENT)
+    };
+  }).filter(Boolean).slice(0,20);
 }
 function normalizeAnnouncement(a){
   const base=JSON.parse(JSON.stringify(DEFAULT_ANNOUNCEMENT));

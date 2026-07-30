@@ -43,8 +43,9 @@ guest scans the table QR:
   legal data in one place.
 - [x] Menu health: missing translations, missing descriptions, media coverage,
   zero-price items, hidden items, and stale announcements.
-- [ ] Scheduled dish availability.
-- [ ] Reusable event presets instead of manually hiding many dishes.
+- [x] Scheduled dish availability, using local calendar dates and automatic
+  refresh on phones that remain open overnight.
+- [x] Reusable, undoable event presets instead of manually hiding many dishes.
 - [ ] Automatic daily backup and a visible change log.
 
 ### Release 3 — guest conversion

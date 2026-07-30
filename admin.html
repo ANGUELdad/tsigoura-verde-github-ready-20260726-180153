@@ -416,6 +416,12 @@ nav.tabs button.on{color:var(--cream);border-bottom-color:var(--gold);}
 .announce-editor .mini-preview b{display:block;font-family:Fraunces,serif;font-size:17px;line-height:1.15;padding-right:34px;}
 .announce-editor .mini-preview span{position:absolute;right:12px;top:10px;font-size:23px;}
 .announce-editor .mini-preview p{font-size:12px;line-height:1.4;margin:5px 0 0;color:rgba(255,248,234,.82);}
+.preset-list{display:grid;gap:8px;margin-top:12px;}
+.preset-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:11px 12px;border-radius:13px;background:rgba(255,255,255,.76);border:1px solid rgba(56,86,79,.12);}
+.preset-card b{display:block;color:var(--forest);font-size:14px;}
+.preset-card small{display:block;color:var(--muted);font-size:10.5px;margin-top:3px;line-height:1.35;}
+.preset-card .preset-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
+.schedule-note{font-size:10.5px;color:var(--muted);line-height:1.4;margin-top:6px;}
 .announce-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
 .announce-actions .btn{flex:1 1 150px;justify-content:center;}
 
@@ -591,6 +597,8 @@ nav.tabs button .ico{width:15px;height:15px;stroke-width:1.9;}
   .setting-row{align-items:flex-start;flex-wrap:wrap;}
   .setting-row .toggle,.setting-row select{margin-left:auto;}
   .announce-actions{display:grid;grid-template-columns:1fr;}
+  .preset-card{grid-template-columns:1fr;}
+  .preset-card .preset-actions{justify-content:flex-start;}
   .qr-card .qbox svg{max-width:100%;height:auto;}
   .toast{max-width:calc(100% - 24px);text-align:center;}
 }
@@ -971,10 +979,12 @@ function localYmd(d){
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 function menuHealth(){
-  const visible=S.menu.filter(i=>!i.hidden);
+  const visible=S.menu.filter(i=>dishGuestVisible(i));
   const hidden=S.menu.length-visible.length;
   const hiddenCats=S.categories.filter(c=>c.hidden).length;
-  const autoEmpty=S.categories.filter(c=>!c.hidden&&!S.menu.some(i=>i.cat===c.id&&!i.hidden)).length;
+  const autoEmpty=S.categories.filter(c=>!c.hidden&&!S.menu.some(i=>i.cat===c.id&&dishGuestVisible(i))).length;
+  const scheduled=S.menu.filter(i=>dishScheduleStatus(i).enabled);
+  const scheduledInactive=scheduled.filter(i=>!dishScheduleStatus(i).active).length;
   const noPrice=visible.filter(i=>Number(i.price)<=0&&!i.priceText).length;
   const noImage=visible.filter(i=>!knownDishImagePath(i)).length;
   const missingNames=visible.filter(i=>LANGUAGES.some(l=>!i.t||!i.t[l.code]||!String(i.t[l.code].n||'').trim())).length;
@@ -982,7 +992,7 @@ function menuHealth(){
   const A=normalizeAnnouncement(S.settings.announcement||{});
   const today=localYmd();
   const staleAnnouncement=!!(A.on&&A.to&&A.to<today);
-  return {visible,hidden,hiddenCats,autoEmpty,noPrice,noImage,missingNames,described,staleAnnouncement};
+  return {visible,hidden,hiddenCats,autoEmpty,scheduled,scheduledInactive,noPrice,noImage,missingNames,described,staleAnnouncement};
 }
 function opsRow(state,title,desc,action,label){
   const icon=state==='ok'?'check':state==='bad'?'close':'warn';
@@ -1025,6 +1035,8 @@ function renderOpsCommand(){
     opsRow(h.noPrice?'bad':'ok','Τιμές καταλόγου',h.noPrice?`${h.noPrice} ορατά πιάτα δεν έχουν τιμή ή κείμενο τιμής.`:'Όλα τα ορατά πιάτα έχουν σαφή τιμή.','menu',h.noPrice?'Διόρθωση':'Μενού'),
     opsRow(h.missingNames?'bad':'ok','Έξι γλώσσες',h.missingNames?`${h.missingNames} πιάτα έχουν κενό όνομα σε κάποια γλώσσα.`:'Όλα τα ορατά ονόματα είναι συμπληρωμένα.','menu',h.missingNames?'Διόρθωση':'Έλεγχος'),
     opsRow(h.noImage?'warn':'ok','Εικόνες πιάτων',h.noImage?`${h.noImage} πιάτα χρησιμοποιούν καθαρό vector fallback.`:'Κάθε ορατό πιάτο έχει αντιστοιχισμένη εικόνα.','menu',h.noImage?'Βελτίωση':'Έλεγχος'),
+    opsRow(h.scheduledInactive?'warn':'ok','Προγραμματισμός',
+      h.scheduled.length?`${h.scheduled.length} προγραμματισμένα · ${h.scheduledInactive} εκτός σημερινού παραθύρου.`:'Δεν υπάρχουν πιάτα με περιορισμό ημερομηνίας.','menu',h.scheduled.length?'Διαχείριση':'Μενού'),
     opsRow(h.staleAnnouncement?'warn':'ok','Ανακοίνωση',h.staleAnnouncement?'Το ενεργό banner έχει λήξει και δεν εμφανίζεται στους πελάτες.':'Δεν υπάρχει ληγμένο ενεργό banner.','announcement',h.staleAnnouncement?'Ενημέρωση':'Ρυθμίσεις'),
     opsRow((h.autoEmpty||h.hiddenCats)?'warn':'ok','Κατηγορίες',
       `${S.categories.length-h.hiddenCats-h.autoEmpty} ορατές · ${h.hiddenCats} κρυφές · ${h.autoEmpty} αυτόματα κενές.`,'menu','Διαχείριση')
@@ -1057,7 +1069,7 @@ function renderOpsCommand(){
       <button data-ops="menu">${ICO.get('bowl')}Επεξεργασία menu</button>
       <button data-ops="refresh">${ICO.get('sparkle')}Νέος έλεγχος</button>
     </div>
-    <div class="ops-local">${h.visible.length} ορατά πιάτα · ${h.hidden} κρυφά · ${h.described} με ελληνική περιγραφή</div>
+    <div class="ops-local">${h.visible.length} ορατά πιάτα σήμερα · ${h.hidden} μη ορατά · ${h.described} με ελληνική περιγραφή</div>
   </section>`;
   root.querySelectorAll('[data-ops]').forEach(b=>b.onclick=()=>runOpsAction(b.dataset.ops));
   hydrateIcons(root); MOT.reveal(root);
@@ -1806,13 +1818,15 @@ function renderEasy(){
     area.appendChild(h);
 
     items.forEach(i=>{
+      const ss=dishScheduleStatus(i);
+      const scheduleText=ss.enabled?(ss.active?'Προγραμματισμένο · live':(ss.upcoming?'Έρχεται '+ss.schedule.from:'Έληξε '+ss.schedule.to)):'';
       const row=document.createElement('div');
-      row.className='easy-row reveal'+(i.available?'':' off')+(i.hidden?' hidden':'');
+      row.className='easy-row reveal'+(i.available?'':' off')+(i.hidden||!ss.active?' hidden':'');
       row.innerHTML=`
         <div class="rico">${ICO.get(i.icon)}</div>
         <div>
           <div class="nm">${itemName(i,'el')}</div>
-          <div class="cat">${itemName(i,'en')}</div>
+          <div class="cat">${itemName(i,'en')}${scheduleText?` · ${scheduleText}`:''}</div>
         </div>
         <div class="spacer"></div>
         <div class="price-edit">
@@ -1820,7 +1834,7 @@ function renderEasy(){
           <input type="number" step="0.10" min="0" value="${i.price.toFixed(2)}" data-price>
           <button class="btn ghost sm pressable" data-plus>${ICO.get('plus')}</button>
         </div>
-        <span class="soldlabel" style="color:${i.hidden?'var(--bad)':(i.available?'var(--ok)':'var(--bad)')}">${i.hidden?'Κρυφό':(i.available?'Διαθέσιμο':'Τελείωσε')}</span>
+        <span class="soldlabel" style="color:${(i.hidden||!ss.active)?'var(--bad)':(i.available?'var(--ok)':'var(--bad)')}">${i.hidden?'Κρυφό':(!ss.active?'Εκτός ημερομηνίας':(i.available?'Διαθέσιμο':'Τελείωσε'))}</span>
         <button class="hidebtn ${i.hidden?'on':''}" data-hide>${i.hidden?'Εμφάνιση':'Απόκρυψη'}</button>
         <div class="toggle ${i.available?'on':''}" data-toggle title="Διαθέσιμο / τελείωσε"></div>`;
       row.querySelector('[data-toggle]').onclick=()=>{ i.available=!i.available; persist(); renderEasy(); };
@@ -1854,7 +1868,7 @@ function renderPro(){
     const id = Math.max(0,...S.menu.map(m=>m.id))+1;
     const blank = { el:{n:'Νέο πιάτο',d:''}, en:{n:'New dish',d:''}, de:{n:'',d:''}, ro:{n:'',d:''}, sr:{n:'',d:''}, bg:{n:'',d:''} };
     S.menu.push({ id, cat:S.categories[0].id, price:0, unit:'portion', icon:'salad', image:'', available:true, popular:false, chefPick:false,
-      veg:false, spicy:false, prepMin:15, allergens:[], removable:[], t:blank });
+      veg:false, spicy:false, prepMin:15, schedule:{enabled:false,from:'',to:''}, allergens:[], removable:[], t:blank });
     persist(); renderPro();
   };
   area.appendChild(addBtn);
@@ -1891,6 +1905,16 @@ function renderPro(){
             <label><input type="checkbox" data-flag="hidden" ${i.hidden?'checked':''}> Κρυφό από πελάτες</label>
           </div>
         </div>
+        <div class="field"><label>Προγραμματισμένη εμφάνιση</label>
+          <div class="checks">
+            <label><input type="checkbox" data-schedule-enabled ${dishScheduleStatus(i).enabled?'checked':''}> Μόνο σε συγκεκριμένες ημερομηνίες</label>
+          </div>
+          <div class="fieldrow">
+            <div><label>Εμφάνιση από</label><input type="date" data-schedule-from value="${ioEsc(dishScheduleStatus(i).schedule.from)}"></div>
+            <div><label>Εμφάνιση έως</label><input type="date" data-schedule-to value="${ioEsc(dishScheduleStatus(i).schedule.to)}"></div>
+          </div>
+          <div class="schedule-note">Έξω από αυτό το παράθυρο το πιάτο εξαφανίζεται αυτόματα. Η κατηγορία κρύβεται επίσης όταν δεν έχει άλλο ορατό πιάτο.</div>
+        </div>
         <div class="field"><label>Αλλεργιογόνα (υποχρεωτικό — Καν. ΕΕ 1169/2011)</label>
           <div class="checks">${Object.entries(ALLERGENS).map(([k,a])=>
             `<label><input type="checkbox" data-alg="${k}" ${(i.allergens||[]).includes(k)?'checked':''}>${ICO.allergen(k)}${a.el}</label>`).join('')}</div>
@@ -1926,6 +1950,11 @@ function renderPro(){
       i.iconOverride = true;
       i.image = cleanAdminPath(box.querySelector('[data-image]').value);
       box.querySelectorAll('[data-flag]').forEach(cb=> i[cb.dataset.flag] = cb.checked );
+      i.schedule=normalizeDishSchedule({
+        enabled:box.querySelector('[data-schedule-enabled]').checked,
+        from:box.querySelector('[data-schedule-from]').value,
+        to:box.querySelector('[data-schedule-to]').value
+      });
       i.allergens = [...box.querySelectorAll('[data-alg]')].filter(cb=>cb.checked).map(cb=>cb.dataset.alg);
       persist(); renderPro(); toast('Αποθηκεύτηκε');
     };
@@ -1948,7 +1977,7 @@ function renderCategoryManager(area){
   const list=wrap.querySelector('.cat-list');
   S.categories.slice().sort((a,b)=>a.order-b.order).forEach((c,ix)=>{
     const used=S.menu.filter(i=>i.cat===c.id).length;
-    const visible=S.menu.filter(i=>i.cat===c.id&&!i.hidden).length;
+    const visible=S.menu.filter(i=>i.cat===c.id&&dishGuestVisible(i)).length;
     const autoHidden=!c.hidden&&visible===0;
     const stateText=c.hidden?'Κρυφή από τον ιδιοκτήτη':autoHidden?'Αυτόματη απόκρυψη · 0 ορατά πιάτα':`${visible} ορατά πιάτα`;
     const stateClass=c.hidden?'off':autoHidden?'auto':'';
@@ -2262,7 +2291,7 @@ function renderPreviewDock(){
   if(sel.type==='category'){
     const c=S.categories.find(x=>String(x.id)===String(sel.id));
     if(!c){ previewSelection=null; renderPreviewDock(); return; }
-    const used=S.menu.filter(i=>i.cat===c.id&&!i.hidden).length;
+    const used=S.menu.filter(i=>i.cat===c.id&&dishGuestVisible(i)).length;
     dock.className='preview-edit-dock';
     dock.innerHTML=`
       <div class="ptop">
@@ -2373,6 +2402,74 @@ function renderQR(){
 $('baseUrl').oninput = ()=>renderQR();
 
 /* ================= SETTINGS ================= */
+function presetSnapshot(name){
+  return {
+    id:'preset-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,6),
+    name:String(name||'Νέο preset').trim().slice(0,50),
+    createdAt:Date.now(),
+    items:S.menu.map(i=>({id:String(i.id),hidden:!!i.hidden,available:i.available!==false,schedule:normalizeDishSchedule(i.schedule)})),
+    categories:S.categories.map(c=>({id:String(c.id),hidden:!!c.hidden})),
+    announcement:normalizeAnnouncement(JSON.parse(JSON.stringify(S.settings.announcement||{})))
+  };
+}
+function presetEditorHTML(){
+  const presets=normalizeEventPresets(S.settings.eventPresets);
+  const cards=presets.map(p=>{
+    const visible=p.items.filter(x=>!x.hidden).length;
+    const scheduled=p.items.filter(x=>dishScheduleStatus(x).enabled).length;
+    const date=new Date(p.createdAt).toLocaleDateString('el-GR',{day:'numeric',month:'short',year:'numeric'});
+    return `<div class="preset-card" data-preset="${ioEsc(p.id)}">
+      <div><b>${ioEsc(p.name)}</b><small>${visible} ορατά πιάτα · ${scheduled} προγραμματισμένα · αποθήκευση ${ioEsc(date)}</small></div>
+      <div class="preset-actions">
+        <button class="btn sm pressable" data-preset-apply="${ioEsc(p.id)}">${ICO.get('sparkle')}Εφαρμογή</button>
+        <button class="btn ghost sm pressable" data-preset-rename="${ioEsc(p.id)}">Μετονομασία</button>
+        <button class="btn danger sm pressable" data-preset-delete="${ioEsc(p.id)}">${ICO.get('trash')}</button>
+      </div>
+    </div>`;
+  }).join('');
+  return `<div class="announce-editor" id="presetEditor">
+    <h3>${ICO.get('layers')}Event presets</h3>
+    <p class="hint">Αποθηκεύστε το σημερινό menu ως έτοιμο σενάριο — π.χ. «Κανονικό», «Κυριακή σούβλας» ή «Private event». Η εφαρμογή επαναφέρει εμφάνιση, διαθεσιμότητα, ημερομηνίες και banner με ένα πάτημα. Κάθε αλλαγή αναιρείται.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <input id="presetName" value="" maxlength="50" placeholder="π.χ. Κανονικό menu" style="flex:1 1 190px;">
+      <button class="btn sm pressable" id="presetSave">${ICO.get('save')}Αποθήκευση τωρινού menu</button>
+    </div>
+    <div class="preset-list">${cards||'<div class="cat-mini">Δεν υπάρχουν presets ακόμη. Ρυθμίστε πρώτα το menu όπως το θέλετε και αποθηκεύστε το.</div>'}</div>
+  </div>`;
+}
+function wirePresetEditor(){
+  const root=$('presetEditor'); if(!root) return;
+  const list=()=>normalizeEventPresets(S.settings.eventPresets);
+  $('presetSave').onclick=()=>{
+    const name=$('presetName').value.trim();
+    if(!name){ $('presetName').focus(); toast('Γράψτε ένα όνομα preset'); return; }
+    S.settings.eventPresets=list();
+    S.settings.eventPresets.push(presetSnapshot(name));
+    persist(); renderSettings(); renderDash(); toast('Το preset αποθηκεύτηκε');
+  };
+  root.querySelectorAll('[data-preset-apply]').forEach(b=>b.onclick=()=>{
+    const p=list().find(x=>x.id===b.dataset.presetApply); if(!p) return;
+    if(!confirm(`Εφαρμογή «${p.name}» στο menu; Μπορείτε να το αναιρέσετε αμέσως.`)) return;
+    const itemMap=new Map(p.items.map(x=>[String(x.id),x]));
+    const catMap=new Map(p.categories.map(x=>[String(x.id),x]));
+    S.menu.forEach(i=>{ const x=itemMap.get(String(i.id)); if(x){ i.hidden=x.hidden; i.available=x.available; i.schedule=normalizeDishSchedule(x.schedule); } });
+    S.categories.forEach(c=>{ const x=catMap.get(String(c.id)); if(x) c.hidden=x.hidden; });
+    S.settings.announcement=normalizeAnnouncement(JSON.parse(JSON.stringify(p.announcement)));
+    persist(); renderAll(); toast(`Εφαρμόστηκε: ${p.name}`);
+  });
+  root.querySelectorAll('[data-preset-rename]').forEach(b=>b.onclick=()=>{
+    const presets=list(), p=presets.find(x=>x.id===b.dataset.presetRename); if(!p) return;
+    const name=prompt('Νέο όνομα preset:',p.name); if(name===null||!name.trim()) return;
+    p.name=name.trim().slice(0,50); S.settings.eventPresets=presets;
+    persist(); renderSettings(); toast('Το preset μετονομάστηκε');
+  });
+  root.querySelectorAll('[data-preset-delete]').forEach(b=>b.onclick=()=>{
+    const presets=list(), p=presets.find(x=>x.id===b.dataset.presetDelete); if(!p) return;
+    if(!confirm(`Διαγραφή preset «${p.name}»;`)) return;
+    S.settings.eventPresets=presets.filter(x=>x.id!==p.id);
+    persist(); renderSettings(); toast('Το preset διαγράφηκε');
+  });
+}
 function announcementEditorHTML(){
   if(!S.settings.announcement) S.settings.announcement=normalizeAnnouncement((typeof DEFAULT_ANNOUNCEMENT!=='undefined')?DEFAULT_ANNOUNCEMENT:null);
   const A=normalizeAnnouncement(S.settings.announcement);
@@ -2482,7 +2579,7 @@ function renderSettings(){
         <button class="btn sm pressable" id="dbPush">${ICO.get('download')}Κατέβασμα menu-live.js</button>
         <button class="btn ghost sm pressable" id="dbCopy">${ICO.get('save')}Αντιγραφή περιεχομένου</button>
       </div>
-    </div>` + announcementEditorHTML() + `
+    </div>` + presetEditorHTML() + announcementEditorHTML() + `
 
     <div class="setting-row">
       <div class="txt"><div class="t" style="display:flex;align-items:center;gap:7px;">${ICO.get('star')}Πρόταση βραδιάς στο αρχικό</div><div class="d">Κρύβει το μεγάλο “Η πρόταση της βραδιάς” από την αρχική οθόνη του menu. Δεν διαγράφει πιάτα.</div></div>
@@ -2508,6 +2605,7 @@ function renderSettings(){
   const dbPush=$('dbPush'); if(dbPush) dbPush.onclick=()=>downloadMenuLive();
   const dbCopy=$('dbCopy'); if(dbCopy) dbCopy.onclick=()=>copyMenuLive();
   $('defLang').onchange=e=>{ S.settings.defaultLang=e.target.value; persist(); };
+  wirePresetEditor();
   wireAnnouncementEditor();
 }
 $('resetBtn').onclick=()=>{ if(confirm('Επαναφορά όλων των demo δεδομένων;')){ resetState(); S=loadState(); renderAll(); toast('Έγινε επαναφορά'); } };
