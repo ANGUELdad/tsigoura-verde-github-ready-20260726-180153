@@ -996,12 +996,13 @@ function menuHealth(){
   const scheduledInactive=scheduled.filter(i=>!dishScheduleStatus(i).active).length;
   const noPrice=visible.filter(i=>Number(i.price)<=0&&!i.priceText).length;
   const noImage=visible.filter(i=>!knownDishImagePath(i)).length;
+  const allergenUnreviewed=visible.filter(i=>!i.allergensReviewed).length;
   const missingNames=visible.filter(i=>LANGUAGES.some(l=>!i.t||!i.t[l.code]||!String(i.t[l.code].n||'').trim())).length;
   const described=visible.filter(i=>i.t&&i.t.el&&String(i.t.el.d||'').trim()).length;
   const A=normalizeAnnouncement(S.settings.announcement||{});
   const today=localYmd();
   const staleAnnouncement=!!(A.on&&A.to&&A.to<today);
-  return {visible,hidden,hiddenCats,autoEmpty,scheduled,scheduledInactive,noPrice,noImage,missingNames,described,staleAnnouncement};
+  return {visible,hidden,hiddenCats,autoEmpty,scheduled,scheduledInactive,noPrice,noImage,allergenUnreviewed,missingNames,described,staleAnnouncement};
 }
 function opsRow(state,title,desc,action,label){
   const icon=state==='ok'?'check':state==='bad'?'close':'warn';
@@ -1044,6 +1045,8 @@ function renderOpsCommand(){
     opsRow(h.noPrice?'bad':'ok','Τιμές καταλόγου',h.noPrice?`${h.noPrice} ορατά πιάτα δεν έχουν τιμή ή κείμενο τιμής.`:'Όλα τα ορατά πιάτα έχουν σαφή τιμή.','menu',h.noPrice?'Διόρθωση':'Μενού'),
     opsRow(h.missingNames?'bad':'ok','Έξι γλώσσες',h.missingNames?`${h.missingNames} πιάτα έχουν κενό όνομα σε κάποια γλώσσα.`:'Όλα τα ορατά ονόματα είναι συμπληρωμένα.','menu',h.missingNames?'Διόρθωση':'Έλεγχος'),
     opsRow(h.noImage?'warn':'ok','Εικόνες πιάτων',h.noImage?`${h.noImage} πιάτα χρησιμοποιούν καθαρό vector fallback.`:'Κάθε ορατό πιάτο έχει αντιστοιχισμένη εικόνα.','menu',h.noImage?'Βελτίωση':'Έλεγχος'),
+    opsRow(h.allergenUnreviewed?'bad':'ok','Έλεγχος αλλεργιογόνων',
+      h.allergenUnreviewed?`${h.allergenUnreviewed} ορατά πιάτα δεν έχουν επιβεβαιωθεί από το κατάστημα.`:'Κάθε ορατό πιάτο έχει ελεγχθεί για δηλωμένα αλλεργιογόνα.','menu',h.allergenUnreviewed?'Έλεγχος':'Μενού'),
     opsRow(h.scheduledInactive?'warn':'ok','Προγραμματισμός',
       h.scheduled.length?`${h.scheduled.length} προγραμματισμένα · ${h.scheduledInactive} εκτός σημερινού παραθύρου.`:'Δεν υπάρχουν πιάτα με περιορισμό ημερομηνίας.','menu',h.scheduled.length?'Διαχείριση':'Μενού'),
     opsRow(h.staleAnnouncement?'warn':'ok','Ανακοίνωση',h.staleAnnouncement?'Το ενεργό banner έχει λήξει και δεν εμφανίζεται στους πελάτες.':'Δεν υπάρχει ληγμένο ενεργό banner.','announcement',h.staleAnnouncement?'Ενημέρωση':'Ρυθμίσεις'),
@@ -1059,7 +1062,7 @@ function renderOpsCommand(){
   const blockers=allRows.match(/ops-row bad/g)||[];
   const warnings=allRows.match(/ops-row warn/g)||[];
   const readinessTitle=blockers.length
-    ? `Χρειάζονται ${blockers.length} βασικές διορθώσεις`
+    ? (blockers.length===1?'Χρειάζεται 1 βασική διόρθωση':`Χρειάζονται ${blockers.length} βασικές διορθώσεις`)
     : warnings.length ? `Έτοιμο με ${warnings.length} ${warnings.length===1?'σύσταση':'συστάσεις'}` : 'Έτοιμο για άνοιγμα';
   root.innerHTML=`<section class="ops-shell reveal">
     <div class="ops-head">
@@ -1128,7 +1131,7 @@ function ownerChangeCounts(before,after){
     if(!!a.hidden!==!!b.hidden)out.visibility++;
     if((a.available!==false)!==(b.available!==false))out.availability++;
     if(stableOwnerValue(a.schedule)!==stableOwnerValue(b.schedule))out.schedules++;
-    const keys=['cat','unit','icon','image','order','t','allergens','removable','popular','chefPick','veg','spicy','prepMin'];
+    const keys=['cat','unit','icon','image','order','t','allergens','allergensReviewed','removable','popular','chefPick','veg','spicy','prepMin'];
     if(keys.some(k=>stableOwnerValue(a[k])!==stableOwnerValue(b[k])))out.content++;
   });
   const oldCats=new Map((Array.isArray(before.categories)?before.categories:[]).map(x=>[String(x&&x.id),x||{}]));
@@ -1977,6 +1980,10 @@ function renderPro(){
           <div class="checks">
             <label><input type="checkbox" data-flag="available" ${i.available?'checked':''}> Διαθέσιμο</label>
             <label><input type="checkbox" data-flag="hidden" ${i.hidden?'checked':''}> Κρυφό από πελάτες</label>
+            <label><input type="checkbox" data-flag="veg" ${i.veg?'checked':''}> Χορτοφαγικό</label>
+            <label><input type="checkbox" data-flag="spicy" ${i.spicy?'checked':''}> Πικάντικο</label>
+            <label><input type="checkbox" data-flag="chefPick" ${i.chefPick?'checked':''}> Πρόταση κουζίνας</label>
+            <label><input type="checkbox" data-flag="popular" ${i.popular?'checked':''}> Δημοφιλές</label>
           </div>
         </div>
         <div class="field"><label>Προγραμματισμένη εμφάνιση</label>
@@ -1990,6 +1997,8 @@ function renderPro(){
           <div class="schedule-note">Έξω από αυτό το παράθυρο το πιάτο εξαφανίζεται αυτόματα. Η κατηγορία κρύβεται επίσης όταν δεν έχει άλλο ορατό πιάτο.</div>
         </div>
         <div class="field"><label>Αλλεργιογόνα (υποχρεωτικό — Καν. ΕΕ 1169/2011)</label>
+          <div class="checks" style="margin-bottom:8px;"><label><input type="checkbox" data-flag="allergensReviewed" ${i.allergensReviewed?'checked':''}> Έγινε έλεγχος από το κατάστημα — ακόμη και αν η σωστή λίστα είναι κενή</label></div>
+          <div class="cat-mini" style="margin-bottom:8px;">Μην ενεργοποιήσετε τον έλεγχο από υπόθεση. Επιβεβαιώστε συνταγή, συσκευασίες και πιθανή διασταυρούμενη επιμόλυνση με την κουζίνα.</div>
           <div class="checks">${Object.entries(ALLERGENS).map(([k,a])=>
             `<label><input type="checkbox" data-alg="${k}" ${(i.allergens||[]).includes(k)?'checked':''}>${ICO.allergen(k)}${a.el}</label>`).join('')}</div>
         </div>

@@ -50,6 +50,12 @@ Ready to upload to **Vercel**. No build step. The menu works as a static site; b
 - Backups work on the current owner device immediately. When KV is attached,
   the same safety history is also stored server-side and protected by
   `ADMIN_PIN`, so recovery does not depend on one browser.
+- Pro mode now records vegetarian, spicy, popular, and chef-pick metadata
+  without creating any new categories. Guests get compact quick filters only
+  for labels the owner has actually used.
+- Allergen exclusion remains locked until **every visible dish** is marked as
+  reviewed by the restaurant. Even then, the guest sees an explicit instruction
+  to tell the waiter; the interface never claims a dish is medically “safe.”
 
 ### Owner workflow for events
 
@@ -66,6 +72,16 @@ Ready to upload to **Vercel**. No build step. The menu works as a static site; b
 3. Confirm only after checking the date and item counts.
 4. If it was the wrong snapshot, press **Αναίρεση**; the state from immediately
    before restoration returns.
+
+### Enabling safe guest filters
+
+1. Keep the existing categories; filters are dish labels, not categories.
+2. In **Μενού → Pro**, mark vegetarian/spicy/chef-pick dishes where appropriate.
+3. For every visible dish, verify the recipe and packaging with the kitchen,
+   select the applicable EU allergens, then mark **Έγινε έλεγχος από το
+   κατάστημα**.
+4. The guest allergen-exclusion control appears automatically only when the
+   entire visible menu has been reviewed. Missing data keeps it hidden.
 
 ## Deploy (2 minutes)
 1. Install once: `npm i -g vercel`

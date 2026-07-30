@@ -101,7 +101,7 @@ function changeCounts(before, after) {
     if (!!a.hidden !== !!b.hidden) out.visibility++;
     if ((a.available !== false) !== (b.available !== false)) out.availability++;
     if (stable(a.schedule) !== stable(b.schedule)) out.schedules++;
-    const contentKeys=['cat','unit','icon','image','order','t','allergens','removable','popular','chefPick','veg','spicy','prepMin'];
+    const contentKeys=['cat','unit','icon','image','order','t','allergens','allergensReviewed','removable','popular','chefPick','veg','spicy','prepMin'];
     if(contentKeys.some(k=>stable(a[k])!==stable(b[k]))) out.content++;
   });
   const oldCats = new Map((Array.isArray(before.categories) ? before.categories : []).map(x => [String(x && x.id), x || {}]));

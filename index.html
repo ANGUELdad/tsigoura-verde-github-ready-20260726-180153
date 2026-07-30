@@ -393,6 +393,18 @@ body.traditional-mode .wrap{padding-bottom:44px;}
 .search svg{width:15px;height:15px;stroke:var(--faint);stroke-width:1.7;fill:none;flex:0 0 auto;}
 .search input{flex:1;border:none;background:none;outline:none;font-size:14px;color:var(--ink);}
 .search input::placeholder{color:var(--faint);}
+.guest-filters{margin:8px 20px 4px;display:flex;align-items:center;gap:7px;overflow-x:auto;padding:2px 0 4px;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
+.guest-filters::-webkit-scrollbar{display:none;}
+.guest-filters[hidden]{display:none!important;}
+.guest-filter{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:7px 11px;border-radius:999px;border:1px solid rgba(56,86,79,.18);background:#FFFDF8;color:var(--pine);font-size:11.5px;font-weight:700;white-space:nowrap;box-shadow:0 4px 11px rgba(20,40,42,.04);}
+.guest-filter.on{background:var(--olive);border-color:var(--olive);color:#fff;}
+.guest-filter.clear{border-style:dashed;color:var(--terra);background:#FFF8F2;}
+.guest-filter-count{min-width:18px;height:18px;border-radius:999px;display:inline-grid;place-items:center;background:rgba(160,126,60,.16);font-size:10px;}
+.guest-filter.on .guest-filter-count{background:rgba(255,255,255,.2);}
+.filter-safety{padding:11px 12px;margin:8px 0 12px;border-radius:12px;background:#FBF2DC;border:1px solid #EAD8AE;color:#72571F;font-size:11.5px;line-height:1.48;}
+.filter-choices{display:flex;flex-wrap:wrap;gap:7px;margin:9px 0 15px;}
+.filter-choice{padding:8px 11px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--pine);font-size:11px;font-weight:700;}
+.filter-choice.on{background:var(--olive);color:#fff;border-color:var(--olive);}
 
 /* ═════════ category nav (icons) ═════════ */
 .nav{position:sticky;top:0;z-index:20;background:rgba(245,240,227,.94);
@@ -1745,6 +1757,8 @@ body.sheet-open .head{
     <button type="button" class="search-clear" id="clearSearch" aria-label="clear search">×</button>
   </div>
 
+  <div class="guest-filters" id="guestFilters" hidden></div>
+
   <div id="viewSwitch"></div>
 
   <nav class="nav"><div class="row" id="tabs"></div></nav>
@@ -2138,6 +2152,14 @@ const VIEW_UI = {
   sr:{viewCompact:'Листа менија',viewGuided:'Категорије',guideBadge:'Из наше кухиње',guideIntro:'Погледајте избор и одаберите без журбе.',guidePick:'Изабери категорију',guidePickSub:'Почните од онога што вам отвара апетит.',guideBackCats:'Категорије',guidePrev:'Назад',guideNext:'Даље',guideInfo:'Инфо',guidePhoto:'Велика слика'},
   bg:{viewCompact:'Списък меню',viewGuided:'Категории',guideBadge:'От нашата кухня',guideIntro:'Разгледайте предложенията и изберете спокойно.',guidePick:'Избери категория',guidePickSub:'Започнете с това, което ви отваря апетита.',guideBackCats:'Категории',guidePrev:'Назад',guideNext:'Напред',guideInfo:'Инфо',guidePhoto:'Голяма снимка'}
 };
+const FILTER_UI = {
+  el:{veg:'Χορτοφαγικά',spicy:'Πικάντικα',avoid:'Αποφυγή αλλεργιογόνων',clear:'Καθαρισμός',hideMarked:'Κρύψε πιάτα που δηλώνονται με:',safety:'Το φίλτρο χρησιμοποιεί μόνο όσα έχει επιβεβαιώσει το κατάστημα. Για αλλεργία ή δυσανεξία, ενημέρωσε πάντα τον σερβιτόρο πριν παραγγείλεις.',chef:'Πρόταση κουζίνας',noFiltered:'Δεν βρέθηκε πιάτο με αυτά τα φίλτρα.'},
+  en:{veg:'Vegetarian',spicy:'Spicy',avoid:'Avoid allergens',clear:'Clear',hideMarked:'Hide dishes marked with:',safety:'This filter only uses information confirmed by the restaurant. For an allergy or intolerance, always tell your waiter before ordering.',chef:"Chef's pick",noFiltered:'No dish matches these filters.'},
+  de:{veg:'Vegetarisch',spicy:'Scharf',avoid:'Allergene meiden',clear:'Löschen',hideMarked:'Gerichte ausblenden mit:',safety:'Der Filter nutzt nur vom Restaurant bestätigte Angaben. Bei Allergie oder Unverträglichkeit immer den Kellner vor der Bestellung informieren.',chef:'Empfehlung der Küche',noFiltered:'Kein Gericht passt zu diesen Filtern.'},
+  ro:{veg:'Vegetarian',spicy:'Picant',avoid:'Evită alergenii',clear:'Șterge',hideMarked:'Ascunde preparatele marcate cu:',safety:'Filtrul folosește doar informațiile confirmate de restaurant. Pentru alergii sau intoleranțe, anunță întotdeauna ospătarul înainte de comandă.',chef:'Recomandarea bucătarului',noFiltered:'Niciun preparat nu corespunde filtrelor.'},
+  sr:{veg:'Вегетаријанско',spicy:'Љуто',avoid:'Избегни алергене',clear:'Обриши',hideMarked:'Сакриј јела означена са:',safety:'Филтер користи само податке које је ресторан потврдио. Код алергије или нетолеранције увек обавести конобара пре наручивања.',chef:'Препорука кухиње',noFiltered:'Ниједно јело не одговара филтерима.'},
+  bg:{veg:'Вегетарианско',spicy:'Люто',avoid:'Избягвай алергени',clear:'Изчисти',hideMarked:'Скрий ястията, отбелязани с:',safety:'Филтърът използва само потвърдени от ресторанта данни. При алергия или непоносимост винаги кажи на сервитьора преди поръчка.',chef:'Препоръка на кухнята',noFiltered:'Няма ястие, което да отговаря на филтрите.'}
+};
 
 /* ═══════════════ security / anti-abuse limits ═══════════════ */
 const LIMITS = { qtyPerItem:20, totalItems:60, sendCooldownMs:8000, sendsWindowMs:600000, sendsMax:6,
@@ -2158,6 +2180,7 @@ const tableId = /^[A-Za-z0-9_-]{1,8}$/.test(rawTable) ? rawTable : '—';
 let S = loadState();
 let lang = (function(){ const s=safeLS.get('tv_lang'); return (s && UI[s]) ? s : (S.settings.defaultLang||'el'); })();
 let q = '';
+let guestFilters={veg:false,spicy:false,avoid:new Set()};
 /* cart is now an array of configurable LINES:
    { lid, id, qty, removed:[idx…] (into item.removable), note:'' } */
 let cart = [];
@@ -2199,6 +2222,7 @@ let activeCat = null;
 let specialMenuActive = false;
 
 const T = k => (VIEW_UI[lang]&&VIEW_UI[lang][k]) || (VIEW_UI.en&&VIEW_UI.en[k]) || (UI[lang] && UI[lang][k]) || UI.en[k] || k;
+const F = k => (FILTER_UI[lang]&&FILTER_UI[lang][k]) || FILTER_UI.en[k] || k;
 const LIVE_UPDATED = {
   el:'Το μενού ενημερώθηκε ζωντανά ✓',
   en:'The menu was updated live ✓',
@@ -2323,7 +2347,8 @@ function renderHero(){
   if(!slot) return;
   if(q.trim()){ slot.innerHTML=''; return; }
   if(design().showFeaturedHero===false){ slot.innerHTML=''; return; }
-  const pick = S.menu.find(i=>isGuestVisible(i) && i.cat==='meat' && i.available && i.price>0)
+  const pick = S.menu.find(i=>isGuestVisible(i) && i.chefPick && i.available && i.price>0)
+            || S.menu.find(i=>isGuestVisible(i) && i.cat==='meat' && i.available && i.price>0)
             || S.menu.find(i=>isGuestVisible(i) && i.available && i.price>0);
   if(!pick){ slot.innerHTML=''; return; }
   const t = tx(pick);
@@ -2420,6 +2445,55 @@ function renderStrip(){
   if(!S.settings.serviceOpen) s.innerHTML=`<div class="strip">${esc(T('closed'))}</div>`;
   else if(!isTraditional() && !S.settings.acceptOrders) s.innerHTML=`<div class="strip">${esc(T('viewOnly'))}</div>`;
   else s.innerHTML='';
+}
+function filterCapabilities(){
+  const items=S.menu.filter(i=>isGuestVisible(i));
+  const reviewed=items.length>0&&items.every(i=>i.allergensReviewed===true);
+  const usedAllergens=new Set(items.flatMap(i=>i.allergens||[]));
+  return {
+    hasVeg:items.some(i=>i.veg),
+    hasSpicy:items.some(i=>i.spicy),
+    allergenReady:reviewed&&usedAllergens.size>0,
+    usedAllergens
+  };
+}
+function activeGuestFilterCount(){
+  return (guestFilters.veg?1:0)+(guestFilters.spicy?1:0)+guestFilters.avoid.size;
+}
+function guestFilterMatch(i){
+  if(guestFilters.veg&&!i.veg)return false;
+  if(guestFilters.spicy&&!i.spicy)return false;
+  const cap=filterCapabilities();
+  if(cap.allergenReady&&guestFilters.avoid.size&&(i.allergens||[]).some(a=>guestFilters.avoid.has(a)))return false;
+  return true;
+}
+function clearGuestFilters(){
+  guestFilters={veg:false,spicy:false,avoid:new Set()};
+  syncSearch(true);
+}
+function renderGuestFilters(){
+  const slot=document.getElementById('guestFilters');if(!slot)return;
+  const cap=filterCapabilities();
+  if(!cap.hasVeg&&!cap.hasSpicy&&!cap.allergenReady){
+    guestFilters={veg:false,spicy:false,avoid:new Set()};
+    slot.hidden=true;slot.innerHTML='';return;
+  }
+  for(const key of [...guestFilters.avoid])if(!cap.usedAllergens.has(key))guestFilters.avoid.delete(key);
+  const n=activeGuestFilterCount();
+  slot.hidden=false;
+  slot.innerHTML=`
+    ${cap.hasVeg?`<button type="button" class="guest-filter ${guestFilters.veg?'on':''}" data-guest-filter="veg">🌿 ${esc(F('veg'))}</button>`:''}
+    ${cap.hasSpicy?`<button type="button" class="guest-filter ${guestFilters.spicy?'on':''}" data-guest-filter="spicy">🌶 ${esc(F('spicy'))}</button>`:''}
+    ${cap.allergenReady?`<button type="button" class="guest-filter ${guestFilters.avoid.size?'on':''}" data-guest-filter="allergens">⚠ ${esc(F('avoid'))}${guestFilters.avoid.size?` <span class="guest-filter-count">${guestFilters.avoid.size}</span>`:''}</button>`:''}
+    ${n?`<button type="button" class="guest-filter clear" data-guest-filter="clear">× ${esc(F('clear'))}</button>`:''}`;
+  slot.querySelectorAll('[data-guest-filter]').forEach(b=>b.onclick=()=>{
+    const key=b.dataset.guestFilter;
+    if(key==='veg')guestFilters.veg=!guestFilters.veg;
+    else if(key==='spicy')guestFilters.spicy=!guestFilters.spicy;
+    else if(key==='allergens'){renderAlg();openSheet('algSheet');return;}
+    else if(key==='clear'){clearGuestFilters();return;}
+    syncSearch(true);
+  });
 }
 function renderViewSwitch(){
   const slot=document.getElementById('viewSwitch'); if(!slot) return;
@@ -2598,6 +2672,7 @@ function itemSearchHaystack(i){
 }
 function matches(i){
   const s=cleanSearch(searchValue());
+  if(!guestFilterMatch(i))return false;
   if(!s) return true;
   return itemSearchHaystack(i).includes(s);
 }
@@ -2616,7 +2691,7 @@ function syncSearch(force){
   document.body.classList.toggle('searching', searching);
   document.body.classList.toggle('guided-view', menuView()==='guide' && !searching);
   document.body.classList.toggle('special-menu', specialMenuActive);
-  renderStrip();renderAnnounce();renderViewSwitch();renderTabs();renderList();
+  renderStrip();renderAnnounce();renderGuestFilters();renderViewSwitch();renderTabs();renderList();
 }
 function clearSearch(ev){
   if(ev){ ev.preventDefault(); ev.stopPropagation(); }
@@ -2634,6 +2709,7 @@ function wireMenuRootActions(root){
   root.querySelectorAll('[data-guide-jump]').forEach(b=>b.onclick=()=>setGuideCategory(b.dataset.guideJump));
   root.querySelectorAll('[data-guide-home]').forEach(b=>b.onclick=()=>{ activeCat=null; renderTabs(); renderList(); scrollMenuTop(); });
   root.querySelectorAll('[data-special-exit]').forEach(b=>b.onclick=exitSpecialMenu);
+  root.querySelectorAll('[data-clear-filters]').forEach(b=>b.onclick=clearGuestFilters);
 }
 function guideCategories(){
   return activeMenuCats().filter(c=>!c.hidden && S.menu.some(i=>isGuestVisible(i)&&i.cat===c.id&&matches(i)));
@@ -2662,7 +2738,7 @@ function scrollGuideStage(){
 function renderGuidedList(){
   const root=document.getElementById('root');
   const cats=guideCategories();
-  if(!cats.length){ root.innerHTML=`<div class="empty">${esc(T('noRes'))}</div>`; return; }
+  if(!cats.length){ root.innerHTML=emptyMenuHTML(); wireMenuRootActions(root); return; }
   if(!activeCat){
     root.innerHTML=guideLandingHTML(cats);
     wireMenuRootActions(root);
@@ -2715,7 +2791,7 @@ function guidePickerHTML(cats,current,ix){
 }
 function guideSectionHTML(c,ix,cats){
   const items=S.menu.filter(i=>isGuestVisible(i)&&i.cat===c.id&&matches(i));
-  const pick=items.find(i=>i.available&&i.price>0) || items[0];
+  const pick=items.find(i=>i.chefPick&&i.available&&i.price>0) || items.find(i=>i.available&&i.price>0) || items[0];
   const rest=items.filter(i=>i!==pick);
   const acc=[c.accent||CAT_ACC[ix%CAT_ACC.length][0], c.tint||CAT_ACC[ix%CAT_ACC.length][1]];
   const prev=cats[ix-1], next=cats[ix+1];
@@ -2786,18 +2862,24 @@ function renderList(){
       </div>`+
       items.map(rowHTML).join('')+`</section>`;
   });
-  if(!any) html=`<div class="empty">${esc(T('noRes'))}</div>`;
+  if(!any) html=emptyMenuHTML();
   root.innerHTML=html;
   wireMenuRootActions(root);
   revealItems(); if(!q.trim()) setupSpy();
+}
+function emptyMenuHTML(){
+  const filtered=activeGuestFilterCount()>0;
+  return `<div class="empty">${esc(filtered?F('noFiltered'):T('noRes'))}${filtered?`<div style="margin-top:14px;"><button type="button" class="guest-filter clear" data-clear-filters>× ${esc(F('clear'))}</button></div>`:''}</div>`;
 }
 function rowHTML(i){
   const t=tx(i);
   const desc=t.d||'';   /* only real descriptions — no redundant English-name subtitle */
   const algs=(i.allergens||[]).map(a=>esc(ALLERGENS[a][lang]||ALLERGENS[a].en)).join(' · ');
+  const diet=[i.veg?`<span class="cust-hint">🌿 ${esc(F('veg'))}</span>`:'',i.spicy?`<span class="cust-hint">🌶 ${esc(F('spicy'))}</span>`:''].filter(Boolean).join(' ');
   const cust=!isTraditional() && (i.removable||[]).length;
   const art=(typeof dishArt==='function'&&dishArt(i)) ? dishArt(i) : '';
-  return `<div class="item ${i.available?'':'out'}" data-dish="${i.id}" data-admin-dish="${i.id}">
+  return `<div class="item ${i.available?'':'out'} ${i.chefPick?'feat':''}" data-dish="${i.id}" data-admin-dish="${i.id}">
+    ${i.chefPick?`<div class="badge">★ ${esc(F('chef'))}</div>`:''}
     <div class="top">
       ${art
         ? `<button type="button" class="dish-ic photo-b" data-photo="${i.id}" aria-label="${esc(t.n)}"><span class="photo-fallback">${svgFor(DISH_ICON[i.icon]||i.icon||'dish')}</span><img src="${esc(art)}" alt="" loading="lazy" decoding="async" width="144" height="144" onload="this.parentElement.classList.add('img-ready')" onerror="this.parentElement.classList.add('img-failed')"></button>`
@@ -2812,8 +2894,8 @@ function rowHTML(i){
     </div>
     ${desc?`<div class="desc">${esc(desc)}</div>`:''}
     ${/* compact row: meta only when it has something to say */''}
-    ${(algs||cust||!i.available)?`<div class="meta hasinfo">
-      <span class="alg" style="flex:1">${algs||''}${cust?`${algs?' &nbsp;':''}<span class="cust-hint">✎ ${esc(T('customizable'))}</span>`:''}</span>
+    ${(algs||diet||cust||!i.available)?`<div class="meta hasinfo">
+      <span class="alg" style="flex:1">${algs||''}${diet?`${algs?' &nbsp;':''}${diet}`:''}${cust?`${algs||diet?' &nbsp;':''}<span class="cust-hint">✎ ${esc(T('customizable'))}</span>`:''}</span>
       ${ i.available ? '' : `<span class="sold">${esc(T('soldOut'))}</span>` }
     </div>`:''}</div>`;
 }
@@ -3024,10 +3106,24 @@ function renderAlg(){
   document.getElementById('algT').textContent=T('algT');
   document.getElementById('algIntro').textContent=T('algIntro');
   const list=document.getElementById('algList');
-  const any=S.menu.some(i=>(i.allergens||[]).length);
+  const visible=S.menu.filter(i=>isGuestVisible(i));
+  const any=visible.some(i=>(i.allergens||[]).length);
   if(!any){ list.innerHTML=`<p class="fine" style="text-align:left">${esc(NOTE('allergensGeneral'))}</p>`; return; }
-  list.innerHTML=Object.entries(ALLERGENS).map(([k,a])=>{const dishes=S.menu.filter(i=>(i.allergens||[]).includes(k)).map(i=>esc(tx(i).n));
+  const cap=filterCapabilities();
+  const chooser=cap.allergenReady?`<div>
+    <b style="display:block;color:var(--pine);font-size:14px;">${esc(F('hideMarked'))}</b>
+    <div class="filter-safety">${esc(F('safety'))}</div>
+    <div class="filter-choices">${Object.entries(ALLERGENS).filter(([k])=>cap.usedAllergens.has(k)).map(([k,a])=>
+      `<button type="button" class="filter-choice ${guestFilters.avoid.has(k)?'on':''}" data-avoid-allergen="${esc(k)}" aria-pressed="${guestFilters.avoid.has(k)?'true':'false'}">${esc(a[lang]||a.en)}</button>`).join('')}</div>
+  </div>`:'';
+  const details=Object.entries(ALLERGENS).map(([k,a])=>{const dishes=visible.filter(i=>(i.allergens||[]).includes(k)).map(i=>esc(tx(i).n));
     return `<div class="alg ${dishes.length?'':'none'}"><span>${esc(a[lang]||a.en)}</span><span class="d">${dishes.length?dishes.join(', '):'—'}</span></div>`;}).join('');
+  list.innerHTML=chooser+details;
+  list.querySelectorAll('[data-avoid-allergen]').forEach(b=>b.onclick=()=>{
+    const key=b.dataset.avoidAllergen;
+    if(guestFilters.avoid.has(key))guestFilters.avoid.delete(key);else guestFilters.avoid.add(key);
+    renderAlg();renderGuestFilters();syncSearch(true);
+  });
 }
 /* Closing block — mirrors the printed menu (notices + agoranomikos + thank you + logo) */
 function renderClosing(){
@@ -4107,7 +4203,7 @@ function handleHandoff(){
 /* ═══════════════ init ═══════════════ */
 function apply(){
   forceCloseFloatingUI();
-  renderHead();renderStrip();renderAnnounce();renderViewSwitch();renderTabs();renderList();
+  renderHead();renderStrip();renderAnnounce();renderGuestFilters();renderViewSwitch();renderTabs();renderList();
   setStickyMetrics();
   renderCartSheet();updateCart();renderLang();renderClosing();resetHelp();initCookie();
   requestAnimationFrame(()=>{ setStickyMetrics(); syncPinnedNav(); forceCloseFloatingUI(); });

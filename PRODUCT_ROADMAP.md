@@ -52,7 +52,9 @@ guest scans the table QR:
 ### Release 3 — guest conversion
 
 - Curated “recommended tonight” and pairing blocks controlled by the owner.
-- Dietary and allergen filters that never imply medical safety.
+- [x] Owner-controlled vegetarian, spicy, and chef-pick metadata.
+- [x] Dietary quick filters plus allergen exclusions that unlock only after
+  every visible dish has an explicit restaurant review.
 - Faster first load through generated image sizes and cache tuning.
 - Post-meal feedback and a tasteful Google review prompt.
 - Privacy-respecting scan, search, category, and dish-interest analytics.

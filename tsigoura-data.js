@@ -434,6 +434,11 @@ function normalizeState(s){
     i.available = i.available!==false;
     i.hidden = i.hidden===true;   /* the admin panel is authoritative — never force this */
     i.schedule = normalizeDishSchedule(i.schedule);
+    i.veg = i.veg===true;
+    i.spicy = i.spicy===true;
+    i.popular = i.popular===true;
+    i.chefPick = i.chefPick===true;
+    i.allergensReviewed = i.allergensReviewed===true;
     i.allergens = Array.isArray(i.allergens)?i.allergens:[];
     i.removable = Array.isArray(i.removable)?i.removable:[];
     i.t = i.t&&typeof i.t==='object'?i.t:{};
