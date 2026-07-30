@@ -651,6 +651,7 @@ nav.tabs button .ico{width:15px;height:15px;stroke-width:1.9;}
         <button data-mode="pro" data-ico="wrench">Pro</button>
         <button data-mode="preview" data-ico="eye">Προεπισκόπηση</button>
       </div>
+      <button class="btn ghost sm" id="showAllBtn" data-ico="eye">Εμφάνιση όλων</button>
       <button class="btn ghost sm" id="exportBtn" data-ico="download">Αντίγραφο ασφαλείας</button>
       <p class="hint" id="modeHint"></p>
     </div>
@@ -1497,6 +1498,33 @@ function clearOccupiedTables(){
 }
 $('addTableBtn').onclick = addTableQuick;
 $('allOpenBtn').onclick = setAllTablesOpen;
+
+/* One control to undo leftover event hiding. Categories matter too: a visible
+   dish inside a hidden category still never reaches the customer. */
+function hiddenCounts(){
+  const d=(S.menu||[]).filter(i=>i.hidden).length;
+  const c=(S.categories||[]).filter(x=>x.hidden).length;
+  return {d,c,total:d+c};
+}
+function refreshShowAllBtn(){
+  const b=$('showAllBtn'); if(!b) return;
+  const n=hiddenCounts();
+  b.textContent = n.total ? `Εμφάνιση όλων (${n.total})` : 'Όλα εμφανίζονται';
+  b.disabled = !n.total;
+  b.title = n.total
+    ? `${n.d} πιάτα και ${n.c} κατηγορίες είναι κρυφά. Πατήστε για να εμφανιστούν όλα.`
+    : 'Κανένα πιάτο ή κατηγορία δεν είναι κρυφό.';
+  if(typeof hydrateIcons==='function') hydrateIcons();
+}
+function showEverything(){
+  const before=hiddenCounts();
+  if(!before.total){ toast('Όλα εμφανίζονται ήδη'); return; }
+  (S.menu||[]).forEach(i=>{ i.hidden=false; });
+  (S.categories||[]).forEach(c=>{ c.hidden=false; });
+  persist(); renderMenuArea(); renderDash(); refreshShowAllBtn();
+  toast(`Εμφανίστηκαν ${before.d} πιάτα και ${before.c} κατηγορίες`);
+}
+if($('showAllBtn')) $('showAllBtn').onclick = showEverything;
 $('clearOccupiedBtn').onclick = clearOccupiedTables;
 $('sketchLayoutBtn').onclick = ()=>applySketchLayout();
 
@@ -2242,7 +2270,7 @@ function renderServicePill(){
 
 
 function renderAll(){
-  probeSync();
+  probeSync(); refreshShowAllBtn();
   renderTables(); renderMenuArea(); renderOrders(); renderSettings();
   renderServicePill(); renderQR(); renderDash(); initScanPanel();
   hydrateIcons(); MOT.reveal();

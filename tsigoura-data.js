@@ -297,9 +297,11 @@ const JULY26_VISIBLE = new Set([
   301,302,303,305,306,307,308,309,317,318,319,
   501,504,505,506,507,508,509,510,511,512,513,514,515,516,517,518,519,520,521,522,523,524,525,526,527
 ]);
-const FORCE_HIDDEN_MENU_IDS = new Set([502,503]); /* Fanta Lemon/Orange hidden for now */
+/* Starting visibility for a brand-new install only. Anything the owner changes
+   in /admin wins from then on — nothing here is re-applied afterwards. */
+const DEFAULT_HIDDEN_MENU_IDS = new Set([502,503]); /* Fanta Lemon/Orange */
 DEFAULT_MENU.forEach(i=>{
-  i.hidden = !JULY26_VISIBLE.has(Number(i.id));
+  i.hidden = !JULY26_VISIBLE.has(Number(i.id)) || DEFAULT_HIDDEN_MENU_IDS.has(Number(i.id));
 });
 
 const UNITS = {
@@ -428,8 +430,7 @@ function normalizeState(s){
     i.icon = i.icon || i.art || 'bowl';
     i.image=cleanAssetPath(i.image);
     i.available = i.available!==false;
-    i.hidden = i.hidden===true;
-    if(FORCE_HIDDEN_MENU_IDS.has(Number(i.id))) i.hidden = true;
+    i.hidden = i.hidden===true;   /* the admin panel is authoritative — never force this */
     i.allergens = Array.isArray(i.allergens)?i.allergens:[];
     i.removable = Array.isArray(i.removable)?i.removable:[];
     i.t = i.t&&typeof i.t==='object'?i.t:{};
