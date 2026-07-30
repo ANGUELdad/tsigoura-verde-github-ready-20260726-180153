@@ -686,9 +686,7 @@ body.traditional-mode .wrap{padding-bottom:44px;}
 .grip{width:36px;height:4px;border-radius:3px;background:var(--line);margin:0 auto 16px;}
 .sheet h2{font-family:Fraunces,serif;font-weight:600;font-size:25px;color:var(--pine);margin:2px 0 3px;}
 .sheet .eyebrow{font-size:11px;letter-spacing:2px;font-weight:600;color:var(--gold);text-transform:uppercase;}
-.sheet .close{position:absolute;top:8px;right:10px;z-index:4;display:grid;place-items:center;
-  width:44px;height:44px;font-size:20px;color:var(--muted);line-height:1;
-  border-radius:50%;touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
+.sheet .close{position:absolute;top:16px;right:20px;font-size:20px;color:var(--muted);line-height:1;}
 
 .crow{display:flex;align-items:center;gap:12px;padding:15px 0;border-bottom:1px solid var(--line-2);}
 .crow .cic{flex:0 0 auto;width:34px;height:34px;border-radius:10px;background:var(--line-2);display:flex;align-items:center;justify-content:center;}
@@ -1094,12 +1092,13 @@ html.motion-on .sec-h{opacity:0;}
 @keyframes sheetChild{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 .sheet{transition:transform .48s var(--ez-out)!important;}
 .scrim{transition:opacity .38s var(--ez-inout)!important;}
-.sheet.on > *:not(.grip):not(.close){animation:sheetChild .5s var(--ez-out) both;}
-.sheet.on > *:not(.grip):not(.close):nth-child(3){animation-delay:.06s}
-.sheet.on > *:not(.grip):not(.close):nth-child(4){animation-delay:.10s}
-.sheet.on > *:not(.grip):not(.close):nth-child(5){animation-delay:.14s}
-.sheet.on > *:not(.grip):not(.close):nth-child(6){animation-delay:.18s}
-.sheet.on > *:not(.grip):not(.close):nth-child(n+7){animation-delay:.22s}
+.sheet.on > *{animation:sheetChild .5s var(--ez-out) both;}
+.sheet.on > *:nth-child(1){animation-delay:.06s}
+.sheet.on > *:nth-child(2){animation-delay:.10s}
+.sheet.on > *:nth-child(3){animation-delay:.14s}
+.sheet.on > *:nth-child(4){animation-delay:.18s}
+.sheet.on > *:nth-child(5){animation-delay:.22s}
+.sheet.on > *:nth-child(n+6){animation-delay:.26s}
 .sheet .grip{transition:background .25s ease!important;}
 .sheet.on .grip{background:var(--faint)!important;}
 
@@ -1923,14 +1922,14 @@ body.nav-pinned .head{
 .head .brand h1{font-size:18px!important;font-weight:600!important;line-height:1.05!important;}
 .head .brand .sub{display:none!important;}
 .wifibtn,.carticon{
-  width:44px!important;height:44px!important;margin:0!important;
+  width:36px!important;height:36px!important;margin:0!important;
   background:transparent!important;border:0!important;box-shadow:none!important;color:var(--pine)!important;
 }
 .wifibtn:hover,.carticon:hover{background:rgba(56,86,79,.07)!important;}
 .wifibtn svg,.carticon svg{width:18px!important;height:18px!important;}
 .social-img{width:20px!important;height:20px!important;}
 .langbtn{
-  min-height:44px!important;padding:6px 10px!important;border:0!important;border-radius:10px!important;
+  min-height:34px!important;padding:6px 9px!important;border:0!important;border-radius:10px!important;
   background:rgba(56,86,79,.07)!important;font-size:11px!important;
 }
 .carticon .cbadge{top:-1px!important;right:-1px!important;}
@@ -1948,7 +1947,7 @@ body.nav-pinned .head{
 .search svg{width:17px!important;height:17px!important;stroke:var(--ui-muted)!important;}
 .search input{font-size:15px!important;color:var(--ui-ink)!important;}
 .search-clear{
-  width:44px!important;height:44px!important;border:0!important;background:var(--ui-soft)!important;
+  width:30px!important;height:30px!important;border:0!important;background:var(--ui-soft)!important;
   font-size:19px!important;
 }
 .view-switch{
@@ -1956,7 +1955,7 @@ body.nav-pinned .head{
   border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;
 }
 .view-switch button{
-  min-height:44px!important;border-radius:11px!important;padding:7px 10px!important;
+  min-height:38px!important;border-radius:11px!important;padding:7px 10px!important;
   color:var(--ui-muted)!important;font-size:12.5px!important;font-weight:650!important;
 }
 .view-switch button.on{
@@ -1972,7 +1971,7 @@ body.nav-pinned .head{
 .nav::before,.nav::after{display:none!important;}
 .nav .row{gap:5px!important;padding:7px 16px 12px!important;scroll-padding-inline:16px!important;}
 .tab{
-  min-height:44px!important;padding:8px 12px!important;gap:0!important;border:0!important;
+  min-height:36px!important;padding:8px 12px!important;gap:0!important;border:0!important;
   border-radius:999px!important;background:transparent!important;box-shadow:none!important;
   color:var(--ui-muted)!important;font-size:12.5px!important;font-weight:650!important;
 }
@@ -2009,10 +2008,10 @@ body.nav-pinned .head{
 .item{padding:14px 0!important;border-bottom:1px solid var(--ui-line)!important;background:transparent!important;}
 .item:last-child{border-bottom:0!important;}
 .item .top{
-  grid-template-columns:44px minmax(0,1fr) auto auto!important;gap:10px!important;
+  grid-template-columns:38px minmax(0,1fr) auto auto!important;gap:10px!important;
 }
 .item .dish-ic{
-  width:44px!important;height:44px!important;border:0!important;border-radius:11px!important;
+  width:38px!important;height:38px!important;border:0!important;border-radius:11px!important;
   background:var(--ui-soft)!important;box-shadow:none!important;
 }
 .item .dish-ic .greek-ic{width:29px!important;height:29px!important;filter:none!important;}
@@ -2027,7 +2026,7 @@ body.nav-pinned .head{
 }
 .item .row-act{display:flex!important;align-items:center!important;gap:3px!important;margin:0!important;}
 .info-b{
-  width:44px!important;height:44px!important;border:0!important;border-radius:11px!important;
+  width:28px!important;height:32px!important;border:0!important;border-radius:9px!important;
   color:var(--ui-muted)!important;font-size:12px!important;
 }
 .add-sm{
@@ -2036,7 +2035,7 @@ body.nav-pinned .head{
 }
 .add-sm.on{background:var(--olive)!important;color:#fff!important;}
 .item .desc,.item .meta{
-  margin-left:54px!important;max-width:calc(100% - 54px)!important;
+  margin-left:48px!important;max-width:calc(100% - 48px)!important;
 }
 .item .desc{
   margin-top:4px!important;font-family:Inter,system-ui,sans-serif!important;font-style:normal!important;
@@ -2153,15 +2152,15 @@ button:focus-visible,a:focus-visible,input:focus-visible{
 }
 @media(max-width:360px){
   .head{padding-left:10px!important;padding-right:10px!important;gap:3px!important;}
-  .wifibtn,.carticon{width:44px!important;height:44px!important;}
+  .wifibtn,.carticon{width:33px!important;height:33px!important;}
   .langbtn{padding:5px 7px!important;}
   .sec{width:calc(100% - 16px)!important;padding-left:12px!important;padding-right:12px!important;}
-  .item .top{grid-template-columns:44px minmax(0,1fr) auto auto!important;gap:7px!important;}
-  .item .dish-ic{width:44px!important;height:44px!important;}
+  .item .top{grid-template-columns:34px minmax(0,1fr) auto auto!important;gap:7px!important;}
+  .item .dish-ic{width:34px!important;height:34px!important;}
   .item .nm{font-size:13.5px!important;}
   .item .pr{font-size:13px!important;}
-  .info-b{width:44px!important;height:44px!important;}
-  .add-sm{width:44px!important;height:44px!important;}
+  .info-b{width:24px!important;}
+  .add-sm{width:34px!important;height:34px!important;}
 }
 @media(min-width:900px){
   .guide-menu{grid-template-columns:repeat(4,minmax(0,1fr))!important;}
@@ -2255,7 +2254,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{
 <div class="scrim" id="scrim"></div>
 
 <div class="sheet" id="cartSheet">
-  <div class="grip"></div><button type="button" class="close" data-x aria-label="Close">✕</button>
+  <div class="grip"></div><button class="close" data-x>✕</button>
   <div class="eyebrow" id="tableTag"></div>
   <h2 id="orderT"></h2>
   <div id="cartRows"></div><div id="cartSum"></div>
@@ -2271,7 +2270,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{
 </div>
 
 <div class="sheet" id="langSheet" style="max-height:66vh;">
-  <div class="grip"></div><button type="button" class="close" data-x aria-label="Close">✕</button>
+  <div class="grip"></div><button class="close" data-x>✕</button>
   <div class="eyebrow">Language · Γλώσσα</div>
   <h2 id="langT"></h2>
   <div class="langgrid" id="langGrid"></div>
@@ -2279,7 +2278,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{
 </div>
 
 <div class="sheet" id="algSheet">
-  <div class="grip"></div><button type="button" class="close" data-x aria-label="Close">✕</button>
+  <div class="grip"></div><button class="close" data-x>✕</button>
   <div class="eyebrow" id="algEye"></div>
   <h2 id="algT"></h2>
   <p style="font-size:14px;line-height:1.55;color:var(--ink);margin:8px 0 4px;" id="algIntro"></p>
@@ -2288,7 +2287,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{
 
 <!-- dish detail / customize (remove ingredients + note + qty + add) -->
 <div class="sheet" id="dishSheet" style="max-height:90vh;">
-  <div class="grip"></div><button type="button" class="close" data-x aria-label="Close">✕</button>
+  <div class="grip"></div><button class="close" data-x>✕</button>
   <div id="dishPhoto" class="dsh-photo" style="display:none"></div>
   <div class="eyebrow" id="dishEye" style="margin-top:14px"></div>
   <h2 id="dishName"></h2>
@@ -2311,7 +2310,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{
 
 <!-- dish info -->
 <div class="sheet" id="infoSheet">
-  <div class="grip"></div><button type="button" class="close" data-x aria-label="Close">✕</button>
+  <div class="grip"></div><button class="close" data-x>✕</button>
   <div class="eyebrow" id="infoEye"></div>
   <h2 id="infoName"></h2>
   <div id="infoBody"></div>
@@ -2319,7 +2318,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{
 </div>
 
 <div class="sheet photo-sheet" id="photoSheet" style="max-height:92vh;">
-  <div class="grip"></div><button type="button" class="close" data-x aria-label="Close">✕</button>
+  <div class="grip"></div><button class="close" data-x>✕</button>
   <div class="photo-stage"><img id="photoImg" src="media/mark.png" alt=""></div>
   <div class="eyebrow" id="photoEye"></div>
   <h2 class="photo-title" id="photoName"></h2>
@@ -2328,7 +2327,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{
 
 <!-- wifi -->
 <div class="sheet" id="wifiSheet" style="max-height:78vh;">
-  <div class="grip"></div><button type="button" class="close" data-x aria-label="Close">✕</button>
+  <div class="grip"></div><button class="close" data-x>✕</button>
   <div class="eyebrow" id="wifiEye"></div>
   <h2 id="wifiT"></h2>
   <p class="fine" id="wifiSub" style="text-align:left;margin:2px 0 14px;"></p>
@@ -2342,7 +2341,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{
 
 <!-- social links -->
 <div class="sheet" id="socialSheet" style="max-height:76vh;">
-  <div class="grip"></div><button type="button" class="close" data-x aria-label="Close">✕</button>
+  <div class="grip"></div><button class="close" data-x>✕</button>
   <div class="eyebrow" id="socialEye"></div>
   <h2 id="socialT"></h2>
   <p class="fine" id="socialSub" style="text-align:left;margin:2px 0 14px;"></p>
@@ -2363,7 +2362,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{
 
 <!-- order sent / for waiter -->
 <div class="sheet" id="sentSheet" style="max-height:88vh;">
-  <div class="grip"></div><button type="button" class="close" data-x aria-label="Close">✕</button>
+  <div class="grip"></div><button class="close" data-x>✕</button>
   <div style="text-align:center;">
     <div class="okmark">✓</div>
     <h2 id="sentH" style="text-align:center;"></h2>
@@ -2381,7 +2380,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{
 
 <!-- my orders tonight (history + receipt image) -->
 <div class="sheet" id="histSheet" style="max-height:88vh;">
-  <div class="grip"></div><button type="button" class="close" data-x aria-label="Close">✕</button>
+  <div class="grip"></div><button class="close" data-x>✕</button>
   <div class="eyebrow" id="histEye"></div>
   <h2 id="histT"></h2>
   <div id="histBody"></div>
@@ -2395,7 +2394,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{
 
 <!-- privacy / legal -->
 <div class="sheet" id="privSheet">
-  <div class="grip"></div><button type="button" class="close" data-x aria-label="Close">✕</button>
+  <div class="grip"></div><button class="close" data-x>✕</button>
   <div class="eyebrow" id="privEye"></div>
   <h2 id="privT"></h2>
   <div id="privBody" style="font-size:13px;line-height:1.6;color:var(--ink);"></div>
@@ -4068,31 +4067,7 @@ function forceCloseFloatingUI(){
   unlockPageScroll();
 }
 document.getElementById('scrim').onclick=closeSheets;
-let sheetClosePointerId=null;
-document.addEventListener('pointerdown',e=>{
-  const close=e.target.closest('[data-x]');
-  if(!close) return;
-  sheetClosePointerId=e.pointerId;
-  e.preventDefault();
-  e.stopImmediatePropagation();
-},{capture:true});
-document.addEventListener('pointerup',e=>{
-  if(sheetClosePointerId===null || e.pointerId!==sheetClosePointerId) return;
-  sheetClosePointerId=null;
-  e.preventDefault();
-  e.stopImmediatePropagation();
-  closeSheets();
-},{capture:true});
-document.addEventListener('pointercancel',e=>{
-  if(e.pointerId===sheetClosePointerId) sheetClosePointerId=null;
-},{capture:true});
-document.addEventListener('click',e=>{
-  const close=e.target.closest('[data-x]');
-  if(!close) return;
-  e.preventDefault();
-  e.stopImmediatePropagation();
-  closeSheets();
-},{capture:true});
+document.querySelectorAll('[data-x]').forEach(b=>b.onclick=closeSheets);
 document.getElementById('socialAdClose').onclick=()=>closeSocialAd(true);
 document.getElementById('socialAdLater').onclick=()=>closeSocialAd(true);
 document.getElementById('socialAd').onclick=e=>{ if(e.target.id==='socialAd') closeSocialAd(true); };
