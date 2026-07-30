@@ -1706,9 +1706,98 @@ body.sheet-open .head{
   }
 }
 
+/* 2026-07-30 — interaction motion layer
+   Native browser APIs + CSS keep the menu independent from third-party CDNs. */
+.motion-progress{
+  position:fixed;z-index:500;top:0;left:50%;width:min(100%,var(--maxw));height:3px;
+  transform:translateX(-50%);pointer-events:none;overflow:hidden;
+  background:rgba(211,186,130,.12);
+}
+.motion-progress span{
+  display:block;width:100%;height:100%;transform:scaleX(0);transform-origin:left center;
+  background:linear-gradient(90deg,var(--olive),var(--gold),var(--terra));
+  box-shadow:0 0 12px rgba(184,152,88,.55);will-change:transform;
+}
+.motion-ripple-host{position:relative!important;isolation:isolate;overflow:hidden!important;}
+.motion-ripple{
+  position:absolute;z-index:0;width:14px;height:14px;border-radius:50%;pointer-events:none;
+  background:rgba(211,186,130,.34);transform:translate(-50%,-50%) scale(0);
+  animation:motionRipple .62s var(--ez-out) forwards!important;
+}
+@keyframes motionRipple{
+  55%{opacity:.7}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(14)}
+}
+@keyframes motionSelect{
+  0%{transform:scale(1)}
+  38%{transform:scale(.94) rotate(-1deg)}
+  72%{transform:scale(1.04) rotate(1deg)}
+  100%{transform:scale(1)}
+}
+.tab.motion-selected,.view-switch button.motion-selected{animation:motionSelect .48s var(--ez-spring)!important;}
+@keyframes cartCelebrate{
+  0%{transform:translateX(-50%) translateY(12px) scale(.94);opacity:.5}
+  58%{transform:translateX(-50%) translateY(-3px) scale(1.025);opacity:1}
+  100%{transform:translateX(-50%) translateY(0) scale(1);opacity:1}
+}
+.cart.motion-celebrate{animation:cartCelebrate .58s var(--ez-spring)!important;}
+@keyframes badgeRoll{
+  0%{transform:translateY(-8px) rotateX(70deg);opacity:0}
+  70%{transform:translateY(1px) rotateX(-8deg);opacity:1}
+  100%{transform:none;opacity:1}
+}
+.cbadge.motion-roll{animation:badgeRoll .42s var(--ez-spring)!important;transform-origin:center bottom;}
+@keyframes totalFlash{
+  0%{transform:scale(.88);color:#fff}
+  58%{transform:scale(1.12);color:var(--gold-lt)}
+  100%{transform:scale(1);color:var(--gold-lt)}
+}
+.cart .tot.motion-flash{animation:totalFlash .5s var(--ez-spring)!important;}
+@keyframes searchWake{
+  0%{transform:scale(.992)}
+  50%{transform:scale(1.008);box-shadow:0 0 0 4px rgba(56,86,79,.1),0 10px 30px rgba(20,40,42,.1)}
+  100%{transform:scale(1)}
+}
+.search.motion-wake{animation:searchWake .5s var(--ez-out)!important;}
+@keyframes sheetArrive{
+  0%{filter:saturate(.86)}
+  55%{filter:saturate(1.08)}
+  100%{filter:saturate(1)}
+}
+.sheet.on.motion-arrive{animation:sheetArrive .52s ease both!important;}
+.guide-menu-card,.guide-card,.guide-hero-dish{
+  --tilt-x:0deg;--tilt-y:0deg;--tilt-lift:0px;
+  transform:perspective(760px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) translateY(var(--tilt-lift));
+  transform-style:preserve-3d;transition:transform .2s var(--ez-out),box-shadow .22s ease!important;
+}
+.guide-menu-card.motion-tilt,.guide-card.motion-tilt,.guide-hero-dish.motion-tilt{
+  box-shadow:0 20px 45px rgba(20,40,42,.14)!important;
+}
+.guide-menu-card.motion-tilt .guide-menu-icon,
+.guide-card.motion-tilt .gthumb,
+.guide-hero-dish.motion-tilt .gphoto{transform:translateZ(18px);}
+.guide-menu-icon,.gthumb,.gphoto{transition:transform .2s var(--ez-out);}
+.hero.motion-parallax .bg{
+  animation:none!important;transform:translate3d(0,var(--hero-y,0px),0) scale(1.1)!important;
+  will-change:transform;
+}
+.photo-b.motion-photo-pop img{animation:motionPhotoPop .5s var(--ez-spring)!important;}
+@keyframes motionPhotoPop{
+  0%{transform:scale(1)}
+  45%{transform:scale(1.16) rotate(-4deg)}
+  100%{transform:scale(1) rotate(0)}
+}
+@media (prefers-reduced-motion:reduce){
+  .motion-progress,.motion-ripple{display:none!important;}
+  .guide-menu-card,.guide-card,.guide-hero-dish{transform:none!important;}
+}
+body.motion-off .motion-progress,body.motion-soft .motion-progress,
+body.motion-off .motion-ripple,body.motion-soft .motion-ripple{display:none!important;}
+
 </style>
 </head>
 <body>
+<div class="motion-progress" aria-hidden="true"><span id="motionProgress"></span></div>
 
 <!-- ═════════ SPLASH ═════════ -->
 <div class="splash" id="splash">
@@ -2963,7 +3052,10 @@ function updateCart(bump){
   renderQuickFlow();
   const ci=document.getElementById('cartIcon'), badge=document.getElementById('cBadge');
   ci.classList.toggle('has', n>0); badge.textContent=n>99?'99':n;
-  if(bump&&n>0){ ci.classList.remove('bump'); void ci.offsetWidth; ci.classList.add('bump'); }
+  if(bump&&n>0){
+    ci.classList.remove('bump'); void ci.offsetWidth; ci.classList.add('bump');
+    replayMotionClass(badge,'motion-roll',520);
+  }
   const bar=document.getElementById('cart');
   if(!n){bar.classList.add('hide');return;}
   bar.classList.remove('hide');
@@ -2971,6 +3063,10 @@ function updateCart(bump){
   document.getElementById('cL').textContent=(n===1?T('item'):T('items'));
   document.getElementById('cT').textContent=money(total());
   document.getElementById('cGo').textContent=T('view');
+  if(bump){
+    replayMotionClass(bar,'motion-celebrate',650);
+    replayMotionClass(document.getElementById('cT'),'motion-flash',560);
+  }
 }
 function renderCartSheet(){
   document.getElementById('tableTag').textContent=T('table').replace('{t}',esc(tableId));
@@ -3599,6 +3695,7 @@ function openSheet(id){
   const sheet=document.getElementById(id);
   if(!sheet) return;
   sheet.classList.add('on');
+  replayMotionClass(sheet,'motion-arrive',620);
   document.getElementById('scrim').classList.add('on');
   document.body.classList.add('sheet-open');
   renderTabs();
@@ -4239,6 +4336,105 @@ document.addEventListener('touchcancel',()=>requestAnimationFrame(()=>{ clearMen
 document.addEventListener('pointerup',()=>requestAnimationFrame(()=>{ clearMenuSelection(); repairScrollAfterTouch(); }),{passive:true});
 setInterval(()=>repairScrollLock('interval'),1800);
 
+/* ─── interaction motion: delegated so it survives every menu re-render ─── */
+function richMotionAllowed(){
+  const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches;
+  return !reduce && design().motion==='rich' &&
+    !document.body.classList.contains('motion-off') &&
+    !document.body.classList.contains('motion-soft');
+}
+function replayMotionClass(el,name,delay){
+  if(!el||!richMotionAllowed()) return;
+  el.classList.remove(name);
+  void el.offsetWidth;
+  el.classList.add(name);
+  setTimeout(()=>el.classList.remove(name),delay||700);
+}
+function initInteractionMotion(){
+  const progress=document.getElementById('motionProgress');
+  let frame=0;
+  const paintScroll=()=>{
+    frame=0;
+    if(!richMotionAllowed()){
+      if(progress) progress.style.transform='scaleX(0)';
+      return;
+    }
+    const doc=document.documentElement;
+    const max=Math.max(1,doc.scrollHeight-innerHeight);
+    const ratio=Math.max(0,Math.min(1,scrollY/max));
+    if(progress) progress.style.transform=`scaleX(${ratio})`;
+    const hero=document.querySelector('.hero');
+    if(hero){
+      const rect=hero.getBoundingClientRect();
+      const y=Math.max(-11,Math.min(11,-rect.top*.045));
+      hero.classList.add('motion-parallax');
+      hero.style.setProperty('--hero-y',`${y}px`);
+    }
+  };
+  const schedulePaint=()=>{
+    if(!frame) frame=requestAnimationFrame(paintScroll);
+  };
+  addEventListener('scroll',schedulePaint,{passive:true});
+  addEventListener('resize',schedulePaint,{passive:true});
+  schedulePaint();
+
+  document.addEventListener('pointerdown',e=>{
+    if(!richMotionAllowed()||e.button>0) return;
+    const host=e.target.closest('button,.tab,[role="button"]');
+    if(!host||host.disabled||host.closest('.sheet:not(.on)')) return;
+    const box=host.getBoundingClientRect();
+    const ripple=document.createElement('span');
+    ripple.className='motion-ripple';
+    ripple.setAttribute('aria-hidden','true');
+    ripple.style.left=(e.clientX-box.left)+'px';
+    ripple.style.top=(e.clientY-box.top)+'px';
+    host.classList.add('motion-ripple-host');
+    host.appendChild(ripple);
+    setTimeout(()=>ripple.remove(),680);
+  },{passive:true});
+
+  document.addEventListener('click',e=>{
+    const tab=e.target.closest('.tab,.view-switch button');
+    if(tab) replayMotionClass(tab,'motion-selected',560);
+    const photo=e.target.closest('.photo-b');
+    if(photo) replayMotionClass(photo,'motion-photo-pop',560);
+  });
+
+  document.addEventListener('focusin',e=>{
+    if(e.target&&e.target.id==='q'){
+      replayMotionClass(e.target.closest('.search'),'motion-wake',580);
+    }
+  });
+
+  const finePointer=window.matchMedia&&matchMedia('(hover:hover) and (pointer:fine)').matches;
+  if(finePointer){
+    let tilted=null;
+    const resetTilt=el=>{
+      if(!el) return;
+      el.classList.remove('motion-tilt');
+      el.style.setProperty('--tilt-x','0deg');
+      el.style.setProperty('--tilt-y','0deg');
+      el.style.setProperty('--tilt-lift','0px');
+    };
+    document.addEventListener('pointermove',e=>{
+      if(!richMotionAllowed()){ resetTilt(tilted); tilted=null; return; }
+      const card=e.target.closest('.guide-menu-card,.guide-card,.guide-hero-dish');
+      if(card!==tilted){ resetTilt(tilted); tilted=card; }
+      if(!card) return;
+      const r=card.getBoundingClientRect();
+      const px=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));
+      const py=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height));
+      card.classList.add('motion-tilt');
+      card.style.setProperty('--tilt-x',`${(0.5-py)*5}deg`);
+      card.style.setProperty('--tilt-y',`${(px-0.5)*6}deg`);
+      card.style.setProperty('--tilt-lift','-3px');
+    },{passive:true});
+    document.addEventListener('pointerout',e=>{
+      if(tilted&&!tilted.contains(e.relatedTarget)){ resetTilt(tilted); tilted=null; }
+    },{passive:true});
+  }
+}
+
 /* ─── scroll reveal: adds .rv to chapter headers + closing as they arrive ───
    html.motion-on is what lets the CSS pre-hide them, so if this script never
    runs the page still renders fully visible. */
@@ -4268,6 +4464,7 @@ setInterval(()=>repairScrollLock('interval'),1800);
     });
   },2500);
 })();
+initInteractionMotion();
 </script>
 </body>
 </html>
