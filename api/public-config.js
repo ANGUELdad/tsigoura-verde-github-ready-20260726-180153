@@ -25,7 +25,7 @@ module.exports = async function handler(req, res) {
       subtitle: env('PUBLIC_VENUE_SUBTITLE', ''),
     },
     contact: {
-      email: env('PUBLIC_BOOKING_EMAIL', env('BOOKING_TO_EMAIL', env('BOOKING_EMAIL', 'reservations@tsigouraverderesort.gr'))),
+      email: env('PUBLIC_CONTACT_EMAIL', 'reservations@tsigouraverderesort.gr'),
       phone: env('PUBLIC_PHONE'),
       instagram: env('PUBLIC_INSTAGRAM'),
       facebook: env('PUBLIC_FACEBOOK'),

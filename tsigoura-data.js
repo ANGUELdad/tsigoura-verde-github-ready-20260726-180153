@@ -352,11 +352,11 @@ const DEFAULT_ANNOUNCEMENT = JSON.parse(JSON.stringify(ANNOUNCE));
 
 const DEFAULT_SETTINGS = {
   serviceOpen:true, acceptOrders:true, currency:'€', defaultLang:'el',
-  catalogVersion:'event-pricelist-sunday-26-hidden-spit-booking-media-supabase-v3',
+  catalogVersion:'event-pricelist-sunday-26-media-live-v4',
   cacheRevision:0,
   cacheSavedAt:0,
   traditionalMenuOnly:true,
-  headerActions:{ booking:false, social:true, wifi:true, language:true },
+  headerActions:{ social:true, wifi:true, language:true },
   design:{ accent:'#38564F', showVisualRail:true, categoryArt:true, motion:'rich', showFeaturedHero:true },
   announcement:JSON.parse(JSON.stringify(DEFAULT_ANNOUNCEMENT)),
   eventPresets:[],

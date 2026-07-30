@@ -1,0 +1,11 @@
+{
+  "name": "tsigoura-verde-menu",
+  "private": true,
+  "version": "1.0.0",
+  "dependencies": {
+    "@vercel/blob": "^2.6.1"
+  },
+  "scripts": {
+    "test": "node tests/security-and-persistence.test.js && node tests/upload-security.test.js"
+  }
+}

@@ -39,7 +39,7 @@ guest scans the table QR:
 
 ### Release 2 — owner command centre
 
-- [x] Service checklist: database, PIN, public details, Wi-Fi, booking email, and
+- [x] Service checklist: database, PIN, public details, Wi-Fi, image uploads, and
   legal data in one place.
 - [x] Menu health: missing translations, missing descriptions, media coverage,
   zero-price items, hidden items, and stale announcements.

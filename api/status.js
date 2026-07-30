@@ -31,10 +31,10 @@ module.exports = async function handler(req, res) {
       howToPublish: 'With a KV store attached, admin edits go live instantly. Without one, use /admin → Ρυθμίσεις → "Κατέβασμα menu-live.js" → replace the file → redeploy.',
     },
     adminPinSet: present('ADMIN_PIN') || present('ADMIN_PASSWORD') || present('TSIGOURA_ADMIN_PIN'),
-    booking: {
-      resendKeySet: present('RESEND_API_KEY'),
-      toEmailSet: present('BOOKING_TO_EMAIL') || present('BOOKING_EMAIL'),
-      fromEmailSet: present('BOOKING_FROM_EMAIL') || present('RESEND_FROM_EMAIL'),
+    imageUploads: {
+      configured: present('BLOB_READ_WRITE_TOKEN'),
+      kind: 'vercel-blob',
+      howToEnable: 'Vercel → Storage → Create → Blob. The token is added automatically; redeploy once.',
     },
     menuMode: {
       serviceOpen: String(process.env.PUBLIC_SERVICE_OPEN ?? 'true'),
@@ -49,8 +49,8 @@ module.exports = async function handler(req, res) {
     out.nextStep = 'No live database yet. Vercel → Storage → Create → KV, attach it to this project, redeploy. Until then the menu uses the published menu-live.js file.';
   } else if (!out.adminPinSet) {
     out.nextStep = 'Database connected. Now set ADMIN_PIN in Vercel → Settings → Environment Variables — live saving is blocked without it.';
-  } else if (!out.booking.resendKeySet || !out.booking.toEmailSet) {
-    out.nextStep = 'Booking emails are not configured yet. Add RESEND_API_KEY and BOOKING_TO_EMAIL, or leave it — /book falls back to an email draft.';
+  } else if (!out.imageUploads.configured) {
+    out.nextStep = 'Live menu is ready. Add Vercel Blob in Storage to enable image uploads from phones and computers.';
   } else {
     out.nextStep = 'All set. Admin changes save to the database instantly and reach every phone with no redeploy.';
   }

@@ -401,6 +401,11 @@ nav.tabs button.on{color:var(--cream);border-bottom-color:var(--gold);}
 .scan-video{display:none;width:100%;max-height:320px;object-fit:cover;border-radius:16px;border:1px solid var(--line);background:#111;margin-top:12px;}
 .scan-video.on{display:block;}
 .scan-note{font-size:11px;color:var(--muted);line-height:1.45;margin-top:8px;}
+.media-upload{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;}
+.media-upload input[type="file"]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;}
+.media-upload .upload-pick{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:9px 12px;border-radius:10px;background:var(--forest);color:#fff;font-size:11.5px;font-weight:800;cursor:pointer;}
+.media-upload .upload-pick:hover{filter:brightness(1.08);}
+.media-upload .upload-status{font-size:10.5px;color:var(--muted);line-height:1.35;flex:1 1 130px;}
 
 /* qr */
 .qr-card{background:var(--paper);border-radius:16px;padding:16px;text-align:center;box-shadow:var(--shadow);}
@@ -844,9 +849,9 @@ const OWNER_BACKUPS_KEY = STORAGE_KEY+'_owner_backups_v1';
 const OWNER_HISTORY_KEY = STORAGE_KEY+'_owner_history_v1';
 let ownerHistoryRemote={tried:false,loading:false,ok:false,backups:[],history:[],error:''};
 let ownerHistoryWriteError='';
+const menuBroadcast=('BroadcastChannel' in window)?new BroadcastChannel('tsigoura-menu-live'):null;
 const MENU_ICON_KEYS = ['dip','cheese','pot','fries','zucchini','fish','salad','meat','chop','burger','shank','chicken','drumstick','skewer','spit','pizza','wine','beer','mug','soda','juice','bottle','carafe','ouzo','pepper','star','leaf'];
 const HEADER_ACTIONS = [
-  ['booking','Κράτηση τραπεζιού','Κρύβει/εμφανίζει το κουμπί κράτησης και το shortcut.'],
   ['social','Social','Κουμπί για Instagram/Facebook.'],
   ['wifi','Wi‑Fi','Κουμπί QR/αντιγραφής Wi‑Fi.'],
   ['language','Γλώσσα','Επιλογή γλώσσας στο πάνω μέρος.'],
@@ -875,6 +880,39 @@ function imageOptionList(){
   try{ Object.values(DISH_ART||{}).forEach(f=>files.add('media/dishes/'+f+'.png')); }catch(e){}
   try{ Object.values(CAT_ART||{}).forEach(f=>files.add('media/dishes/'+f+'.png')); }catch(e){}
   return [...files].sort();
+}
+async function uploadAdminImage(file,kind,id,status){
+  if(!file) return '';
+  const allowed=['image/jpeg','image/png','image/webp','image/avif'];
+  if(!allowed.includes(file.type)){ toast('Μόνο JPG, PNG, WebP ή AVIF'); return ''; }
+  if(file.size>4*1024*1024){ toast('Η εικόνα πρέπει να είναι έως 4 MB'); return ''; }
+  const pin=adminPin();
+  if(!pin){ toast('Ξανακάντε είσοδο'); return ''; }
+  if(status) status.textContent='Ανέβασμα…';
+  try{
+    const r=await fetch('/api/admin-upload',{
+      method:'POST',
+      headers:{
+        'Content-Type':file.type,
+        'X-Admin-Pin':pin,
+        'X-Upload-Kind':kind,
+        'X-Upload-Id':String(id),
+        'X-File-Name':file.name
+      },
+      body:file
+    });
+    const data=await r.json().catch(()=>null);
+    if(!r.ok||!data||!data.url) throw new Error((data&&data.error)||'upload_failed');
+    if(status) status.textContent='Ανέβηκε με ασφάλεια ✓';
+    return cleanAdminPath(data.url);
+  }catch(e){
+    const msg=e&&e.message==='blob_not_configured'
+      ?'Συνδέστε Vercel Blob για uploads'
+      :'Το ανέβασμα απέτυχε';
+    if(status) status.textContent=msg;
+    toast(msg);
+    return '';
+  }
 }
 function iconOptions(selected){
   selected=String(selected||'');
@@ -1042,10 +1080,9 @@ function renderOpsCommand(){
     const wifi=cfg&&cfg.wifi||{}, wifiReady=!!(wifi.ssid&&wifi.pass);
     setup.push(opsRow(wifiReady?'ok':'warn','Wi‑Fi επισκεπτών',
       wifiReady?`Το δίκτυο «${ioEsc(wifi.ssid)}» είναι διαθέσιμο στο menu.`:'Προσθέστε όνομα δικτύου και κωδικό Wi‑Fi.','settings',wifiReady?'Έλεγχος':'Οδηγίες'));
-    const bookingOn=S.settings.headerActions&&S.settings.headerActions.booking!==false;
-    const bookingReady=!bookingOn||!!(st&&st.booking&&st.booking.resendKeySet&&st.booking.toEmailSet);
-    setup.push(opsRow(bookingReady?'ok':'warn','Κρατήσεις',
-      !bookingOn?'Το κουμπί είναι σκόπιμα κλειστό.':bookingReady?'Τα email κρατήσεων είναι έτοιμα.':'Η κράτηση είναι ορατή αλλά το email δεν έχει πλήρη ρύθμιση.','settings',bookingReady?'Ρύθμιση':'Διόρθωση'));
+    const uploadsReady=!!(st&&st.imageUploads&&st.imageUploads.configured);
+    setup.push(opsRow(uploadsReady?'ok':'warn','Εικόνες',
+      uploadsReady?'Uploads από κινητό και υπολογιστή είναι έτοιμα.':'Συνδέστε Vercel Blob για uploads από συσκευή.','settings',uploadsReady?'Έτοιμο':'Ρύθμιση'));
   }
   const quality=[
     opsRow(h.noPrice?'bad':'ok','Τιμές καταλόγου',h.noPrice?`${h.noPrice} ορατά πιάτα δεν έχουν τιμή ή κείμενο τιμής.`:'Όλα τα ορατά πιάτα έχουν σαφή τιμή.','menu',h.noPrice?'Διόρθωση':'Μενού'),
@@ -1221,7 +1258,9 @@ function undoLastChange(){
 if($('undoBtn')) $('undoBtn').onclick=undoLastChange;
 function notifyFreshMenu(){
   try{
-    localStorage.setItem(STORAGE_KEY+'_admin_revision', String((S&&S.updatedAt)||Date.now()));
+    const revision=String((S&&S.updatedAt)||Date.now());
+    localStorage.setItem(STORAGE_KEY+'_admin_revision',revision);
+    if(menuBroadcast) menuBroadcast.postMessage({type:'menu-revision',revision:Number(revision)});
     if($('menuPreview') && editMode==='preview') renderPreviewDock();
   }catch(e){}
 }
@@ -1307,6 +1346,7 @@ async function loadRemoteMenu({silent=false}={}){
       refreshUndoBtn();
     }
     setSyncState('live');
+    if(menuBroadcast) menuBroadcast.postMessage({type:'menu-revision',revision:Number(data.revision)||Date.now()});
     if(!silent) toast('Φορτώθηκε το ζωντανό μενού ✓');
     return true;
   }catch(e){
@@ -1992,7 +2032,9 @@ function renderPro(){
         </div>
         <div class="fieldrow">
           <div><label>Icon</label><select data-icon>${iconOptions(i.icon||'bowl')}</select></div>
-          <div><label>Εικόνα πιάτου</label><input data-image list="mediaPathList" value="${ioEsc(knownDishImagePath(i))}" placeholder="media/dishes/01-tzatziki.png ή https://..."></div>
+          <div><label>Εικόνα πιάτου · path ή URL</label><input data-image list="mediaPathList" value="${ioEsc(knownDishImagePath(i))}" placeholder="media/dishes/01-tzatziki.png ή https://...">
+            <div class="media-upload"><input type="file" data-image-file accept="image/jpeg,image/png,image/webp,image/avif"><label class="upload-pick">${ICO.get('plus')}Από συσκευή</label><span class="upload-status">Κινητό ή υπολογιστής · έως 4 MB</span></div>
+          </div>
         </div>
         <div class="cat-mini">Αν η εικόνα λείπει ή είναι λάθος, ο πελάτης βλέπει καθαρό fallback αντί για σπασμένο icon.</div>
         <div class="field"><label>Σημάνσεις</label>
@@ -2042,6 +2084,17 @@ function renderPro(){
     });
     box.querySelectorAll('[data-lang]').forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); proLang=b.dataset.lang; renderPro();
       document.querySelectorAll('.pro-item')[S.menu.indexOf(i)].classList.add('open'); });
+    const dishFile=box.querySelector('[data-image-file]');
+    const dishPick=box.querySelector('.upload-pick');
+    dishPick.onclick=()=>dishFile.click();
+    dishFile.onchange=async()=>{
+      const url=await uploadAdminImage(dishFile.files&&dishFile.files[0],'dish',i.id,box.querySelector('.upload-status'));
+      if(!url)return;
+      i.image=url;
+      persist('dish-image-upload');
+      renderPro();
+      toast('Η νέα εικόνα δημοσιεύτηκε ✓');
+    };
     box.querySelector('[data-save]').onclick=()=>{
       if(!i.t[proLang]) i.t[proLang]={n:'',d:''};
       i.t[proLang].n = box.querySelector('[data-n]').value;
@@ -2080,9 +2133,8 @@ function renderCategoryManager(area){
   wrap.className='cat-manager reveal';
   wrap.innerHTML=`<div class="cat-top">
     <h3>${ICO.get('layers')}Κατηγορίες</h3>
-    <button class="btn ghost sm" id="addCatBtn">${ICO.get('plus')}Νέα κατηγορία</button>
   </div>
-  <div class="cat-mini" style="margin-bottom:10px;">Σύρε τις κατηγορίες για αλλαγή σειράς. Τα πιάτα ακολουθούν αυτόματα τη σειρά.</div>
+  <div class="cat-mini" style="margin-bottom:10px;">Χρησιμοποιούνται μόνο οι αρχικές κατηγορίες. Μπορείτε να τις μετονομάσετε, να τις ταξινομήσετε, να τις κρύψετε ή να τις διαγράψετε.</div>
   <div class="cat-list"></div>`;
   const list=wrap.querySelector('.cat-list');
   S.categories.slice().sort((a,b)=>a.order-b.order).forEach((c,ix)=>{
@@ -2113,7 +2165,9 @@ function renderCategoryManager(area){
         <button data-cat-save title="Αποθήκευση">${ICO.get('check')}</button>
         <button class="danger" data-cat-del title="Διαγραφή">${ICO.get('trash')}</button>
       </div>
-      <div class="cat-media"><label>Εικόνα κατηγορίας</label><input data-cat-image list="mediaPathList" value="${ioEsc(knownCategoryImagePath(c))}" placeholder="media/dishes/05-bougiourdi.png ή https://..."></div>
+      <div class="cat-media"><label>Εικόνα κατηγορίας · path ή URL</label><input data-cat-image list="mediaPathList" value="${ioEsc(knownCategoryImagePath(c))}" placeholder="media/dishes/05-bougiourdi.png ή https://...">
+        <div class="media-upload"><input type="file" data-cat-image-file accept="image/jpeg,image/png,image/webp,image/avif"><label class="upload-pick">${ICO.get('plus')}Από συσκευή</label><span class="upload-status">Κινητό ή υπολογιστής · έως 4 MB</span></div>
+      </div>
       <div class="cat-media"><label>Χρώμα φόντου</label><input type="color" data-cat-tint value="${ioEsc(c.tint||'#E7EEEA')}" style="width:70px"></div>
       <div class="cat-translations">
         <div class="cat-mini">Ονομασία σε όλες τις γλώσσες</div>
@@ -2132,6 +2186,16 @@ function renderCategoryManager(area){
     row.querySelector('[data-cat-name]').onchange=()=>saveCategoryRow(c,row);
     row.querySelector('[data-cat-icon]').onchange=()=>saveCategoryRow(c,row);
     row.querySelector('[data-cat-image]').onchange=()=>saveCategoryRow(c,row);
+    const catFile=row.querySelector('[data-cat-image-file]');
+    row.querySelector('.upload-pick').onclick=()=>catFile.click();
+    catFile.onchange=async()=>{
+      const url=await uploadAdminImage(catFile.files&&catFile.files[0],'category',c.id,row.querySelector('.upload-status'));
+      if(!url)return;
+      c.image=url;
+      persist('category-image-upload');
+      renderPro();
+      toast('Η εικόνα κατηγορίας δημοσιεύτηκε ✓');
+    };
     row.querySelector('[data-cat-accent]').onchange=()=>saveCategoryRow(c,row);
     row.querySelector('[data-cat-tint]').onchange=()=>saveCategoryRow(c,row);
     row.querySelectorAll('[data-cat-lang]').forEach(input=>input.onchange=()=>saveCategoryRow(c,row));
@@ -2140,7 +2204,6 @@ function renderCategoryManager(area){
     list.appendChild(row);
   });
   area.appendChild(wrap);
-  wrap.querySelector('#addCatBtn').onclick=addCategory;
 }
 
 function saveCategoryRow(c,row){
@@ -2157,15 +2220,6 @@ function saveCategoryRow(c,row){
   c.t.el=name;
   c.icon=icon; c.accent=accent; c.tint=tint; c.image=image;
   persist(); renderPro(); toast('Η κατηγορία αποθηκεύτηκε');
-}
-function addCategory(){
-  const name=(prompt('Όνομα νέας κατηγορίας:','Νέα κατηγορία')||'').trim();
-  if(!name) return;
-  const idBase=name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'') || 'category';
-  let id=idBase.slice(0,28), n=2;
-  while(S.categories.some(c=>c.id===id)) id=(idBase.slice(0,24)+'-'+(n++));
-  S.categories.push({id,order:S.categories.length+1,icon:'star',accent:'#38564F',t:{el:name,en:name,de:name,ro:name,sr:name,bg:name}});
-  persist(); renderPro(); toast('Προστέθηκε κατηγορία');
 }
 function deleteCategory(c){
   const used=S.menu.filter(i=>i.cat===c.id).length;
@@ -2771,7 +2825,7 @@ function wireAnnouncementEditor(){
   };
 }
 function renderSettings(){
-  if(!S.settings.headerActions) S.settings.headerActions={booking:false,social:true,wifi:true,language:true};
+  if(!S.settings.headerActions) S.settings.headerActions={social:true,wifi:true,language:true};
   const rows=[
     { ic:'sun', key:'serviceOpen', t:'Το κατάστημα είναι ανοιχτό', d:'Όταν είναι κλειστό, οι πελάτες βλέπουν το μενού αλλά δεν μπορούν να παραγγείλουν.' },
     { ic:'qr', key:'acceptOrders', t:'Δέχεται παραγγελίες από QR', d:'Κλείστε το σε ώρες αιχμής ή αν θέλετε το μενού μόνο για ανάγνωση.' },
@@ -2779,7 +2833,7 @@ function renderSettings(){
   ];
   const actionRows=HEADER_ACTIONS.map(([key,title,desc])=>`
     <div class="setting-row">
-      <div class="txt"><div class="t" style="display:flex;align-items:center;gap:7px;">${ICO.get(key==='booking'?'calendar':key==='social'?'share':key==='wifi'?'wifi':'language')}${title}</div><div class="d">${desc}</div></div>
+      <div class="txt"><div class="t" style="display:flex;align-items:center;gap:7px;">${ICO.get(key==='social'?'share':key==='wifi'?'wifi':'language')}${title}</div><div class="d">${desc}</div></div>
       <div class="toggle ${S.settings.headerActions[key]!==false?'on':''}" data-action-set="${key}"></div>
     </div>`).join('');
   $('settingsArea').innerHTML = rows.map(r=>`

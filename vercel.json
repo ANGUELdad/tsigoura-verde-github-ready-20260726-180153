@@ -10,13 +10,13 @@
       ]
     },
     {
-      "source": "/(index|admin|book)",
+      "source": "/(index|admin)",
       "headers": [
         { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" }
       ]
     },
     {
-      "source": "/(index|admin|book).html",
+      "source": "/(index|admin).html",
       "headers": [
         { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" }
       ]
@@ -28,7 +28,7 @@
       ]
     },
     {
-      "source": "/api/(public-config|status|menu|admin-menu)",
+      "source": "/api/(public-config|status|menu|admin-menu|admin-upload)",
       "headers": [
         { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" }
       ]

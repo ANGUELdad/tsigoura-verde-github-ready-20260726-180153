@@ -119,6 +119,11 @@ const fullState = {
   assert.equal(result.body.state.tables[0].status, 'open');
   assert.equal(result.body.state.tables[0].note, '');
 
+  result = await invoke(publicMenu, { query: { revision: 1 } });
+  assert.equal(result.status, 200);
+  assert.equal(result.body.unchanged, true);
+  assert.equal(result.body.state, undefined);
+
   const invalid = JSON.parse(JSON.stringify(fullState));
   invalid.menu.push(Object.assign({}, invalid.menu[0]));
   result = await invoke(adminMenu, {
@@ -141,7 +146,7 @@ const fullState = {
   assert.equal(result.status, 503);
   assert.equal(result.body.error, 'admin_pin_not_set');
 
-  console.log('security-and-persistence: 14/14 assertions passed');
+  console.log('security-and-persistence: 17/17 assertions passed');
 })().catch(error => {
   console.error(error);
   process.exitCode = 1;

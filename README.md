@@ -1,17 +1,17 @@
 # Tsigoura Verde Resort — e-menu (deploy package)
 
-Ready to upload to **Vercel**. No build step. The menu works as a static site; booking email and admin PIN checks use optional Vercel functions in `api/`.
+Ready to deploy to **Vercel**. The menu is static-first; protected live editing,
+cross-device refresh, and image uploads use Vercel functions in `api/`.
 
 ## What's inside
 | File | URL | What it is |
 |---|---|---|
 | `index.html` | `/` | Customer menu (the QR opens this) |
 | `admin.html` | `/admin` | Owner panel (menu, tables, orders, QR, **Πιάτο ημέρας**) |
-| `book.html` | `/book` | Full page for table bookings |
 | `tsigoura-data.js` | — | All menu data (dishes, prices, categories, tables, settings) |
 | `tsigoura-menu-icons.js`, `tsigoura-icons.js`, `tsigoura-qr.js` | — | Icons + QR encoder |
 | `media/` | — | Logo, acorn mark, hero photo |
-| `api/book.js` | `/api/book` | Booking email endpoint via Resend |
+| `api/admin-upload.js` | `/api/admin-upload` | PIN-protected image upload to Vercel Blob |
 | `api/admin-login.js` | `/api/admin-login` | Admin PIN check from Vercel env |
 | `api/admin-history.js` | `/api/admin-history` | PIN-protected backups, change log, and restore |
 | `api/public-config.js` | `/api/public-config` | Public contact/Wi-Fi/legal config from env |
@@ -23,8 +23,8 @@ Ready to upload to **Vercel**. No build step. The menu works as a static site; b
 ## Owner safety and smart menu behaviour
 
 - The **Επισκόπηση** starts with a launch-readiness command centre that checks
-  live publishing, required business details, guest contact links, booking
-  setup, prices, translations, media, announcements, and category visibility.
+  live publishing, required business details, guest contact links, image
+  uploads, prices, translations, media, announcements, and category visibility.
 - Every finding explains the impact and links directly to the owner screen
   where it can be handled.
 - Every owner edit can be reversed immediately with **Αναίρεση**.
@@ -92,15 +92,10 @@ Ready to upload to **Vercel**. No build step. The menu works as a static site; b
 ## Environment variables
 Add these in Vercel: **Project → Settings → Environment Variables**. Use `.env.example` as the complete checklist.
 
-- `RESEND_API_KEY` — your Resend API key
-- `BOOKING_TO_EMAIL` or `BOOKING_EMAIL` — where booking requests should arrive
-- `BOOKING_FROM_EMAIL` or `RESEND_FROM_EMAIL` — verified sender, e.g. `Tsigoura Verde Resort <bookings@yourdomain.gr>`
 - `ADMIN_PIN` — the real admin/waiter PIN
-- `PUBLIC_PHONE`, `PUBLIC_BOOKING_EMAIL`, `PUBLIC_INSTAGRAM`, `PUBLIC_FACEBOOK`, `PUBLIC_MAPS_URL`, `PUBLIC_WEBSITE_URL`
+- `PUBLIC_PHONE`, `PUBLIC_CONTACT_EMAIL`, `PUBLIC_INSTAGRAM`, `PUBLIC_FACEBOOK`, `PUBLIC_MAPS_URL`, `PUBLIC_WEBSITE_URL`
 - `PUBLIC_WIFI_SSID`, `PUBLIC_WIFI_PASS`, `PUBLIC_WIFI_ENC`
 - `PUBLIC_COMPANY_NAME`, `PUBLIC_AFM`, `PUBLIC_DOY`, `PUBLIC_GEMI`, `PUBLIC_ADDRESS`, `PUBLIC_MHTE`, `PUBLIC_AGORANOMIKOS`
-
-If Resend is not configured yet, `/book` falls back to a prefilled email draft so customers are not trapped on a dead form.
 
 ## Live menu database (no keys to copy)
 
@@ -118,12 +113,17 @@ Then set **`ADMIN_PIN`** in *Settings → Environment Variables*. This one is
 required: without it live saving is blocked, otherwise anyone who found the URL
 could rewrite your menu.
 
+For uploads from a phone or computer, add **Blob** from the same Vercel Storage
+tab and redeploy. Vercel injects `BLOB_READ_WRITE_TOKEN`; the owner then picks a
+JPG, PNG, WebP, or AVIF directly in **Μενού → Pro**. Local paths and full URLs
+remain available beside the upload control.
+
 Open **`/api/status`** at any time — it tells you exactly what is still missing.
 
 ### How it behaves
 | | What customers get |
 |---|---|
-| KV attached + `ADMIN_PIN` set | Every admin edit is live on the next page load |
+| KV attached + `ADMIN_PIN` set | Every admin edit is live; open phones check within about 15 seconds |
 | No KV attached | The published `menu-live.js` file, else the built-in catalogue |
 
 The badge in the admin header always says which mode you are in:
@@ -147,13 +147,6 @@ project → redeploy. Slower, but needs no account and no configuration.
 If the database is unreachable the menu silently falls back, so guests never see
 a blank page.
 
-## Booking page
-Share this link anywhere:
-
-`https://<project>.vercel.app/book`
-
-The menu header booking button opens this full page. The page posts to `/api/book`, and includes a spam honeypot plus required-field validation.
-
 ## The QR codes (two kinds — don't mix them)
 - **Table QR** (print one per table): `https://<project>.vercel.app/?t=T4` → opens the menu already tagged to table T4. Generate/print these from **/admin → QR & Σύνδεσμοι**.
 - **Order QR** (on the customer's screen after ordering): shows the order so the waiter can read/scan it. In this version it carries the order text; the waiter assigns the table if no `?t=` was used.
@@ -165,7 +158,7 @@ Owner sets it in **/admin → Επισκόπηση** (name + price + toggle). It
 Guests tap the Wi-Fi icon in the menu header → a **join QR** (camera auto-connects) **plus** a copy-password button.
 
 ## Important notes
-- This package ships in **traditional e-menu mode by default** for today's upload: guests see menu, availability, event banner, booking, socials, Wi-Fi, and legal info. The ordering systems can be re-enabled from `/admin → Ρυθμίσεις`.
+- This package ships in **traditional e-menu mode by default**: guests see the menu, availability, event banner, socials, Wi-Fi, and legal info. Ordering can be re-enabled from `/admin → Ρυθμίσεις`.
 - Menu edits live in `menu-live.js`. Until you publish it, admin changes stay on the device that made them.
-- Set the real business/legal details, phone, Wi-Fi, booking email, and admin PIN in Vercel env before going public.
+- Set the real business/legal details, contact details, Wi-Fi, and admin PIN in Vercel env before going public.
 - Local preview fallback admin PIN is `1234`; production should use `ADMIN_PIN`.
