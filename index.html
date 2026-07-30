@@ -9,7 +9,7 @@
 <title>Tsigoura Verde Resort</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 /* ============================================================================
    TSIGOURA VERDE — guest menu
@@ -218,7 +218,7 @@ body.traditional-mode .wrap{padding-bottom:44px;}
   .vshot b{font-size:13.5px;}
   .quick-flow{grid-template-columns:1fr 1fr;gap:8px;}
   .flow-chip:nth-child(5){grid-column:1 / -1;}
-  .social-grid{grid-template-columns:1fr;}
+  .book-two,.social-grid{grid-template-columns:1fr;}
   .cat-mosaic{grid-template-columns:1fr 1fr;gap:8px;}
   .cat-card{min-height:86px;padding:12px;}
   .cat-card:first-child{grid-row:auto;min-height:110px;grid-column:1 / -1;}
@@ -329,6 +329,14 @@ body.traditional-mode .wrap{padding-bottom:44px;}
 .social-ad-actions .social-img{width:19px;height:19px;}
 .social-ad-later{width:100%;margin-top:9px;color:var(--muted);background:rgba(255,253,248,.58);}
 .social-ad-actions a:active,.social-ad-later:active,.social-ad-x:active{transform:scale(.96);}
+.book-form{display:grid;gap:10px;margin-top:14px;}
+.book-form label{display:grid;gap:5px;font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);}
+.book-form input,.book-form textarea{width:100%;border:1px solid var(--line);border-radius:12px;background:var(--card);padding:12px 13px;font:inherit;font-size:14px;color:var(--ink);}
+.book-form textarea{resize:none;min-height:84px;}
+.book-form input:focus,.book-form textarea:focus{outline:none;border-color:var(--olive);box-shadow:0 0 0 3px rgba(56,86,79,.12);}
+.book-two{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+.book-note{font-size:12px;line-height:1.5;color:var(--muted);margin-top:10px;}
+.book-status{font-size:12px;line-height:1.45;color:var(--olive);min-height:18px;}
 .cat-mosaic{margin:16px 22px 6px;display:grid;grid-template-columns:1.1fr .9fr;gap:11px;isolation:isolate;}
 .cat-card{position:relative;min-height:98px;border-radius:20px;padding:14px;overflow:hidden;text-align:left;color:var(--pine);
   border:1px solid color-mix(in srgb,var(--acc) 36%,rgba(221,210,186,.88));
@@ -743,11 +751,6 @@ body.traditional-mode .wrap{padding-bottom:44px;}
 .checkout-card .co-ic .ic{width:20px;height:20px;stroke-width:1.9;}
 .checkout-card b{display:block;font-size:14px;color:var(--pine);line-height:1.2;}
 .checkout-card span{display:block;font-size:11.5px;color:var(--muted);line-height:1.35;margin-top:3px;}
-.checkout-card .recommended{
-  display:inline-flex;margin:0 0 5px;padding:3px 7px;border-radius:999px;
-  background:var(--gold);color:#fff;font-size:9px;font-style:normal;font-weight:850;
-  line-height:1;text-transform:uppercase;letter-spacing:.7px;
-}
 .checkout-card .arr{color:var(--gold);font-size:20px;}
 .checkout-card.waiter{border-color:rgba(160,126,60,.36);background:#FFF9EA;}
 .checkout-card.beta{border-color:rgba(56,86,79,.34);background:#EEF5EF;}
@@ -860,7 +863,7 @@ body.traditional-mode .wrap{padding-bottom:44px;}
   .item .top{grid-template-columns:42px minmax(0,1fr) auto auto;}
   .item .pr{font-size:16px;}
   .item .meta{margin-left:44px;}
-  .sp-grid,.langgrid,.social-grid{grid-template-columns:1fr;}
+  .sp-grid,.langgrid,.book-two,.social-grid{grid-template-columns:1fr;}
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -992,6 +995,7 @@ body{background:var(--paper)!important;}
 @keyframes btnPop {from{opacity:0;transform:scale(.5) translateY(-6px)}to{opacity:1;transform:none}}
 .head .brand h1{animation:nameIn .6s var(--ez-out) .12s both!important;}
 .head .brand .sub{animation:nameIn .6s var(--ez-out) .2s both!important;}
+.head #bookBtn  {animation:btnPop .5s var(--ez-spring) .26s both!important;}
 .head #socialBtn{animation:btnPop .5s var(--ez-spring) .34s both!important;}
 .head #wifiBtn  {animation:btnPop .5s var(--ez-spring) .42s both!important;}
 .head .carticon {animation:btnPop .5s var(--ez-spring) .48s both!important;}
@@ -1696,17 +1700,10 @@ body.sheet-open .head{
   -webkit-overflow-scrolling:touch!important;
 }
 @media(min-width:900px){
-  :root{--maxw:1120px;}
+  :root{--maxw:760px;}
   .wrap,.head,.search,.view-switch,.updates,.announce,.nav,.sec,.closing{
-    max-width:1120px!important;
+    max-width:760px!important;
   }
-  #root{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;padding:0 22px!important;align-items:start;}
-  #root>.guide-shell,#root>.guide-landing,#root>.empty{grid-column:1 / -1;}
-  #root>.sec{width:100%!important;margin:0!important;padding-left:0!important;padding-right:0!important;}
-  .guide-menu{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px!important;}
-  .guide-dishes{grid-template-columns:repeat(3,minmax(0,1fr))!important;}
-  .guide-card{min-height:100%;align-content:start;}
-  .closing{padding-left:22px!important;padding-right:22px!important;}
 }
 
 /* 2026-07-30 — interaction motion layer
@@ -1879,6 +1876,19 @@ body.sheet-open .head{
   100%{opacity:1;filter:blur(0);transform:none}
 }
 #root.motion-live-update{animation:liveRefresh .65s var(--ez-out) both!important;}
+@keyframes formShake{
+  0%,100%{transform:none}
+  20%{transform:translateX(-7px)}
+  40%{transform:translateX(6px)}
+  60%{transform:translateX(-4px)}
+  80%{transform:translateX(3px)}
+}
+.motion-shake{animation:formShake .42s ease both!important;}
+@keyframes bookedGlow{
+  0%{box-shadow:0 0 0 0 rgba(56,86,79,.28)}
+  100%{box-shadow:0 0 0 12px rgba(56,86,79,0)}
+}
+.book-status.motion-booked{animation:bookedGlow .8s ease both!important;border-radius:8px;}
 @media (prefers-reduced-motion:reduce){
   .motion-progress,.motion-ripple,.success-sparks{display:none!important;}
   .guide-menu-card,.guide-card,.guide-hero-dish{transform:none!important;}
@@ -1891,290 +1901,6 @@ body.motion-off *,body.motion-off *::before,body.motion-off *::after{
 }
 body.motion-off .photo-stage img,body.motion-soft .photo-stage.img-ready img{
   opacity:1!important;filter:none!important;transform:none!important;
-}
-
-/* ═════════ CALM GUEST UI — one clear hierarchy, fewer competing surfaces ═════════
-   Brand → search → view/category navigation → menu content.  Motion remains,
-   but decoration, gradients and shadows no longer compete with the food. */
-:root{
-  --ui-bg:#F6F3EB;
-  --ui-surface:#FFFDF9;
-  --ui-soft:#EFEBE1;
-  --ui-line:#E5DFD1;
-  --ui-ink:#1F2F30;
-  --ui-muted:#706E66;
-  --ui-shadow:0 10px 28px rgba(31,47,48,.07);
-}
-body{background:var(--ui-bg)!important;color:var(--ui-ink)!important;}
-body::after{display:none!important;}
-.wrap{background:var(--ui-bg)!important;}
-
-/* Compact utility header. On phones the crest carries the brand so controls
-   are never crushed by a wrapping title. */
-.head,
-body.guided-view .head,
-body.nav-pinned .head{
-  min-height:64px!important;padding:10px 16px!important;gap:7px!important;
-  background:rgba(246,243,235,.96)!important;border-bottom:1px solid var(--ui-line)!important;
-  box-shadow:none!important;backdrop-filter:blur(18px)!important;
-}
-.mark-link,.head .mark{width:40px!important;height:40px!important;}
-.head .brand h1{font-size:18px!important;font-weight:600!important;line-height:1.05!important;}
-.head .brand .sub{display:none!important;}
-.wifibtn,.carticon{
-  width:36px!important;height:36px!important;margin:0!important;
-  background:transparent!important;border:0!important;box-shadow:none!important;color:var(--pine)!important;
-}
-.wifibtn:hover,.carticon:hover{background:rgba(56,86,79,.07)!important;}
-.wifibtn svg,.carticon svg{width:18px!important;height:18px!important;}
-.social-img{width:20px!important;height:20px!important;}
-.langbtn{
-  min-height:34px!important;padding:6px 9px!important;border:0!important;border-radius:10px!important;
-  background:rgba(56,86,79,.07)!important;font-size:11px!important;
-}
-.carticon .cbadge{top:-1px!important;right:-1px!important;}
-
-/* Search is the primary tool; the mode switch is a quiet secondary choice. */
-.search{
-  min-height:48px!important;margin:14px 16px 7px!important;padding:0 14px!important;
-  border:1px solid var(--ui-line)!important;border-radius:15px!important;
-  background:var(--ui-surface)!important;box-shadow:none!important;
-}
-.search:focus-within{
-  border-color:rgba(56,86,79,.55)!important;
-  box-shadow:0 0 0 3px rgba(56,86,79,.09)!important;
-}
-.search svg{width:17px!important;height:17px!important;stroke:var(--ui-muted)!important;}
-.search input{font-size:15px!important;color:var(--ui-ink)!important;}
-.search-clear{
-  width:30px!important;height:30px!important;border:0!important;background:var(--ui-soft)!important;
-  font-size:19px!important;
-}
-.view-switch{
-  margin:3px 16px 5px!important;padding:0!important;gap:4px!important;
-  border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;
-}
-.view-switch button{
-  min-height:38px!important;border-radius:11px!important;padding:7px 10px!important;
-  color:var(--ui-muted)!important;font-size:12.5px!important;font-weight:650!important;
-}
-.view-switch button.on{
-  color:var(--pine)!important;background:rgba(56,86,79,.10)!important;box-shadow:none!important;
-}
-.view-switch button .ic{width:15px!important;height:15px!important;}
-
-/* One restrained category rail instead of a second row of decorative cards. */
-.nav,.nav.nav-fixed{
-  margin:0 auto!important;background:transparent!important;border:0!important;
-  box-shadow:none!important;contain:none!important;
-}
-.nav::before,.nav::after{display:none!important;}
-.nav .row{gap:5px!important;padding:7px 16px 12px!important;scroll-padding-inline:16px!important;}
-.tab{
-  min-height:36px!important;padding:8px 12px!important;gap:0!important;border:0!important;
-  border-radius:999px!important;background:transparent!important;box-shadow:none!important;
-  color:var(--ui-muted)!important;font-size:12.5px!important;font-weight:650!important;
-}
-.tab .ic,.tab .greek-ic{display:none!important;}
-.tab.on{
-  color:#fff!important;background:var(--tab-acc,var(--olive))!important;
-  border:0!important;box-shadow:none!important;
-}
-.tab.util-tab{background:transparent!important;opacity:.65!important;}
-
-/* Each category becomes one coherent surface. The heading establishes the
-   group once; rows then stay quiet and easy to scan. */
-.sec{
-  width:calc(100% - 24px)!important;max-width:calc(var(--maxw) - 24px)!important;
-  margin:16px auto!important;padding:0 16px 3px!important;
-  border:1px solid var(--ui-line)!important;border-radius:22px!important;
-  background:var(--ui-surface)!important;box-shadow:none!important;
-}
-.sec-h{
-  display:grid!important;grid-template-columns:36px minmax(0,1fr)!important;column-gap:10px!important;
-  min-height:0!important;margin:0!important;padding:17px 0 13px!important;
-  border:0!important;border-bottom:1px solid var(--ui-line)!important;
-}
-.sec-h .sic{
-  display:flex!important;width:36px!important;height:36px!important;border:0!important;border-radius:11px!important;
-  background:var(--ui-soft)!important;box-shadow:none!important;
-}
-.sec-h .sic .ic{width:20px!important;height:20px!important;}
-.sec-h .sic .greek-ic{width:29px!important;height:29px!important;filter:none!important;}
-.sec-h .t{
-  font-size:24px!important;font-weight:650!important;line-height:1.08!important;color:var(--ui-ink)!important;
-}
-.sec-h .num,.sec-h .cat-art,.sec-h::before,.sec-h::after{display:none!important;}
-.item{padding:14px 0!important;border-bottom:1px solid var(--ui-line)!important;background:transparent!important;}
-.item:last-child{border-bottom:0!important;}
-.item .top{
-  grid-template-columns:38px minmax(0,1fr) auto auto!important;gap:10px!important;
-}
-.item .dish-ic{
-  width:38px!important;height:38px!important;border:0!important;border-radius:11px!important;
-  background:var(--ui-soft)!important;box-shadow:none!important;
-}
-.item .dish-ic .greek-ic{width:29px!important;height:29px!important;filter:none!important;}
-.item .dish-ic .ic{width:19px!important;height:19px!important;}
-.item .nm{
-  font-family:Inter,system-ui,sans-serif!important;font-size:14.5px!important;font-weight:650!important;
-  line-height:1.3!important;color:var(--ui-ink)!important;
-}
-.item .pr{
-  font-family:Inter,system-ui,sans-serif!important;font-size:14px!important;font-weight:700!important;
-  color:var(--pine)!important;
-}
-.item .row-act{display:flex!important;align-items:center!important;gap:3px!important;margin:0!important;}
-.info-b{
-  width:28px!important;height:32px!important;border:0!important;border-radius:9px!important;
-  color:var(--ui-muted)!important;font-size:12px!important;
-}
-.add-sm{
-  width:36px!important;height:36px!important;border:1px solid rgba(56,86,79,.38)!important;
-  border-radius:11px!important;background:transparent!important;box-shadow:none!important;font-size:18px!important;
-}
-.add-sm.on{background:var(--olive)!important;color:#fff!important;}
-.item .desc,.item .meta{
-  margin-left:48px!important;max-width:calc(100% - 48px)!important;
-}
-.item .desc{
-  margin-top:4px!important;font-family:Inter,system-ui,sans-serif!important;font-style:normal!important;
-  font-size:12px!important;line-height:1.45!important;color:var(--ui-muted)!important;
-}
-.item .alg,.cust-hint{font-size:10.5px!important;color:var(--ui-muted)!important;}
-.item.feat::after{opacity:.32!important;}
-
-/* Category overview: compact two-column map instead of four oversized banners. */
-.guide-landing{padding:12px 16px 28px!important;}
-.guide-landing-copy{
-  margin:4px 2px 14px!important;padding:10px 2px 13px!important;border:0!important;border-radius:0!important;
-  background:transparent!important;box-shadow:none!important;
-}
-.guide-landing-copy small{margin-bottom:4px!important;font-size:10px!important;letter-spacing:1.8px!important;}
-.guide-landing-copy h2{font-size:clamp(28px,8vw,40px)!important;line-height:1.05!important;}
-.guide-landing-copy p{margin-top:6px!important;font-size:12.5px!important;}
-.guide-menu{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important;}
-.guide-menu-card{
-  min-height:148px!important;display:flex!important;flex-direction:column!important;align-items:flex-start!important;
-  justify-content:space-between!important;gap:10px!important;padding:14px!important;border-radius:20px!important;
-  background:color-mix(in srgb,var(--accbg,#E7EEEA) 58%,var(--ui-surface))!important;
-  border:1px solid color-mix(in srgb,var(--acc) 22%,var(--ui-line))!important;box-shadow:none!important;
-}
-.guide-menu-card::after{display:none!important;}
-.guide-menu-icon{
-  width:50px!important;height:50px!important;border:0!important;border-radius:14px!important;
-  background:rgba(255,255,255,.64)!important;box-shadow:none!important;
-}
-.guide-menu-icon .greek-ic{width:42px!important;height:42px!important;filter:none!important;}
-.guide-menu-icon .ic{width:26px!important;height:26px!important;}
-.guide-menu-card b{font-size:22px!important;line-height:1.08!important;}
-.guide-menu-card i{position:absolute!important;right:13px!important;bottom:12px!important;font-size:22px!important;}
-.guide-picker{
-  margin:2px 0 8px!important;padding:6px 16px!important;gap:5px!important;background:transparent!important;
-}
-.guide-pick{
-  min-height:36px!important;padding:7px 10px!important;border:0!important;border-radius:999px!important;
-  background:var(--ui-soft)!important;box-shadow:none!important;font-size:11.5px!important;
-}
-.guide-pick span{display:none!important;}
-.guide-progress{height:3px!important;margin:0 16px 6px!important;}
-body.guided-view .guide-sec{
-  width:calc(100% - 24px)!important;max-width:calc(var(--maxw) - 24px)!important;
-  margin:14px auto!important;padding:0!important;border:0!important;background:transparent!important;
-}
-.guide-chapter{
-  min-height:0!important;padding:14px 16px!important;border:1px solid var(--ui-line)!important;border-radius:20px!important;
-  display:grid!important;grid-template-columns:minmax(0,1fr) 52px!important;
-  grid-template-areas:"home icon" "badge icon" "title icon" "intro intro"!important;
-  column-gap:12px!important;align-items:center!important;
-  background:var(--ui-surface)!important;box-shadow:none!important;
-}
-.guide-chapter::before{display:none!important;}
-.guide-chapter .guide-home{
-  grid-area:home!important;justify-self:start!important;min-height:30px!important;margin:0 0 7px!important;
-  padding:0 10px!important;border:0!important;background:var(--ui-soft)!important;
-}
-.guide-chapter small{grid-area:badge!important;margin:0 0 3px!important;}
-.guide-chapter h2{grid-area:title!important;max-width:none!important;font-size:28px!important;line-height:1.05!important;}
-.guide-chapter p{
-  grid-area:intro!important;max-width:none!important;margin:8px 0 0!important;
-  font-size:12px!important;line-height:1.45!important;
-}
-.guide-chapter .gicon{
-  grid-area:icon!important;position:static!important;width:52px!important;height:52px!important;
-  justify-self:end!important;align-self:center!important;
-}
-.guide-chapter .gicon .greek-ic{width:46px!important;height:46px!important;filter:none!important;}
-body.guided-view .guide-hero-dish,
-body.guided-view .guide-card{
-  border:1px solid var(--ui-line)!important;background:var(--ui-surface)!important;box-shadow:none!important;
-}
-body.guided-view .guide-card .gthumb,
-body.guided-view .guide-hero-dish .gphoto{background:var(--ui-soft)!important;box-shadow:none!important;}
-.guide-card .mini-actions button,.guide-actions button{
-  border-radius:10px!important;box-shadow:none!important;
-}
-
-/* Ordering and assistance stay visible, but stop floating like advertisements. */
-.cart{
-  bottom:12px!important;width:calc(100% - 24px)!important;max-width:calc(var(--maxw) - 24px)!important;
-  min-height:58px!important;padding:12px 15px!important;border-radius:18px!important;
-  background:var(--pine)!important;box-shadow:0 12px 30px rgba(31,47,48,.22)!important;
-}
-.cart .n{width:24px!important;height:24px!important;}
-.cart .go{display:block!important;}
-.cart:focus-visible{outline-color:var(--gold-lt)!important;}
-.sheet{
-  padding:12px 20px 26px!important;border-radius:24px 24px 0 0!important;
-  background:var(--ui-bg)!important;
-}
-.checkout-card,.guide-step{box-shadow:none!important;background:var(--ui-surface)!important;}
-.help{
-  right:14px!important;bottom:14px!important;padding:9px 12px!important;border-color:var(--ui-line)!important;
-  background:var(--ui-surface)!important;box-shadow:var(--ui-shadow)!important;font-size:11px!important;
-}
-.closing{width:calc(100% - 32px)!important;padding:22px 0 10px!important;border-color:var(--ui-line)!important;}
-button:focus-visible,a:focus-visible,input:focus-visible{
-  outline:3px solid color-mix(in srgb,var(--olive) 55%,#fff)!important;
-  outline-offset:2px!important;
-}
-
-@media(max-width:480px){
-  .head .brand{display:none!important;}
-  .head .mark-link{margin-right:auto!important;}
-  .help{
-    left:14px!important;right:auto!important;width:36px!important;height:36px!important;
-    padding:0!important;border-radius:50%!important;
-    font-size:0!important;
-  }
-  .help::before{content:'?';font-size:14px;font-weight:800;}
-  .cart:not(.hide) + .help{display:none!important;}
-}
-@media(max-width:360px){
-  .head{padding-left:10px!important;padding-right:10px!important;gap:3px!important;}
-  .wifibtn,.carticon{width:33px!important;height:33px!important;}
-  .langbtn{padding:5px 7px!important;}
-  .sec{width:calc(100% - 16px)!important;padding-left:12px!important;padding-right:12px!important;}
-  .item .top{grid-template-columns:34px minmax(0,1fr) auto auto!important;gap:7px!important;}
-  .item .dish-ic{width:34px!important;height:34px!important;}
-  .item .nm{font-size:13.5px!important;}
-  .item .pr{font-size:13px!important;}
-  .info-b{width:24px!important;}
-  .add-sm{width:34px!important;height:34px!important;}
-}
-@media(min-width:900px){
-  .guide-menu{grid-template-columns:repeat(4,minmax(0,1fr))!important;}
-  .guide-menu-card{
-    min-height:94px!important;display:grid!important;
-    grid-template-columns:50px minmax(0,1fr) 18px!important;
-    align-items:center!important;justify-content:stretch!important;
-    gap:11px!important;padding:13px!important;
-  }
-  .guide-menu-card i{position:static!important;justify-self:end!important;}
-  .guide-menu-card b{font-size:20px!important;}
-}
-@media(max-width:899px){
-  .guide-menu-card{min-height:118px!important;}
 }
 
 </style>
@@ -2203,6 +1929,9 @@ button:focus-visible,a:focus-visible,input:focus-visible{
       <h1 id="venueName">Tsigoura Verde</h1>
       <div class="sub" id="venueSub"></div>
     </div>
+    <button type="button" class="wifibtn" id="bookBtn" aria-label="book a table">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M8 3v4M16 3v4M3 10h18"/><path d="M9 14.5h2.5"/></svg>
+    </button>
     <button type="button" class="wifibtn" id="socialBtn" aria-label="social">
       <img class="social-img" src="media/social/social.svg" alt="" aria-hidden="true">
     </button>
@@ -2237,10 +1966,10 @@ button:focus-visible,a:focus-visible,input:focus-visible{
   <section class="closing" id="closing"></section>
 </div>
 
-<div class="cart hide" id="cart" role="button" tabindex="-1" aria-hidden="true" aria-label="cart">
+<div class="cart hide" id="cart">
   <span class="n" id="cN">0</span>
   <span class="l" id="cL"></span>
-  <div class="r"><span class="tot" id="cT"></span><span class="go" id="cGo"></span></div>
+  <div class="r"><span class="tot" id="cT"></span><button class="go" id="cGo"></button></div>
 </div>
 
 <button class="help" id="help"></button>
@@ -2293,7 +2022,6 @@ button:focus-visible,a:focus-visible,input:focus-visible{
   <h2 id="dishName"></h2>
   <div class="dsh-price" id="dishPrice"></div>
   <div class="dsh-desc" id="dishDesc"></div>
-  <div id="dishDetails"></div>
   <div id="dishAlg" style="margin:8px 0 2px"></div>
   <div class="dsh-block" id="dishRemBlock" style="display:none">
     <h4 id="dishRemT"></h4><div class="sub" id="dishRemSub"></div>
@@ -2360,6 +2088,30 @@ button:focus-visible,a:focus-visible,input:focus-visible{
   </div>
 </div>
 
+<!-- booking request -->
+<div class="sheet" id="bookSheet" style="max-height:88vh;">
+  <div class="grip"></div><button class="close" data-x>✕</button>
+  <div class="eyebrow" id="bookEye"></div>
+  <h2 id="bookT"></h2>
+  <p class="fine" id="bookSub" style="text-align:left;margin:2px 0 14px;"></p>
+  <form class="book-form" id="bookForm">
+    <label><span id="bookNameL"></span><input id="bookName" autocomplete="name" maxlength="80" required></label>
+    <label><span id="bookPhoneL"></span><input id="bookPhone" autocomplete="tel" maxlength="40" required></label>
+    <div class="book-two">
+      <label><span id="bookDateL"></span><input id="bookDate" type="date" required></label>
+      <label><span id="bookTimeL"></span><input id="bookTime" type="time" required></label>
+    </div>
+    <div class="book-two">
+      <label><span id="bookPeopleL"></span><input id="bookPeople" type="number" min="1" max="80" value="2" required></label>
+      <label><span id="bookEmailL"></span><input id="bookEmail" type="email" autocomplete="email" maxlength="100"></label>
+    </div>
+    <label><span id="bookMsgL"></span><textarea id="bookMsg" maxlength="500"></textarea></label>
+    <div class="book-status" id="bookStatus"></div>
+    <button class="cta" id="bookSend" type="submit" style="margin-top:4px;"></button>
+  </form>
+  <p class="book-note" id="bookNote"></p>
+</div>
+
 <!-- order sent / for waiter -->
 <div class="sheet" id="sentSheet" style="max-height:88vh;">
   <div class="grip"></div><button class="close" data-x>✕</button>
@@ -2398,7 +2150,6 @@ button:focus-visible,a:focus-visible,input:focus-visible{
   <div class="eyebrow" id="privEye"></div>
   <h2 id="privT"></h2>
   <div id="privBody" style="font-size:13px;line-height:1.6;color:var(--ink);"></div>
-  <button type="button" class="cta" id="resetDeviceData" style="margin-top:14px;background:var(--card);color:var(--terra);border:1px solid var(--line)"></button>
 </div>
 
 <!-- cookie consent -->
@@ -2686,7 +2437,7 @@ const priceDisp = i => i.priceText ? i.priceText : (i.price>0 ? money(i.price)+`
 const isTraditional = () => !!(S.settings&&S.settings.traditionalMenuOnly);
 function design(){ return Object.assign({accent:'#38564F',showVisualRail:true,categoryArt:true,motion:'rich',showFeaturedHero:true}, (S.settings&&S.settings.design)||{}); }
 function headerActions(){
-  return Object.assign({social:true,wifi:true,language:true}, (S.settings&&S.settings.headerActions)||{});
+  return Object.assign({booking:false,social:true,wifi:true,language:true}, (S.settings&&S.settings.headerActions)||{});
 }
 function actionEnabled(key){ return headerActions()[key] !== false; }
 const canOrder = () => S.settings.serviceOpen && S.settings.acceptOrders && !isTraditional();
@@ -2832,11 +2583,13 @@ function renderQuickFlow(){
     `<button class="flow-chip" data-flow="cart"><span class="mini">${checkoutIcon('send')}${esc(n?T('order'):T('flowBuild'))}</span><small>${esc(n?money(total()):T('flowBuildD'))}</small></button>`;
   slot.innerHTML=`
     <button class="flow-chip" data-flow="menu"><span class="mini">${checkoutIcon('hand')}${esc(T('flowMenu'))}</span><small>${esc(T('flowMenuD'))}</small></button>
+    ${actionEnabled('booking')?`<button class="flow-chip" data-flow="book"><span class="mini">${checkoutIcon('calendar')}${esc(T('book'))}</span><small>${esc(T('bookD'))}</small></button>`:''}
     ${actionEnabled('social')?`<button class="flow-chip" data-flow="social"><span class="mini">${checkoutIcon('social')}${esc(T('social'))}</span><small>${esc(T('socialD'))}</small></button>`:''}
     ${actionEnabled('wifi')?`<button class="flow-chip" data-flow="wifi"><span class="mini">${checkoutIcon('qr')}${esc(T('wifi'))}</span><small>${esc(T('flowWifiD'))}</small></button>`:''}
     ${orderChip}`;
   slot.querySelector('[data-flow="menu"]').onclick=()=>{ const first=document.querySelector('.sec'); if(first) scrollToCategory(first.id.replace('sec-','')); };
   const cartBtn=slot.querySelector('[data-flow="cart"]'); if(cartBtn) cartBtn.onclick=()=>{ if(count()){ renderCartSheet(); openSheet('cartSheet'); } else toast(T('flowEmpty')); };
+  const bookFlow=slot.querySelector('[data-flow="book"]'); if(bookFlow) bookFlow.onclick=()=>{ location.href='book.html'; };
   const socialFlow=slot.querySelector('[data-flow="social"]'); if(socialFlow) socialFlow.onclick=()=>{ renderSocial(); openSheet('socialSheet'); };
   const wifiFlow=slot.querySelector('[data-flow="wifi"]'); if(wifiFlow) wifiFlow.onclick=()=>{ renderWifi(); openSheet('wifiSheet'); };
 }
@@ -2879,7 +2632,7 @@ function renderHead(){
   document.getElementById('helpT').textContent = T('help');
   document.getElementById('pin').placeholder = T('search');
   const actions=headerActions();
-  [['socialBtn','social'],['wifiBtn','wifi'],['langBtn','language']].forEach(([id,key])=>{
+  [['bookBtn','booking'],['socialBtn','social'],['wifiBtn','wifi'],['langBtn','language']].forEach(([id,key])=>{
     const el=document.getElementById(id);
     if(el) el.hidden = actions[key]===false;
   });
@@ -3098,16 +2851,7 @@ const CAT_ACC=[['#38564F','#E7EEEA'],['#A07E3C','#F5EDD8'],['#B4623A','#F6E6DC']
                ['#2C4A4E','#E4EBEB'],['#6E5A2E','#F0E9D5'],['#8A4B3A','#F4E3DC']];
 /* Category chapters use the hand-drawn Greek plate art (brand palette,
    no cropped stock photos). Unmapped categories simply show no art. */
-function revisionedArt(src){
-  src=String(src||'').trim();
-  if(!src)return '';
-  try{
-    const url=new URL(src,location.href);
-    url.searchParams.set('menu_rev',String(liveMenuRevision||(S&&S.settings&&S.settings.cacheRevision)||(S&&S.updatedAt)||0));
-    return url.href;
-  }catch(e){return src;}
-}
-function catArt(c){ return (typeof catArtSrc==='function') ? revisionedArt(catArtSrc(c)) : ''; }
+function catArt(c){ return (typeof catArtSrc==='function') ? catArtSrc(c) : ''; }
 function cleanSearch(s){
   return String(s||'').toLowerCase().normalize('NFD')
     .replace(/[\u0300-\u036f]/g,'').replace(/ς/g,'σ')
@@ -3245,6 +2989,8 @@ function guidePickerHTML(cats,current,ix){
 }
 function guideSectionHTML(c,ix,cats){
   const items=S.menu.filter(i=>isGuestVisible(i)&&i.cat===c.id&&matches(i));
+  const pick=items.find(i=>i.chefPick&&i.available&&i.price>0) || items.find(i=>i.available&&i.price>0) || items[0];
+  const rest=items.filter(i=>i!==pick);
   const acc=[c.accent||CAT_ACC[ix%CAT_ACC.length][0], c.tint||CAT_ACC[ix%CAT_ACC.length][1]];
   const prev=cats[ix-1], next=cats[ix+1];
   return `<section class="sec guide-sec guide-stage ${esc(c.id)}" id="sec-${c.id}" data-admin-cat="${esc(c.id)}" style="--stage:${ix}">
@@ -3255,7 +3001,8 @@ function guideSectionHTML(c,ix,cats){
       <h2>${esc(catName(c))}</h2>
       <p>${esc(T('guideIntro'))}</p>
     </div>
-    ${items.length?`<div class="guide-dishes">${items.map((i,k)=>guideCardHTML(i,k)).join('')}</div>`:''}
+    ${pick?guideHeroDishHTML(pick):''}
+    ${rest.length?`<div class="guide-dishes">${rest.map((i,k)=>guideCardHTML(i,k)).join('')}</div>`:''}
     <div class="guide-nav">
       <button type="button" class="guide-prev" ${prev?`data-guide-jump="${esc(prev.id)}"`:'disabled'}>‹ ${esc(prev?catName(prev):T('guidePrev'))}</button>
       <button type="button" class="guide-next" ${next?`data-guide-jump="${esc(next.id)}"`:'disabled'}>${esc(next?catName(next):T('guideNext'))} ›</button>
@@ -3263,7 +3010,7 @@ function guideSectionHTML(c,ix,cats){
   </section>`;
 }
 function guideVisual(i,cls,large){
-  const t=tx(i), art=(typeof dishArt==='function'&&dishArt(i)) ? revisionedArt(dishArt(i)) : '';
+  const t=tx(i), art=(typeof dishArt==='function'&&dishArt(i)) ? dishArt(i) : '';
   if(art) return `<button type="button" class="${cls}" data-admin-dish="${i.id}" data-photo="${i.id}" aria-label="${esc(T('guidePhoto'))}: ${esc(t.n)}"><span class="photo-fallback">${svgFor(DISH_ICON[i.icon]||i.icon||'dish')}</span><img src="${esc(art)}" alt="" loading="lazy" decoding="async" width="${large?180:120}" height="${large?180:120}" onload="this.parentElement.classList.remove('img-failed');this.parentElement.classList.add('img-ready')" onerror="this.parentElement.classList.add('img-failed')"></button>`;
   return `<button type="button" class="${cls}" data-admin-dish="${i.id}" data-dish="${i.id}" aria-label="${esc(T('guideInfo'))}: ${esc(t.n)}">${dishIcon(i)}</button>`;
 }
@@ -3328,7 +3075,7 @@ function rowHTML(i){
   const algs=(i.allergens||[]).map(a=>esc(ALLERGENS[a][lang]||ALLERGENS[a].en)).join(' · ');
   const diet=[i.veg?`<span class="cust-hint">🌿 ${esc(F('veg'))}</span>`:'',i.spicy?`<span class="cust-hint">🌶 ${esc(F('spicy'))}</span>`:''].filter(Boolean).join(' ');
   const cust=!isTraditional() && (i.removable||[]).length;
-  const art=(typeof dishArt==='function'&&dishArt(i)) ? revisionedArt(dishArt(i)) : '';
+  const art=(typeof dishArt==='function'&&dishArt(i)) ? dishArt(i) : '';
   return `<div class="item ${i.available?'':'out'} ${i.chefPick?'feat':''}" data-dish="${i.id}" data-admin-dish="${i.id}">
     ${i.chefPick?`<div class="badge">★ ${esc(F('chef'))}</div>`:''}
     <div class="top">
@@ -3419,15 +3166,8 @@ function updateCart(bump){
     replayMotionClass(badge,'motion-roll',520);
   }
   const bar=document.getElementById('cart');
-  if(!n){
-    bar.classList.add('hide');
-    bar.setAttribute('aria-hidden','true');
-    bar.tabIndex=-1;
-    return;
-  }
+  if(!n){bar.classList.add('hide');return;}
   bar.classList.remove('hide');
-  bar.setAttribute('aria-hidden','false');
-  bar.tabIndex=0;
   document.getElementById('cN').textContent=n;
   document.getElementById('cL').textContent=(n===1?T('item'):T('items'));
   document.getElementById('cT').textContent=money(total());
@@ -3453,7 +3193,7 @@ function renderCartSheet(){
   const checkoutTitle=document.getElementById('checkoutTitle');
   if(!cart.length){ rows.innerHTML=`<div class="empty">${esc(T('empty'))}<br><span style="font-size:12.5px">${esc(T('emptyHint'))}</span></div>`;
     document.getElementById('cartSum').innerHTML=''; document.getElementById('savedNote').innerHTML=''; if(beta)beta.innerHTML=''; if(guide)guide.innerHTML=''; if(checkout)checkout.innerHTML=''; if(checkoutTitle)checkoutTitle.textContent=''; btn.disabled=true; return; }
-  if(beta) beta.innerHTML='';
+  if(beta) beta.innerHTML=`<span class="bdot">BETA</span><span>${esc(T('betaCart'))}</span>`;
   btn.disabled=!canOrder();
   rows.innerHTML=cart.map(l=>{const i=itemOf(l.id),t=tx(i);
     const rmv=removedText(i,l.removed);
@@ -3479,14 +3219,18 @@ function renderCartSheet(){
   const sub=total();
   document.getElementById('cartSum').innerHTML=`<div class="sum"><span>${esc(T('subtotal'))}</span><span>${money(sub)}</span></div>
     <div class="sum tot"><span>${esc(T('total'))}</span><span>${money(sub)}</span></div>`;
-  if(guide) guide.innerHTML='';
+  if(guide) guide.innerHTML=`<div class="checkout-guide">
+    <div class="guide-step"><b data-n="1">${esc(T('guideTraditional'))}</b><span>${esc(T('guideTraditionalD'))}</span></div>
+    <div class="guide-step rec"><b data-n="2">${esc(T('guideWaiter'))}</b><span>${esc(T('guideWaiterD'))}</span></div>
+    <div class="guide-step ${hasRealTable()?'':'lock'}"><b data-n="3">${esc(T('guideBeta'))}</b><span>${esc(hasRealTable()?T('guideBetaD'):T('guideBetaLocked'))}</span></div>
+  </div>`;
   if(checkoutTitle) checkoutTitle.textContent=T('checkoutTitle');
   if(checkout) checkout.innerHTML=`
-    <button class="checkout-card waiter" data-checkout="waiter">
-      <span class="co-ic">${checkoutIcon('qr')}</span><span><em class="recommended">${esc(T('guideWaiter'))}</em><b>${esc(T('optWaiter'))}</b><span>${esc(T('optWaiterD'))}</span></span><i class="arr">›</i>
-    </button>
     <button class="checkout-card traditional" data-checkout="traditional">
       <span class="co-ic">${checkoutIcon('hand')}</span><span><b>${esc(T('optTraditional'))}</b><span>${esc(T('optTraditionalD'))}</span></span><i class="arr">›</i>
+    </button>
+    <button class="checkout-card waiter" data-checkout="waiter">
+      <span class="co-ic">${checkoutIcon('qr')}</span><span><b>${esc(T('optWaiter'))}</b><span>${esc(T('optWaiterD'))}</span></span><i class="arr">›</i>
     </button>
     <button class="checkout-card beta" data-checkout="beta" ${(canOrder()&&hasRealTable())?'':'disabled'}>
       <span class="co-ic">${checkoutIcon('send')}</span><span><b>${esc(T('optBeta'))}</b><span>${esc(T('optBetaD'))}</span></span><i class="arr">›</i>
@@ -3635,7 +3379,7 @@ function openInfo(id){
 }
 function openPhoto(id){
   const i=itemOf(id); if(!i) return;
-  const art=(typeof dishArt==='function') ? revisionedArt(dishArt(i)) : '';
+  const art=(typeof dishArt==='function') ? dishArt(i) : '';
   if(!art){ openInfo(id); return; }
   const t=tx(i), img=document.getElementById('photoImg'), stage=img.closest('.photo-stage');
   if(stage) stage.classList.remove('img-ready');
@@ -3811,6 +3555,64 @@ function scheduleSocialAd(){
   const delay=isFinite(testDelay) && testDelay>0 ? Math.max(500,testDelay) : 60000;
   scheduleSocialAd._timer=setTimeout(showSocialAd,delay);
 }
+function renderBook(){
+  document.getElementById('bookEye').textContent=VENUE.name;
+  document.getElementById('bookT').textContent=T('book');
+  document.getElementById('bookSub').textContent=T('bookSub');
+  document.getElementById('bookNameL').textContent=T('bookName');
+  document.getElementById('bookPhoneL').textContent=T('bookPhone');
+  document.getElementById('bookDateL').textContent=T('bookDate');
+  document.getElementById('bookTimeL').textContent=T('bookTime');
+  document.getElementById('bookPeopleL').textContent=T('bookPeople');
+  document.getElementById('bookEmailL').textContent=T('bookEmail');
+  document.getElementById('bookMsgL').textContent=T('bookMsg');
+  document.getElementById('bookSend').textContent=T('bookSend');
+  document.getElementById('bookNote').textContent=T('bookNote');
+  document.getElementById('bookStatus').textContent='';
+}
+function bookingPayload(){
+  const v=id=>String(document.getElementById(id).value||'').trim();
+  return {
+    venue: VENUE.name,
+    name:v('bookName').slice(0,80),
+    phone:v('bookPhone').slice(0,40),
+    email:v('bookEmail').slice(0,100),
+    date:v('bookDate'),
+    time:v('bookTime'),
+    people:clampInt(v('bookPeople'),1,80),
+    message:v('bookMsg').slice(0,500),
+    lang,
+    source:location.href
+  };
+}
+function bookingMailto(p){
+  const to=CONTACT.email||'';
+  const subject=encodeURIComponent(`${VENUE.name} booking request · ${p.date} ${p.time}`);
+  const body=encodeURIComponent(`Name: ${p.name}\nPhone: ${p.phone}\nEmail: ${p.email||'-'}\nDate: ${p.date}\nTime: ${p.time}\nPeople: ${p.people}\n\nMessage:\n${p.message||'-'}`);
+  return `mailto:${to}?subject=${subject}&body=${body}`;
+}
+async function submitBooking(e){
+  e.preventDefault();
+  const status=document.getElementById('bookStatus'), btn=document.getElementById('bookSend');
+  const p=bookingPayload();
+  if(!p.name || !p.phone || !p.date || !p.time){
+    status.textContent=T('bookMissing');
+    replayMotionClass(document.getElementById('bookForm'),'motion-shake',520);
+    return;
+  }
+  btn.disabled=true; status.textContent=T('bookSending');
+  try{
+    const r=await fetch('/api/book',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
+    if(!r.ok) throw new Error('mail failed');
+    status.textContent=T('bookSent'); toast(T('bookSent'));
+    replayMotionClass(status,'motion-booked',900);
+    document.getElementById('bookForm').reset();
+  }catch(err){
+    status.textContent=T('bookFallback');
+    location.href=bookingMailto(p);
+  }finally{ setTimeout(()=>btn.disabled=false,900); }
+}
+
 /* ─── order sent → confirmation with QR for the waiter ─── */
 function showSent(order,opts={}){
   const waiterMode=opts.mode==='waiter';
@@ -3937,15 +3739,15 @@ function wrapTxt(ctx,text,cx,y,maxw,lh,maxLines){
 
 /* ─── cookie consent + privacy/legal ─── */
 function initCookie(){
-  const COOKIE_NOTICE_VERSION='2026-07-30-essential-v2';
   const c=document.getElementById('cookie');
   document.getElementById('ckT').textContent=T('cookieTitle');
   document.getElementById('ckText').textContent=T('cookieText');
   document.getElementById('ckMore').textContent=T('legalMore');
   document.getElementById('ckOk').textContent=T('accept');
   document.getElementById('ckMore').onclick=()=>{ renderPriv(); openSheet('privSheet'); };
-  document.getElementById('ckOk').onclick=()=>{ safeLS.set('tv_cookie',COOKIE_NOTICE_VERSION); c.classList.remove('on'); };
-  c.classList.toggle('on',safeLS.get('tv_cookie')!==COOKIE_NOTICE_VERSION);
+  document.getElementById('ckOk').onclick=()=>{ safeLS.set('tv_cookie','1'); c.classList.remove('on'); };
+  c.classList.remove('on');
+  if(!safeLS.get('tv_cookie')) safeLS.set('tv_cookie','1');
 }
 function renderPriv(){
   document.getElementById('privEye').textContent=T('cookieTitle');
@@ -3954,6 +3756,7 @@ function renderPriv(){
   const legal=Object.entries(L).filter(([k,v])=>v).map(([,v])=>esc(v)).join('<br>');
   document.getElementById('privBody').innerHTML=`
     <p>${esc(T('privacyBody'))}</p>
+    <p>${esc(T('bookingPrivacy'))}</p>
     <p><b>${esc(T('contains'))} / Allergens:</b> ${esc(NOTE('allergensGeneral'))}</p>
     <p style="color:var(--terra)">${esc(T('allergyWarn'))}</p>
     <p>${esc(N.taxes[lang]||N.taxes.en)}</p>
@@ -3963,26 +3766,6 @@ function renderPriv(){
     <p style="font-size:11.5px;color:var(--muted)">${esc(T('odrNotice'))}<br>
     <a href="https://www.synigoroskatanaloti.gr" target="_blank" rel="noopener">synigoroskatanaloti.gr</a> · 
     <a href="https://consumer-redress.ec.europa.eu/dispute-resolution-bodies" target="_blank" rel="noopener">EU ADR bodies</a></p>`;
-  const reset=document.getElementById('resetDeviceData');
-  reset.textContent=lang==='el'?'Καθαρισμός cache & προτιμήσεων αυτής της συσκευής':'Clear cache & preferences on this device';
-  reset.onclick=()=>{
-    const question=lang==='el'
-      ?'Να καθαριστούν η cache, η γλώσσα, το καλάθι και οι προτιμήσεις μόνο σε αυτή τη συσκευή;'
-      :'Clear cache, language, basket, and preferences only on this device?';
-    if(!confirm(question)) return;
-    try{
-      for(let i=localStorage.length-1;i>=0;i--){
-        const key=localStorage.key(i)||'';
-        if(key.startsWith('tv_')||key.startsWith('tsigoura_')) localStorage.removeItem(key);
-      }
-      for(let i=sessionStorage.length-1;i>=0;i--){
-        const key=sessionStorage.key(i)||'';
-        if(key.startsWith('tv_')||key.startsWith('tsigoura_')) sessionStorage.removeItem(key);
-      }
-      if('caches' in window) caches.keys().then(keys=>Promise.all(keys.map(key=>caches.delete(key)))).finally(()=>location.reload());
-      else location.reload();
-    }catch(e){ location.reload(); }
-  };
 }
 
 function bub(t,w){const b=document.createElement('div');b.className='bub '+w;b.textContent=t;
@@ -4067,14 +3850,35 @@ function forceCloseFloatingUI(){
   unlockPageScroll();
 }
 document.getElementById('scrim').onclick=closeSheets;
-document.querySelectorAll('[data-x]').forEach(b=>b.onclick=closeSheets);
+let sheetClosePointerId=null;
+document.addEventListener('pointerdown',e=>{
+  const close=e.target.closest('[data-x]');
+  if(!close) return;
+  sheetClosePointerId=e.pointerId;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+},{capture:true});
+document.addEventListener('pointerup',e=>{
+  if(sheetClosePointerId===null || e.pointerId!==sheetClosePointerId) return;
+  sheetClosePointerId=null;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  closeSheets();
+},{capture:true});
+document.addEventListener('pointercancel',e=>{
+  if(e.pointerId===sheetClosePointerId) sheetClosePointerId=null;
+},{capture:true});
+document.addEventListener('click',e=>{
+  const close=e.target.closest('[data-x]');
+  if(!close) return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  closeSheets();
+},{capture:true});
 document.getElementById('socialAdClose').onclick=()=>closeSocialAd(true);
 document.getElementById('socialAdLater').onclick=()=>closeSocialAd(true);
 document.getElementById('socialAd').onclick=e=>{ if(e.target.id==='socialAd') closeSocialAd(true); };
 document.getElementById('cart').onclick=()=>{renderCartSheet();openSheet('cartSheet');};
-document.getElementById('cart').onkeydown=e=>{
-  if(e.key==='Enter'||e.key===' '){e.preventDefault();document.getElementById('cart').click();}
-};
 document.getElementById('cartIcon').onclick=()=>{renderCartSheet();openSheet('cartSheet');};
 /* the cart sheet always offers "my orders tonight" when there is history */
 function wireHistLink(){
@@ -4091,10 +3895,13 @@ document.getElementById('langBtn').onclick=()=>{renderLang();openSheet('langShee
   if(wb) wb.onclick=()=>{renderWifi();openSheet('wifiSheet');};
 }
 (function(){
+  const bb=document.getElementById('bookBtn');
+  if(bb) bb.onclick=()=>{ location.href='book.html'; };
   const sb=document.getElementById('socialBtn');
   if(sb) sb.onclick=()=>{ renderSocial(); openSheet('socialSheet'); };
 })();
 wireTopShortcut();
+document.getElementById('bookForm').onsubmit=submitBooking;
 {
   const qInput=document.getElementById('q');
   ['input','change','search','keyup','keydown','paste','blur','compositionend'].forEach(ev=>qInput.addEventListener(ev,()=>setTimeout(()=>syncSearch(true),0)));
@@ -4125,7 +3932,6 @@ function toast(m){
 let lastLiveCheckAt=0;
 let liveCheckBusy=false;
 let renderedScheduleDate=localDateKey();
-const liveMenuChannel=('BroadcastChannel' in window)?new BroadcastChannel('tsigoura-menu-live'):null;
 function checkScheduleDate(){
   const today=localDateKey();
   if(today===renderedScheduleDate) return false;
@@ -4143,10 +3949,7 @@ async function checkLiveMenuUpdate(force){
   if(!force && now-lastLiveCheckAt<30000) return false;
   liveCheckBusy=true; lastLiveCheckAt=now;
   try{
-    const r=await fetch('/api/menu?revision='+encodeURIComponent(String(liveMenuRevision||0)),{
-      cache:'no-store',
-      headers:{'Cache-Control':'no-cache'}
-    });
+    const r=await fetch('/api/menu',{cache:'no-store'});
     if(!r.ok) return false;
     const data=await r.json();
     const revision=Number(data&&data.revision)||0;
@@ -4175,11 +3978,7 @@ window.addEventListener('storage',e=>{
   if(e.key===STORAGE_KEY||e.key===STORAGE_KEY+'_ping'){ S=loadState();
     cart=cart.filter(l=>{const i=itemOf(l.id);return i&&isGuestVisible(i)&&i.available&&i.price>0;}); saveCart(); apply();
     replayMotionClass(document.getElementById('root'),'motion-live-update',760); }
-  if(e.key===STORAGE_KEY+'_admin_revision') checkLiveMenuUpdate(true);
 });
-if(liveMenuChannel) liveMenuChannel.onmessage=e=>{
-  if(e.data&&e.data.type==='menu-revision') checkLiveMenuUpdate(true);
-};
 
 /* ═══════════════ splash (first visit) ═══════════════ */
 function buildSplash(){
@@ -4188,14 +3987,7 @@ function buildSplash(){
     b.style.animationDelay=(1.0+idx*0.08)+'s';
     b.dataset.c=l.code;
     b.innerHTML=`<span class="fl">${l.flag}</span>${esc(l.label)}`;
-    b.onclick=()=>{
-      if(!safeLS.get(VIEW_KEY)){
-        safeLS.set(VIEW_KEY,'guide');
-        activeCat=null;
-      }
-      setLang(l.code);
-      closeSplash();
-    };
+    b.onclick=()=>{ setLang(l.code); closeSplash(); };
     grid.appendChild(b); });
   // iPhone-style: welcome word + subtitle cycle TOGETHER, same language, and the
   // matching language button glows in sync.
@@ -4249,7 +4041,9 @@ Object.assign(UI.el, {
   flowMenu:'Δείτε κατηγορίες', flowMenuD:'Πιάτα, ποτά, σούβλες', flowBuild:'Φτιάξτε επιλογή', flowBuildD:'Προσθέστε ό,τι θέλετε', flowWifiD:'QR + κωδικός', flowEmpty:'Προσθέστε πρώτα κάτι στο καλάθι',
   availableShort:'διαθέσιμα',
   social:'Social', socialD:'Νέα & φωτογραφίες', socialSub:'Ακολουθήστε μας για σημερινά πιάτα, εκδηλώσεις και στιγμές από την Τσιγγούρα.', maps:'Χάρτης', website:'Website',
+  book:'Κράτηση', bookD:'Τραπέζι / εκδήλωση', bookSub:'Στείλτε αίτημα κράτησης. Θα σας απαντήσουμε από το προσωπικό για επιβεβαίωση.', bookName:'Όνομα', bookPhone:'Τηλέφωνο', bookDate:'Ημερομηνία', bookTime:'Ώρα', bookPeople:'Άτομα', bookEmail:'Email', bookMsg:'Σημείωση', bookSend:'Αποστολή αιτήματος', bookNote:'Το αίτημα κράτησης δεν είναι οριστική κράτηση μέχρι να επιβεβαιωθεί από το προσωπικό.', bookMissing:'Συμπληρώστε όνομα, τηλέφωνο, ημερομηνία και ώρα.', bookSending:'Αποστολή...', bookSent:'Το αίτημα στάλθηκε ✓', bookFallback:'Δεν ενεργοποιήθηκε ακόμη το email server. Άνοιξε πρόχειρο email.',
   privacyBody:'Αυτή η σελίδα χρησιμοποιεί μόνο απαραίτητη τοπική αποθήκευση στη συσκευή σας για γλώσσα, καλάθι και προτιμήσεις. Δεν χρησιμοποιεί analytics, marketing cookies ή τρίτους trackers. Αν ενεργοποιηθούν social embeds, analytics ή διαφημιστικά εργαλεία στο μέλλον, πρέπει να ζητηθεί ξεχωριστή συγκατάθεση.',
+  bookingPrivacy:'Αν στείλετε αίτημα κράτησης, τα στοιχεία που συμπληρώνετε αποστέλλονται στο κατάστημα αποκλειστικά για επικοινωνία και διαχείριση της κράτησης.',
   odrNotice:'Η ευρωπαϊκή πλατφόρμα ODR έχει διακοπεί από 20/07/2025. Για καταναλωτικές διαφορές στην Ελλάδα μπορείτε να απευθυνθείτε στον Συνήγορο του Καταναλωτή ή σε φορείς εναλλακτικής επίλυσης διαφορών.',
   guideTraditional:'Κλασικά', guideTraditionalD:'Κρατάτε τη λίστα και φωνάζετε σερβιτόρο.',
   guideWaiter:'Προτεινόμενο', guideWaiterD:'Δείχνετε QR, ο σερβιτόρος ελέγχει και διαλέγει τραπέζι.',
@@ -4292,7 +4086,9 @@ Object.assign(UI.en, {
   flowMenu:'Browse sections', flowMenuD:'Food, drinks, souvles', flowBuild:'Build an order', flowBuildD:'Add what you like', flowWifiD:'QR + password', flowEmpty:'Add something to the cart first',
   availableShort:'available',
   social:'Social', socialD:'News & photos', socialSub:'Follow us for today’s dishes, events, and moments from Tsigoura.', maps:'Map', website:'Website',
+  book:'Book', bookD:'Table / event', bookSub:'Send a booking request. Staff will reply to confirm availability.', bookName:'Name', bookPhone:'Phone', bookDate:'Date', bookTime:'Time', bookPeople:'People', bookEmail:'Email', bookMsg:'Note', bookSend:'Send request', bookNote:'A booking request is not final until confirmed by staff.', bookMissing:'Please fill name, phone, date, and time.', bookSending:'Sending...', bookSent:'Request sent ✓', bookFallback:'The email server is not enabled yet. Opening an email draft.',
   privacyBody:'This page uses only essential local storage on your device for language, basket, and preferences. It does not use analytics, marketing cookies, or third-party trackers. If social embeds, analytics, or advertising tools are enabled later, separate consent should be requested.',
+  bookingPrivacy:'If you send a booking request, the details you enter are sent to the venue only for contact and booking management.',
   odrNotice:'The EU ODR platform has been discontinued since 20 July 2025. For consumer disputes in Greece, you may contact the Consumer Ombudsman or certified alternative dispute resolution bodies.',
   guideTraditional:'Classic', guideTraditionalD:'Keep the list and call your waiter.',
   guideWaiter:'Recommended', guideWaiterD:'Show QR, waiter checks it and chooses the table.',
@@ -4446,14 +4242,6 @@ function openDish(id){
   document.getElementById('dishPrice').innerHTML = priceDisp(i);
   const desc=t.d||'';
   const dd=document.getElementById('dishDesc'); dd.textContent=desc; dd.style.display=desc?'':'none';
-  const ing=i.ing ? (i.ing[lang] || i.ing.en || '') : '';
-  const prep=Math.max(0,Number(i.prepMin)||0);
-  const details=document.getElementById('dishDetails');
-  details.innerHTML=[
-    ing?`<div class="info-row"><span class="k">${esc(T('ingredients'))}</span><span>${esc(ing)}</span></div>`:'',
-    prep?`<div class="info-row"><span class="k">⏱</span><span>${prep} min</span></div>`:''
-  ].join('');
-  details.style.display=(ing||prep)?'':'none';
   document.getElementById('dishAlg').innerHTML=(i.allergens||[]).map(a=>`<span class="ichip">${esc(ALLERGENS[a][lang]||ALLERGENS[a].en)}</span>`).join('');
 
   const rb=document.getElementById('dishRemBlock'), rem=document.getElementById('dishRem');
@@ -4697,7 +4485,7 @@ async function boot(){
     /* first visit → splash + language pick; returning (saved lang) → skip */
     if(safeLS.get('tv_lang')){ const sp=document.getElementById('splash'); sp.classList.add('gone'); sp.style.display='none'; }
     else { buildSplash(); }
-    setInterval(()=>{ checkScheduleDate(); checkLiveMenuUpdate(false); },15000);
+    setInterval(()=>{ checkScheduleDate(); checkLiveMenuUpdate(false); },45000);
   }
 }
 boot();
@@ -4877,25 +4665,13 @@ function initInteractionMotion(){
 (function watchPhotoTiles(){
   var SEL = '.dish-ic,.gphoto,.gthumb,.cat-card .art';
   var seenAt = new WeakMap();
-  /* loading="lazy" intentionally defers fetching rows the guest hasn't
-     scrolled to. Only ever act on a tile once its row is actually revealed
-     (or it's not gated by the reveal system at all) — otherwise we'd force
-     a "failed" state onto perfectly good images that simply haven't been
-     asked to load yet, which is worse than the original bug. */
-  function isRelevant(el){
-    var row = el.closest('.item');
-    if(row && !row.classList.contains('in')) return false;
-    var r = el.getBoundingClientRect();
-    return r.bottom > -200 && r.top < window.innerHeight + 800;
-  }
   function sweep(){
     document.querySelectorAll(SEL).forEach(function(el){
       if(el.classList.contains('img-ready')) return;
       var img = el.querySelector('img'); if(!img) return;
-      if(!isRelevant(el)){ seenAt.delete(el); return; }
-      if(img.complete && img.naturalWidth>0){
+      if(img.complete){
         el.classList.remove('img-failed');
-        el.classList.add('img-ready');
+        el.classList.add(img.naturalWidth>0 ? 'img-ready' : 'img-failed');
         return;
       }
       if(el.classList.contains('img-failed')) return;
