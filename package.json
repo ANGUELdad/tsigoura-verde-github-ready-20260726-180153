@@ -5,7 +5,12 @@
   "dependencies": {
     "@vercel/blob": "^2.6.1"
   },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0"
+  },
   "scripts": {
-    "test": "node tests/security-and-persistence.test.js && node tests/upload-security.test.js"
+    "test": "node tests/security-and-persistence.test.js && node tests/upload-security.test.js",
+    "test:ui": "playwright test",
+    "test:ui:update": "playwright test --update-snapshots"
   }
 }

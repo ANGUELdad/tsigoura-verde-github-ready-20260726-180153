@@ -14,6 +14,7 @@
   --shadow:0 6px 20px rgba(30,59,42,.08);
 }
 *{box-sizing:border-box;}
+[hidden]{display:none!important;}
 body{margin:0;font-family:Inter,system-ui,sans-serif;background:var(--cream);color:var(--ink);}
 h1,h2,h3{font-family:Fraunces,serif;margin:0;}
 button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;}
@@ -597,7 +598,7 @@ nav.tabs button .ico{width:15px;height:15px;stroke-width:1.9;}
   .cat-manager .cat-top .btn{width:100%;justify-content:center;}
   .cat-edit{grid-template-columns:28px 40px minmax(0,1fr);}
   .cat-edit select,.cat-edit input[type="color"],.cat-actions{grid-column:1 / -1;width:100%;}
-  .cat-actions{display:grid;grid-template-columns:repeat(3,1fr);}
+  .cat-actions{display:grid;grid-template-columns:repeat(2,1fr);}
   .cat-actions button{width:100%;}
   .phone-frame{height:640px;max-width:360px;border-width:8px;}
   .io-scrim{align-items:flex-start!important;justify-content:center!important;padding:8px!important;padding-top:max(8px,env(safe-area-inset-top))!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch;}
@@ -645,6 +646,67 @@ nav.tabs button .ico{width:15px;height:15px;stroke-width:1.9;}
 .sync-pill.bad   .dot{background:#A8452A;}
 .sync-pill.local,.sync-pill.bad{cursor:help;}
 @media(max-width:760px){ .sync-pill{width:100%;margin-left:0;} }
+
+/* 2026-07-31 — owner UI quality pass */
+:root{--tap:44px;}
+:focus-visible{outline:3px solid #E4C95F;outline-offset:3px;}
+button,.btn,nav.tabs button,.hidebtn,.upload-pick,.langtabs button,.cat-actions button,
+.io-x,.io-editbtn,.io-shortcuts button,.ops-go,.ops-actions button{
+  min-height:var(--tap);
+}
+input,select,textarea{min-height:var(--tap);font-size:16px;}
+button:disabled,[aria-disabled="true"]{cursor:not-allowed;}
+.login{padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));}
+.login .box{max-width:420px;}
+.login-status{min-height:22px;margin:10px 0 0;color:var(--bad);font-size:12px;line-height:1.45;}
+.status-pill{min-height:var(--tap);}
+.sync-pill.pending .dot{background:#D5B94C;animation:syncPulse 1s ease-in-out infinite alternate;}
+@keyframes syncPulse{to{opacity:.38;transform:scale(.75)}}
+.panel,[id^="panel-"]{scroll-margin-top:150px;}
+.media-upload{align-items:stretch;}
+.media-upload .upload-pick{padding:10px 14px;text-align:center;}
+.media-upload .upload-status{display:flex;align-items:center;overflow-wrap:anywhere;}
+.field,.fieldrow>div,.cat-media,.cat-translations{min-width:0;}
+.pro-body input,.pro-body textarea,.pro-body select,.cat-edit input,.cat-edit select{max-width:100%;}
+.io-scrim[aria-hidden="true"]{display:none!important;}
+.io-card{overscroll-behavior:contain;}
+.toast{min-height:44px;display:flex;align-items:center;justify-content:center;}
+body.is-saving button[data-save],body.is-saving .upload-pick{pointer-events:none;opacity:.6;}
+
+@media(min-width:1280px){
+  header .bar,nav.tabs,.wrap{max-width:1240px;}
+  .wrap{padding-left:24px;padding-right:24px;}
+}
+@media(max-width:760px){
+  header{padding-top:max(10px,env(safe-area-inset-top));}
+  header .bar{padding-bottom:10px;}
+  header .bar>div:first-child{flex:1 1 190px;min-width:0;}
+  .status-pill{flex:1 1 calc(50% - 6px);width:auto;max-width:none!important;margin:0!important;}
+  nav.tabs{position:sticky;top:0;z-index:22;background:var(--forest);padding-inline:max(8px,env(safe-area-inset-left));}
+  nav.tabs button{min-width:max-content;padding:11px 14px;}
+  .panel-head{align-items:stretch;}
+  .panel-head h2{width:100%;}
+  .panel-head .btn,.modeswitch button{min-height:44px;}
+  .modeswitch{width:100%;display:grid;grid-template-columns:repeat(3,1fr);}
+  .modeswitch button{min-width:0;padding-inline:6px;}
+  .cat-edit{padding:12px;}
+  .cat-actions button{min-width:44px;}
+  .pro-item .pro-head{min-height:56px;}
+  .pro-body{padding:12px;}
+  .login .box{padding:28px 20px;}
+}
+@media(max-width:390px){
+  .status-pill{flex-basis:100%;}
+  .modeswitch{grid-template-columns:1fr;}
+  .media-upload{display:grid;grid-template-columns:1fr;}
+  .media-upload .upload-status{min-height:32px;}
+  .cat-actions{grid-template-columns:repeat(2,1fr)!important;}
+  .cat-actions button{min-height:44px!important;}
+  .io-x{width:44px;height:44px;}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;}
+}
 </style>
 </head>
 <body>
@@ -656,13 +718,12 @@ nav.tabs button .ico{width:15px;height:15px;stroke-width:1.9;}
     <h2 style="font-size:20px;color:var(--forest);">Tsigoura Verde Resort · Διαχείριση</h2>
     <p style="font-size:12px;color:var(--muted);line-height:1.5;margin:8px 0 18px;">
       Εισάγετε τον κωδικό διαχείρισης του καταστήματος.</p>
-    <input type="password" id="pinInput" placeholder="Κωδικός" autocomplete="current-password" style="text-align:center;font-size:20px;letter-spacing:0;padding:14px;">
-    <button class="btn" style="width:100%;margin-top:12px;" id="loginBtn">Είσοδος</button>
-    <p style="font-size:10.5px;color:var(--muted);margin-top:14px;line-height:1.5;">
-      Στο Vercel ο κωδικός έρχεται από το environment variable <b>ADMIN_PIN</b>.
-      Για local preview λειτουργεί ο ίδιος κωδικός ιδιοκτήτη ή το fallback PIN <b>1234</b>.</p>
+    <label for="pinInput" style="position:absolute;clip:rect(0 0 0 0);clip-path:inset(50%);width:1px;height:1px;overflow:hidden;">Κωδικός διαχείρισης</label>
+    <input type="password" id="pinInput" placeholder="Κωδικός" autocomplete="current-password" style="text-align:center;font-size:20px;letter-spacing:0;padding:14px;" data-testid="admin-pin">
+    <button class="btn" style="width:100%;margin-top:12px;" id="loginBtn" data-testid="admin-login">Είσοδος</button>
+    <p class="login-status" id="loginStatus" role="status" aria-live="polite"></p>
     <p style="font-size:11px;color:var(--muted);margin-top:14px;line-height:1.5;">
-      Ο κωδικός δίνεται από τον ιδιοκτήτη. Κρατήστε τον μυστικό.</p>
+      Χρησιμοποιήστε τον ιδιωτικό κωδικό του καταστήματος.</p>
   </div>
 </div>
 
@@ -672,19 +733,19 @@ nav.tabs button .ico{width:15px;height:15px;stroke-width:1.9;}
   <div class="bar">
     <div>
       <h1>Tsigoura Verde Resort</h1>
-      <div class="sub">Πίνακας διαχείρισης · τιμοκατάλογος εκδηλώσεων</div>
+      <div class="sub">Πίνακας διαχείρισης καταλόγου</div>
     </div>
     <div class="status-pill" id="servicePill"><span class="dot"></span> <span id="serviceText"></span></div>
-    <div class="status-pill sync-pill" id="syncPill" title="Πού αποθηκεύονται οι αλλαγές σας"><span class="dot"></span> <span id="syncText">Έλεγχος βάσης…</span></div>
+    <div class="status-pill sync-pill" id="syncPill" role="status" aria-live="polite"><span class="dot"></span> <span id="syncText">Έλεγχος δημοσίευσης…</span></div>
     <button class="status-pill undo-pill" id="undoBtn" type="button" data-ico="undo" disabled title="Αναίρεση τελευταίας αλλαγής">Αναίρεση</button>
   </div>
   <nav class="tabs" id="tabs">
-    <button data-tab="dash" class="on" data-ico="sparkle">Επισκόπηση</button>
-    <button data-tab="tables" data-ico="table">Τραπέζια</button>
-    <button data-tab="menu" data-ico="bowl">Μενού</button>
-    <button data-tab="orders" data-ico="receipt">Παραγγελίες</button>
-    <button data-tab="qr" data-ico="qr">QR &amp; Σύνδεσμοι</button>
-    <button data-tab="settings" data-ico="gear">Ρυθμίσεις</button>
+    <button data-tab="dash" class="on" data-ico="sparkle" data-testid="admin-tab-dashboard">Επισκόπηση</button>
+    <button data-tab="tables" data-ico="table" data-advanced-service data-testid="admin-tab-tables">Τραπέζια</button>
+    <button data-tab="menu" data-ico="bowl" data-testid="admin-tab-menu">Μενού</button>
+    <button data-tab="orders" data-ico="receipt" data-advanced-service data-testid="admin-tab-orders">Παραγγελίες</button>
+    <button data-tab="qr" data-ico="qr" data-testid="admin-tab-qr">QR &amp; Σύνδεσμοι</button>
+    <button data-tab="settings" data-ico="gear" data-testid="admin-tab-settings">Ρυθμίσεις</button>
   </nav>
 </header>
 
@@ -694,8 +755,8 @@ nav.tabs button .ico{width:15px;height:15px;stroke-width:1.9;}
   <section class="panel on" id="panel-dash">
     <div class="panel-head">
       <h2>Επισκόπηση</h2>
-      <p class="hint">Ζωντανή εικόνα του καταλόγου και της αίθουσας. Όλα τα γραφήματα
-        υπολογίζονται από τα πραγματικά δεδομένα — τίποτα δεν είναι διακοσμητικό.</p>
+      <p class="hint">Ζωντανή εικόνα του καταλόγου. Όλες οι πληροφορίες
+        υπολογίζονται από τα πραγματικά δεδομένα του μενού.</p>
     </div>
     <div id="opsCommand"></div>
     <div class="kpis" id="kpis"></div>
@@ -784,9 +845,8 @@ nav.tabs button .ico{width:15px;height:15px;stroke-width:1.9;}
   <!-- ---------- SETTINGS ---------- -->
   <section class="panel" id="panel-settings">
     <div class="panel-head"><h2>Ρυθμίσεις</h2></div>
-    <div class="warnbox"><span id="warnIco"></span><div>Πριν το online άνοιγμα, συμπληρώστε τα πραγματικά στοιχεία της επιχείρησης
-      (επωνυμία, ΑΦΜ, ΔΟΥ, ΓΕΜΗ, διεύθυνση, τηλέφωνο) στις μεταβλητές περιβάλλοντος του Vercel.
-      Η Επισκόπηση τα ελέγχει αυτόματα και το <code>/api/status</code> δείχνει τι λείπει χωρίς να εμφανίζει μυστικά.</div></div>
+    <div class="warnbox"><span id="warnIco"></span><div>Πριν το άνοιγμα, βεβαιωθείτε ότι τα πραγματικά στοιχεία της επιχείρησης
+      (επωνυμία, ΑΦΜ, ΔΟΥ, ΓΕΜΗ, διεύθυνση και τηλέφωνο) είναι σωστά. Η Επισκόπηση δείχνει ό,τι χρειάζεται διόρθωση.</div></div>
     <div id="settingsArea"></div>
     <div style="margin-top:20px;display:flex;gap:8px;flex-wrap:wrap;">
       <button class="btn danger sm" id="resetBtn" data-ico="trash">Επαναφορά demo δεδομένων</button>
@@ -797,15 +857,15 @@ nav.tabs button .ico{width:15px;height:15px;stroke-width:1.9;}
 </div>
 
 <!-- ---------- INCOMING ORDER (scanned from a customer QR) ---------- -->
-<div class="io-scrim" id="ioScrim">
-  <div class="io-card" id="ioCard">
+<div class="io-scrim" id="ioScrim" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="io-card" id="ioCard" tabindex="-1">
     <div class="io-ticket">
       <div class="io-top">
         <div>
           <div class="io-eyebrow">✦ Εισερχόμενη παραγγελία</div>
           <div class="io-no" id="ioNo">#—</div>
         </div>
-        <button class="io-x" id="ioClose" aria-label="close">✕</button>
+        <button class="io-x" id="ioClose" aria-label="Κλείσιμο">✕</button>
       </div>
       <div class="io-meta" id="ioMeta"></div>
       <div class="io-lines" id="ioLines"></div>
@@ -830,7 +890,7 @@ nav.tabs button .ico{width:15px;height:15px;stroke-width:1.9;}
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="tsigoura-data.js?v=20260727-script-publish-v1"></script>
 <script src="tsigoura-menu-icons.js?v=20260727-owner-media-controls-v2"></script>
@@ -907,7 +967,7 @@ async function uploadAdminImage(file,kind,id,status){
     return cleanAdminPath(data.url);
   }catch(e){
     const msg=e&&e.message==='blob_not_configured'
-      ?'Συνδέστε Vercel Blob για uploads'
+      ?'Η αποστολή εικόνων δεν είναι διαθέσιμη ακόμη'
       :'Το ανέβασμα απέτυχε';
     if(status) status.textContent=msg;
     toast(msg);
@@ -941,6 +1001,7 @@ function hydrateIcons(root){
 /* ══════════════ DASHBOARD — everything computed from real data ══════════ */
 function renderDash(){
   const menu = S.menu, tables = S.tables;
+  const advancedService=!S.settings.traditionalMenuOnly;
   const avail = menu.filter(i=>i.available).length;
   const out   = menu.length - avail;
   const prices= menu.map(i=>i.price);
@@ -952,13 +1013,16 @@ function renderDash(){
   const newOrders = S.orders.filter(o=>o.status!=='done').length;
   const revenue = S.orders.reduce((a,o)=>a+o.total,0);
 
-  $('kpis').innerHTML = [
+  const kpis = [
     { ic:'bowl',    v:menu.length, s:'στον κατάλογο', t:'Πιάτα' },
     { ic:'check',   v:avail, s:out?out+' εκτός':'όλα διαθέσιμα', t:'Διαθέσιμα' },
+  ];
+  if(advancedService) kpis.push(
     { ic:'table',   v:openT+'/'+tables.length, s:seats+' θέσεις σύνολο', t:'Ελεύθερα τραπέζια', raw:true },
     { ic:'receipt', v:newOrders, s:S.orders.length+' συνολικά', t:'Ανοιχτές παραγγελίες' },
-    { ic:'euro',    v:S.settings.currency+revenue.toFixed(2), s:'σε παραγγελίες σήμερα', t:'Αξία', raw:true },
-  ].map((k,i)=>`
+    { ic:'euro',    v:S.settings.currency+revenue.toFixed(2), s:'σε παραγγελίες σήμερα', t:'Αξία', raw:true }
+  );
+  $('kpis').innerHTML = kpis.map((k,i)=>`
     <div class="kpi reveal" style="--rd:${i*50}ms">
       <div class="kt">${ICO.get(k.ic)}${k.t}</div>
       <div class="kv${k.raw?'':' kcount'}" ${k.raw?'':`data-to="${k.v}"`}>${k.raw?k.v:'0'}</div>
@@ -966,7 +1030,7 @@ function renderDash(){
     </div>`).join('');
 
   $('dashGrid').innerHTML = `
-    <div class="dcard center reveal">
+    ${advancedService?`<div class="dcard center reveal">
       <h4 style="align-self:flex-start;">${ICO.get('table')}Κατάσταση αίθουσας</h4>
       ${VIZ.donut([
         {label:'Ελεύθερα',    value:openT||0.0001, color:'#2F6B3C'},
@@ -980,7 +1044,7 @@ function renderDash(){
         <span><i style="background:#C9A227"></i>Κρατήσεις ${resT}</span>
         <span><i style="background:#CFC7B4"></i>Κλειστά ${clsT}</span>
       </div>
-    </div>
+    </div>`:''}
 
     <div class="dcard reveal" style="--rd:70ms">
       <h4>${ICO.get('layers')}Πιάτα ανά κατηγορία</h4>
@@ -1006,7 +1070,7 @@ function renderDash(){
       </div>
     </div>
 
-    <div class="dcard reveal" style="--rd:280ms">
+    ${advancedService?`<div class="dcard reveal" style="--rd:280ms">
       <h4>${ICO.get('users')}Θέσεις ανά ζώνη</h4>
       ${VIZ.bars([...new Set(tables.map(t=>t.zone))].map(z=>({
         label:(ZONES[z]?ZONES[z].el:z), icon:'chair',
@@ -1016,7 +1080,7 @@ function renderDash(){
         ${[...new Set(tables.map(t=>t.zone))].map(z=>
           `<span class="zone-chip">${ICO.get('table')}${ZONES[z]?ZONES[z].el:z} · ${tables.filter(t=>t.zone===z).length}</span>`).join('')}
       </div>
-    </div>`;
+    </div>`:''}`;
 
   document.querySelectorAll('.kcount').forEach(el=>MOT.count(el, parseFloat(el.dataset.to)));
   renderOpsCommand();
@@ -1062,14 +1126,14 @@ function renderOpsCommand(){
   const localPreview=/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
   const setup=[];
   if(opsSnapshot.loading){
-    setup.push(opsRow('warn','Έλεγχος online ρυθμίσεων','Γίνεται ασφαλής έλεγχος χωρίς εμφάνιση κωδικών ή κλειδιών.','',''));
+    setup.push(opsRow('warn','Έλεγχος δημοσίευσης','Ελέγχουμε αν οι αλλαγές φτάνουν σωστά στους πελάτες.','',''));
   }else if(opsSnapshot.failed){
-    setup.push(opsRow('warn',localPreview?'Τοπική προεπισκόπηση':'Δεν απάντησε ο online έλεγχος',
-      localPreview?'Οι ρυθμίσεις Vercel ελέγχονται όταν ανοίξετε το online admin.':'Ελέγξτε ξανά τη σύνδεση ή ανοίξτε /api/status.','refresh','Ξανά'));
+    setup.push(opsRow('warn',localPreview?'Τοπική προεπισκόπηση':'Δεν ολοκληρώθηκε ο έλεγχος',
+      localPreview?'Ο πλήρης έλεγχος γίνεται στην online σελίδα διαχείρισης.':'Ελέγξτε τη σύνδεση και δοκιμάστε ξανά.','refresh','Ξανά'));
   }else{
     const live=!!(st&&st.liveStore&&st.liveStore.configured&&st.adminPinSet);
     setup.push(opsRow(live?'ok':'bad','Ζωντανή δημοσίευση',
-      live?'Κάθε αλλαγή φτάνει αυτόματα στα κινητά.':(st&&st.liveStore&&st.liveStore.configured?'Η βάση υπάρχει αλλά λείπει το ADMIN_PIN.':'Συνδέστε Vercel KV και ορίστε ADMIN_PIN.'),'settings',live?'Ρυθμίσεις':'Οδηγίες'));
+      live?'Κάθε αλλαγή φτάνει αυτόματα σε όλες τις συσκευές.':'Η ζωντανή δημοσίευση χρειάζεται έλεγχο από τον τεχνικό διαχειριστή.','settings',live?'Ρυθμίσεις':'Χρειάζεται βοήθεια'));
     const legal=cfg&&cfg.legal||{}, contact=cfg&&cfg.contact||{};
     const legalReady=!!(legal.companyName&&legal.afm&&legal.address&&legal.agoranomikos);
     setup.push(opsRow(legalReady?'ok':'bad','Νομικά στοιχεία',
@@ -1082,7 +1146,7 @@ function renderOpsCommand(){
       wifiReady?`Το δίκτυο «${ioEsc(wifi.ssid)}» είναι διαθέσιμο στο menu.`:'Προσθέστε όνομα δικτύου και κωδικό Wi‑Fi.','settings',wifiReady?'Έλεγχος':'Οδηγίες'));
     const uploadsReady=!!(st&&st.imageUploads&&st.imageUploads.configured);
     setup.push(opsRow(uploadsReady?'ok':'warn','Εικόνες',
-      uploadsReady?'Uploads από κινητό και υπολογιστή είναι έτοιμα.':'Συνδέστε Vercel Blob για uploads από συσκευή.','settings',uploadsReady?'Έτοιμο':'Ρύθμιση'));
+      uploadsReady?'Αποστολή από κινητό και υπολογιστή είναι έτοιμη.':'Η αποστολή εικόνων από συσκευή χρειάζεται ενεργοποίηση.','settings',uploadsReady?'Έτοιμο':'Χρειάζεται βοήθεια'));
   }
   const quality=[
     opsRow(h.noPrice?'bad':'ok','Τιμές καταλόγου',h.noPrice?`${h.noPrice} ορατά πιάτα δεν έχουν τιμή ή κείμενο τιμής.`:'Όλα τα ορατά πιάτα έχουν σαφή τιμή.','menu',h.noPrice?'Διόρθωση':'Μενού'),
@@ -1115,7 +1179,7 @@ function renderOpsCommand(){
     </div>
     <div class="ops-progress"><i style="width:${pct}%"></i></div>
     <div class="ops-grid">
-      <div class="ops-card"><h4>${ICO.get('gear')}Online ετοιμότητα</h4>${setup.join('')}</div>
+      <div class="ops-card"><h4>${ICO.get('gear')}Ετοιμότητα δημοσίευσης</h4>${setup.join('')}</div>
       <div class="ops-card"><h4>${ICO.get('bowl')}Υγεία καταλόγου</h4>${quality.join('')}</div>
     </div>
     <div class="ops-actions">
@@ -1268,9 +1332,11 @@ function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('on'); s
 function adminPin(){ try{return sessionStorage.getItem('tv_admin_pin')||'';}catch(e){return '';} }
 let remoteSaveTimer=null;
 let pendingRemoteReason='edit';
+let liveSaveChain=Promise.resolve(false);
 function scheduleRemoteSave(reason){
   pendingRemoteReason=reason||pendingRemoteReason||'edit';
   clearTimeout(remoteSaveTimer);
+  setSyncState('pending');
   remoteSaveTimer=setTimeout(()=>saveLiveMenu({silent:true}),700);
 }
 /* ── publishing (no database) ────────────────────────────────────────────────
@@ -1305,7 +1371,7 @@ function downloadMenuLive(){
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(()=>URL.revokeObjectURL(url),1500);
     markPublishedNow();
-    toast('Κατέβηκε το menu-live.js');
+    toast('Το αντίγραφο κατέβηκε ✓');
     return true;
   }catch(e){ toast('Δεν μπόρεσε να δημιουργηθεί το αρχείο'); return false; }
 }
@@ -1313,7 +1379,7 @@ async function copyMenuLive(){
   try{
     await navigator.clipboard.writeText(buildMenuLiveFile());
     markPublishedNow();
-    toast('Αντιγράφηκε — επικολλήστε το στο menu-live.js');
+    toast('Το αντίγραφο αποθηκεύτηκε στο πρόχειρο ✓');
     return true;
   }catch(e){ toast('Η αντιγραφή απέτυχε — χρησιμοποιήστε το κατέβασμα'); return false; }
 }
@@ -1354,9 +1420,14 @@ async function loadRemoteMenu({silent=false}={}){
     return false;
   }
 }
-async function saveLiveMenu({silent=false}={}){
+function saveLiveMenu(options={}){
+  liveSaveChain=liveSaveChain.catch(()=>false).then(()=>performLiveMenuSave(options));
+  return liveSaveChain;
+}
+async function performLiveMenuSave({silent=false}={}){
   const pin=adminPin();
   if(!pin){ setSyncState('nopin'); if(!silent) toast('Ξανακάντε είσοδο'); return false; }
+  document.body.classList.add('is-saving');
   try{
     const state=normalizeState(S);
     state.orders=[];
@@ -1370,14 +1441,15 @@ async function saveLiveMenu({silent=false}={}){
     if(!r.ok || !data || !data.ok){
       const why=(data&&data.error)||'save_failed';
       setSyncState(why==='store_not_configured'?'offline':why==='admin_pin_not_set'?'nopin':'offline', why);
-      if(!silent) toast(why==='store_not_configured'?'Δεν έχει συνδεθεί βάση ακόμα':'Δεν αποθηκεύτηκε ζωντανά');
+      if(!silent) toast('Δεν δημοσιεύτηκε. Δοκιμάστε ξανά.');
       return false;
     }
     setSyncState('live');
     pendingRemoteReason='edit';
     if(!silent) toast('Ενημερώθηκε ζωντανά ✓');
     return true;
-  }catch(e){ setSyncState('offline','network'); if(!silent) toast('Χωρίς σύνδεση'); return false; }
+  }catch(e){ setSyncState('offline','network'); if(!silent) toast('Δεν υπάρχει σύνδεση'); return false; }
+  finally{ document.body.classList.remove('is-saving'); }
 }
 
 /* ── sync status ────────────────────────────────────────────────────────────
@@ -1387,19 +1459,23 @@ function setSyncState(state, why){
   if(state) liveState=state;
   const pill=document.getElementById('syncPill'); if(!pill) return;
   const txt=document.getElementById('syncText');
-  pill.classList.remove('ok','local','bad');
+  pill.classList.remove('ok','local','bad','pending');
   if(liveState==='live'){
     syncState='live'; pill.classList.add('ok');
-    txt.textContent='Ζωντανά σε όλες τις συσκευές';
-    pill.title='Κάθε αλλαγή αποθηκεύεται αμέσως στη βάση. Οι πελάτες τη βλέπουν μόλις ανοίξουν/ανανεώσουν το μενού.';
+    txt.textContent='Δημοσιεύτηκε';
+    pill.title='Οι αλλαγές είναι διαθέσιμες σε όλες τις συσκευές.';
+  }else if(liveState==='pending'){
+    syncState='pending'; pill.classList.add('pending');
+    txt.textContent='Αποθήκευση…';
+    pill.title='Οι αλλαγές αποθηκεύονται.';
   }else if(liveState==='nopin'){
     syncState='nopin'; pill.classList.add('bad');
-    txt.textContent='⚠ Λείπει ADMIN_PIN';
-    pill.title='Ορίστε ADMIN_PIN στο Vercel για να επιτρέπεται η ζωντανή αποθήκευση.';
+    txt.textContent='⚠ Χρειάζεται σύνδεση';
+    pill.title='Κάντε ξανά είσοδο ή επικοινωνήστε με τον τεχνικό διαχειριστή.';
   }else if(liveState==='offline'){
     syncState='offline'; pill.classList.add('local');
-    txt.textContent='⚠ Χωρίς βάση · μόνο τοπικά';
-    pill.title='Δεν έχει συνδεθεί βάση (Vercel → Storage → Create → KV). Μέχρι τότε, δημοσιεύστε με «Κατέβασμα menu-live.js».';
+    txt.textContent='⚠ Δεν δημοσιεύτηκε';
+    pill.title='Οι αλλαγές έμειναν σε αυτή τη συσκευή. Ελέγξτε τη σύνδεση και δοκιμάστε ξανά.';
   }else{
     txt.textContent='Έλεγχος…';
   }
@@ -1510,12 +1586,14 @@ async function checkAdminPin(pin){
   return false;
 }
 $('loginBtn').onclick = async () => {
-  const btn=$('loginBtn'), input=$('pinInput'), pin=input.value.trim();
+  const btn=$('loginBtn'), input=$('pinInput'), status=$('loginStatus'), pin=input.value.trim();
+  if(!pin){ status.textContent='Γράψτε τον κωδικό διαχείρισης.'; input.focus(); return; }
+  status.textContent='';
   btn.disabled=true; btn.textContent='Έλεγχος...';
   const ok=await checkAdminPin(pin);
   btn.disabled=false; btn.textContent='Είσοδος';
   if(ok){ try{sessionStorage.setItem('tv_admin_ok','1');sessionStorage.setItem('tv_admin_pin',pin);}catch(e){} unlock(); }
-  else { input.value=''; input.placeholder='Λάθος κωδικός'; }
+  else { input.value=''; status.textContent='Ο κωδικός δεν είναι σωστός. Δοκιμάστε ξανά.'; input.focus(); }
 };
 $('pinInput').onkeydown = e => { if(e.key==='Enter') $('loginBtn').click(); };
 
@@ -1567,6 +1645,7 @@ function openIncomingRaw(raw,opts={}){
   if(opts.stripUrl) ioStripUrl();
 }
 function renderIncoming(p){
+  adminDialogReturnFocus=document.activeElement;
   incomingPayload = p;
   ioSetStatus(p,'scanned',{table:p.t||''});
   $('ioNo').textContent = '#'+ioEsc(p.no||'—');
@@ -1578,8 +1657,10 @@ function renderIncoming(p){
   renderIncomingTableMap(p.t||'');
   const v=$('ioVerified'); if(v) v.checked=false;
   $('ioScrim').classList.add('on');
+  $('ioScrim').setAttribute('aria-hidden','false');
   $('ioClose').onclick = $('ioCancel').onclick = closeIncoming;
   $('ioConfirm').onclick = () => confirmIncoming(p);
+  requestAnimationFrame(()=>$('ioClose').focus({preventScroll:true}));
 }
 function ioLineTotal(l){ const it=ioItem(l.i); return (it?it.price:0)*Math.max(1,l.q||1); }
 function ioTotal(){ return (incomingPayload&&incomingPayload.l||[]).reduce((s,l)=>s+ioLineTotal(l),0); }
@@ -1633,7 +1714,30 @@ function renderIncomingTableMap(sel){
   $('ioTable').onchange=()=>renderIncomingTableMap($('ioTable').value);
   if(incomingPayload && sel) ioSetStatus(incomingPayload,'assigned',{table:sel});
 }
-function closeIncoming(){ $('ioScrim').classList.remove('on'); ioStripUrl(); }
+let adminDialogReturnFocus=null;
+function closeIncoming(){
+  $('ioScrim').classList.remove('on');
+  $('ioScrim').setAttribute('aria-hidden','true');
+  ioStripUrl();
+  const target=adminDialogReturnFocus;
+  adminDialogReturnFocus=null;
+  if(target&&target.isConnected) requestAnimationFrame(()=>target.focus({preventScroll:true}));
+}
+document.addEventListener('keydown',e=>{
+  const dialog=$('ioScrim');
+  if(e.key==='Escape'&&dialog.classList.contains('on')){
+    e.preventDefault();
+    closeIncoming();
+    return;
+  }
+  if(e.key!=='Tab'||!dialog.classList.contains('on')) return;
+  const focusable=Array.from(dialog.querySelectorAll('button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'))
+    .filter(el=>el.offsetWidth>0&&el.offsetHeight>0);
+  if(!focusable.length){ e.preventDefault(); return; }
+  const first=focusable[0],last=focusable[focusable.length-1];
+  if(e.shiftKey&&document.activeElement===first){ e.preventDefault();last.focus(); }
+  else if(!e.shiftKey&&document.activeElement===last){ e.preventDefault();first.focus(); }
+});
 function ioStripUrl(){ try{ const u=new URL(location.href); u.searchParams.delete('o'); history.replaceState(null,'',u.pathname+u.search); }catch(e){} }
 function confirmIncoming(p){
   const table = $('ioTable').value || p.t || '';
@@ -1744,6 +1848,17 @@ function stopScanCamera(){
 }
 
 /* ---------------- tabs ---------------- */
+function updateAdminFeatureVisibility(){
+  const advanced=!S.settings.traditionalMenuOnly;
+  document.body.classList.toggle('admin-traditional',!advanced);
+  document.querySelectorAll('[data-advanced-service]').forEach(el=>el.hidden=!advanced);
+  ['panel-tables','panel-orders'].forEach(id=>{
+    const panel=$(id);
+    if(panel) panel.setAttribute('aria-hidden',advanced?'false':'true');
+  });
+  const active=document.querySelector('#tabs button.on');
+  if(active&&active.hidden) switchAdminTab('dash');
+}
 $('tabs').querySelectorAll('button').forEach(b=>{
   b.onclick = ()=>{
     $('tabs').querySelectorAll('button').forEach(x=>x.classList.remove('on'));
@@ -1959,7 +2074,7 @@ function renderEasy(){
           <button class="btn ghost sm pressable" data-plus>${ICO.get('plus')}</button>
         </div>
         <span class="soldlabel" style="color:${(i.hidden||!ss.active)?'var(--bad)':(i.available?'var(--ok)':'var(--bad)')}">${i.hidden?'Κρυφό':(!ss.active?'Εκτός ημερομηνίας':(i.available?'Διαθέσιμο':'Τελείωσε'))}</span>
-        <button class="hidebtn ${i.hidden?'on':''}" data-hide>${i.hidden?'Εμφάνιση':'Απόκρυψη'}</button>
+        <button class="hidebtn ${i.hidden?'on':''}" data-hide data-testid="dish-visibility-${i.id}">${i.hidden?'Εμφάνιση':'Απόκρυψη'}</button>
         <div class="toggle ${i.available?'on':''}" data-toggle title="Διαθέσιμο / τελείωσε"></div>`;
       row.querySelector('[data-toggle]').onclick=()=>{ i.available=!i.available; persist(); renderEasy(); };
       row.querySelector('[data-hide]').onclick=()=>{ i.hidden=!i.hidden; persist(); renderEasy(); toast(i.hidden?'Κρύφτηκε από το menu':'Εμφανίζεται στο menu'); };
@@ -2134,7 +2249,7 @@ function renderCategoryManager(area){
   wrap.innerHTML=`<div class="cat-top">
     <h3>${ICO.get('layers')}Κατηγορίες</h3>
   </div>
-  <div class="cat-mini" style="margin-bottom:10px;">Χρησιμοποιούνται μόνο οι αρχικές κατηγορίες. Μπορείτε να τις μετονομάσετε, να τις ταξινομήσετε, να τις κρύψετε ή να τις διαγράψετε.</div>
+  <div class="cat-mini" style="margin-bottom:10px;">Χρησιμοποιούνται μόνο οι αρχικές κατηγορίες. Μπορείτε να τις μετονομάσετε, να τις ταξινομήσετε, να τις κρύψετε και να τις εμφανίσετε ξανά.</div>
   <div class="cat-list"></div>`;
   const list=wrap.querySelector('.cat-list');
   S.categories.slice().sort((a,b)=>a.order-b.order).forEach((c,ix)=>{
@@ -2161,9 +2276,8 @@ function renderCategoryManager(area){
       <select data-cat-icon>${icons.map(ic=>`<option value="${ic}" ${ic===(c.icon||'bowl')?'selected':''}>${ic}</option>`).join('')}</select>
       <input type="color" data-cat-accent value="${ioEsc(acc)}" title="Χρώμα">
       <div class="cat-actions">
-        <button data-cat-hide title="${c.hidden?'Εμφάνιση':'Απόκρυψη'}">${ICO.get(c.hidden?'eye':'eye')}</button>
-        <button data-cat-save title="Αποθήκευση">${ICO.get('check')}</button>
-        <button class="danger" data-cat-del title="Διαγραφή">${ICO.get('trash')}</button>
+        <button data-cat-hide data-testid="category-visibility-${ioEsc(c.id)}" title="${c.hidden?'Εμφάνιση':'Απόκρυψη'}">${ICO.get(c.hidden?'eye':'eye')}</button>
+        <button data-cat-save data-testid="category-save-${ioEsc(c.id)}" title="Αποθήκευση">${ICO.get('check')}</button>
       </div>
       <div class="cat-media"><label>Εικόνα κατηγορίας · path ή URL</label><input data-cat-image list="mediaPathList" value="${ioEsc(knownCategoryImagePath(c))}" placeholder="media/dishes/05-bougiourdi.png ή https://...">
         <div class="media-upload"><input type="file" data-cat-image-file accept="image/jpeg,image/png,image/webp,image/avif"><label class="upload-pick">${ICO.get('plus')}Από συσκευή</label><span class="upload-status">Κινητό ή υπολογιστής · έως 4 MB</span></div>
@@ -2200,7 +2314,6 @@ function renderCategoryManager(area){
     row.querySelector('[data-cat-tint]').onchange=()=>saveCategoryRow(c,row);
     row.querySelectorAll('[data-cat-lang]').forEach(input=>input.onchange=()=>saveCategoryRow(c,row));
     row.querySelector('[data-cat-hide]').onclick=()=>{ c.hidden=!c.hidden; persist(); renderPro(); toast(c.hidden?'Η κατηγορία κρύφτηκε':'Η κατηγορία εμφανίζεται'); };
-    row.querySelector('[data-cat-del]').onclick=()=>deleteCategory(c);
     list.appendChild(row);
   });
   area.appendChild(wrap);
@@ -2375,7 +2488,7 @@ function renderPreview(){
         if(frame.classList.contains('loading')){
           frame.classList.remove('loading'); frame.classList.add('fail');
           if(title) title.textContent='Δεν φορτώθηκε το preview';
-          if(text) text.textContent='Ανοίξτε το menu σε κανονική καρτέλα για έλεγχο. Στο Vercel θα φορτώνει κανονικά.';
+          if(text) text.textContent='Ανοίξτε το μενού σε κανονική καρτέλα για πλήρη έλεγχο.';
         }
       },1800);
     }
@@ -2606,9 +2719,9 @@ function ownerHistoryPanelHTML(){
   }:{backups:[],history:[]};
   const backups=remote.backups.concat(local.backups).slice(0,16);
   const history=(ownerHistoryRemote.ok?remote.history:local.history).slice(0,12);
-  const status=ownerHistoryWriteError?'Η συσκευή δεν μπόρεσε να γράψει backup. Κατεβάστε το τωρινό backup και ελέγξτε τον διαθέσιμο χώρο.':ownerHistoryRemote.loading?'Έλεγχος live backup…':ownerHistoryRemote.ok
-    ?'Live backups στη βάση + αντίγραφο ασφαλείας σε αυτή τη συσκευή.'
-    :'Αυτόματο αντίγραφο σε αυτή τη συσκευή. Με KV συνδεδεμένο, κρατιέται και δεύτερο live backup.';
+  const status=ownerHistoryWriteError?'Η συσκευή δεν μπόρεσε να κρατήσει αντίγραφο. Κατεβάστε το τωρινό αντίγραφο και ελέγξτε τον διαθέσιμο χώρο.':ownerHistoryRemote.loading?'Έλεγχος αντιγράφων…':ownerHistoryRemote.ok
+    ?'Αυτόματα αντίγραφα online και σε αυτή τη συσκευή.'
+    :'Αυτόματο αντίγραφο σε αυτή τη συσκευή.';
   const backupCards=backups.map(x=>`<div class="preset-card">
     <div><b>${x.source==='remote'?'Live':'Συσκευή'} · ${ioEsc(ownerHistoryDate(x.day||x.createdAt,false))}</b>
       <small>${Number(x.dishes)||0} πιάτα · ${Number(x.categories)||0} κατηγορίες${x.revision?` · rev ${Number(x.revision)}`:''}</small></div>
@@ -2849,14 +2962,12 @@ function renderSettings(){
     </div>
 
     <div class="announce-editor">
-      <h3>${ICO.get('save')}Δημοσίευση μενού</h3>
-      <p class="hint">Όταν το επάνω badge είναι πράσινο, οι αλλαγές δημοσιεύονται αυτόματα.
-        Αν η βάση δεν είναι ακόμη συνδεδεμένη, κατεβάστε το <b>menu-live.js</b>,
-        αντικαταστήστε το στο project και κάντε redeploy. Το αρχείο λειτουργεί
-        επίσης ως χειροκίνητο αντίγραφο ασφαλείας.</p>
+      <h3>${ICO.get('save')}Αντίγραφο καταλόγου</h3>
+      <p class="hint">Όταν η ένδειξη επάνω γράφει «Δημοσιεύτηκε», οι αλλαγές έχουν φτάσει στους πελάτες.
+        Μπορείτε επίσης να κρατήσετε ένα χειροκίνητο αντίγραφο του καταλόγου.</p>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
-        <button class="btn sm pressable" id="dbPush">${ICO.get('download')}Κατέβασμα menu-live.js</button>
-        <button class="btn ghost sm pressable" id="dbCopy">${ICO.get('save')}Αντιγραφή περιεχομένου</button>
+        <button class="btn sm pressable" id="dbPush">${ICO.get('download')}Λήψη αντιγράφου</button>
+        <button class="btn ghost sm pressable" id="dbCopy">${ICO.get('save')}Αντιγραφή</button>
       </div>
     </div>` + ownerHistoryPanelHTML() + presetEditorHTML() + announcementEditorHTML() + `
 
@@ -2870,7 +2981,7 @@ function renderSettings(){
       <select id="defLang" style="width:160px;">${LANGUAGES.map(l=>`<option value="${l.code}" ${S.settings.defaultLang===l.code?'selected':''}>${l.flag} ${l.label}</option>`).join('')}</select>
     </div>`;
   $('settingsArea').querySelectorAll('[data-set]').forEach(el=>el.onclick=()=>{
-    S.settings[el.dataset.set]=!S.settings[el.dataset.set]; persist(); renderSettings(); renderServicePill(); renderQR(); renderPreview(); });
+    S.settings[el.dataset.set]=!S.settings[el.dataset.set]; persist(); renderSettings(); renderServicePill(); updateAdminFeatureVisibility(); renderDash(); renderQR(); renderPreview(); });
   $('settingsArea').querySelectorAll('[data-action-set]').forEach(el=>el.onclick=()=>{
     if(!S.settings.headerActions) S.settings.headerActions={};
     const k=el.dataset.actionSet;
@@ -2905,6 +3016,7 @@ function renderServicePill(){
 
 function renderAll(){
   probeSync(); refreshShowAllBtn();
+  updateAdminFeatureVisibility();
   renderTables(); renderMenuArea(); renderOrders(); renderSettings();
   renderServicePill(); renderQR(); renderDash(); initScanPanel();
   hydrateIcons(); MOT.reveal();

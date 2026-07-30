@@ -3,6 +3,9 @@
 .env.*
 !.env.example
 node_modules/
+.playwright/
+playwright-report/
+test-results/
 .vercel/
 *.log
 *.zip

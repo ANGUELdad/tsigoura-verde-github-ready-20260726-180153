@@ -992,7 +992,7 @@ body{background:var(--paper)!important;}
                    60%{opacity:1;transform:scale(1.06) rotate(4deg)}
                    100%{opacity:1;transform:scale(1) rotate(0)}}
 @keyframes nameIn {from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}
-@keyframes btnPop {from{opacity:0;transform:scale(.5) translateY(-6px)}to{opacity:1;transform:none}}
+@keyframes btnPop {from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
 .head .brand h1{animation:nameIn .6s var(--ez-out) .12s both!important;}
 .head .brand .sub{animation:nameIn .6s var(--ez-out) .2s both!important;}
 .head #bookBtn  {animation:btnPop .5s var(--ez-spring) .26s both!important;}
@@ -1903,6 +1903,145 @@ body.motion-off .photo-stage img,body.motion-soft .photo-stage.img-ready img{
   opacity:1!important;filter:none!important;transform:none!important;
 }
 
+/* 2026-07-31 — classic UI quality pass.
+   Preserve the established visual language while making every viewport usable. */
+:root{--tap:44px;}
+:focus-visible{
+  outline:3px solid color-mix(in srgb,var(--gold) 78%,white);
+  outline-offset:3px;
+}
+button:disabled,[aria-disabled="true"]{cursor:not-allowed;}
+.mark-link,.wifibtn,.carticon,.langbtn,.search-clear,.info-b,.add-sm,
+.sheet .close,.panel .x,.help,.cpy,.lopt,.qc,.step button{
+  min-width:var(--tap)!important;
+  min-height:var(--tap)!important;
+}
+.wifibtn,.carticon{flex:0 0 var(--tap)!important;width:var(--tap)!important;height:var(--tap)!important;}
+.langbtn{flex:0 0 50px!important;width:50px!important;height:var(--tap)!important;}
+.search input{min-width:0!important;}
+.search-clear{flex:0 0 var(--tap)!important;width:var(--tap)!important;height:var(--tap)!important;}
+.sheet .close{
+  top:8px!important;
+  right:max(8px,env(safe-area-inset-right))!important;
+  display:grid!important;
+  place-items:center!important;
+  border-radius:50%!important;
+  background:color-mix(in srgb,var(--card) 92%,transparent)!important;
+  z-index:4!important;
+}
+.sheet{
+  padding-top:14px!important;
+  padding-right:max(22px,env(safe-area-inset-right))!important;
+  padding-bottom:max(28px,env(safe-area-inset-bottom))!important;
+  padding-left:max(22px,env(safe-area-inset-left))!important;
+  scroll-padding-block:18px!important;
+}
+.sheet h2,.sheet p,.sheet .wrow,.sheet .info-row,.sheet .ordline{
+  overflow-wrap:anywhere;
+  word-break:normal;
+}
+.wrow{align-items:flex-start!important;}
+.wrow>span{flex:0 0 82px;min-width:0!important;}
+.wrow>b,#wifiPass{min-width:0;flex:1 1 auto;overflow-wrap:anywhere;word-break:break-word;}
+.wrow .cpy{flex:0 0 auto;}
+.item .nm,.item .desc,.item .pr{min-width:0;overflow-wrap:anywhere;}
+.item .pr{white-space:normal!important;text-align:right;line-height:1.25;}
+.item .row-act{min-width:var(--tap);}
+.info-b{
+  width:var(--tap)!important;
+  height:var(--tap)!important;
+  margin:-9px -9px -9px 0!important;
+}
+.search-clear{
+  display:grid!important;
+  place-items:center!important;
+  margin-right:-7px!important;
+  transform:none!important;
+}
+body.searching .search-clear{transform:none!important;}
+.empty{min-height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
+
+@media(max-width:420px){
+  .head{
+    display:grid!important;
+    grid-template-columns:44px minmax(0,1fr) 44px 44px 50px!important;
+    padding:12px max(10px,env(safe-area-inset-right)) 10px max(10px,env(safe-area-inset-left))!important;
+    gap:4px!important;
+  }
+  .mark-link,.head .mark{width:44px!important;height:44px!important;}
+  .head .brand{flex:1 1 auto!important;min-width:0!important;}
+  .head .brand h1{
+    font-size:17px!important;line-height:1.02!important;
+    display:-webkit-box!important;-webkit-box-orient:vertical!important;-webkit-line-clamp:2!important;
+    overflow:hidden!important;
+  }
+  .wifibtn,.carticon{
+    width:44px!important;height:44px!important;margin-left:0!important;min-width:44px!important;
+    background:transparent!important;border-color:transparent!important;
+  }
+  .langbtn{
+    width:50px!important;min-width:50px!important;height:44px!important;padding:6px!important;
+    border-color:transparent!important;background:transparent!important;
+  }
+  .search{margin-top:10px!important;}
+  .sheet{max-height:calc(100dvh - max(8px,env(safe-area-inset-top)))!important;}
+  .wrow{display:grid!important;grid-template-columns:76px minmax(0,1fr) auto!important;gap:8px!important;}
+  .wrow .cpy{max-width:92px;white-space:normal;line-height:1.15;}
+}
+@media(max-width:350px){
+  .head .brand h1{font-size:15px!important;}
+  .head .brand{max-width:92px!important;}
+  .wrow{grid-template-columns:68px minmax(0,1fr)!important;}
+  .wrow .cpy{grid-column:2;width:100%;max-width:none;}
+}
+
+@media(min-width:601px) and (max-width:1099px){
+  :root{--maxw:min(900px,calc(100vw - 40px));}
+  .wrap,.head,.search,.view-switch,.updates,.announce,.nav,.closing{
+    max-width:var(--maxw)!important;
+  }
+}
+@media(min-width:1100px){
+  :root{--maxw:min(1200px,calc(100vw - 64px));}
+  .wrap,.head,.search,.view-switch,.updates,.announce,.nav,.closing{
+    max-width:var(--maxw)!important;
+  }
+  #root:not(:has(.guide-shell)):not(:has(.guide-landing)){
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    align-items:start!important;
+    gap:20px 28px!important;
+    padding:18px 20px 0!important;
+  }
+  #root>.sec{
+    width:100%!important;
+    max-width:none!important;
+    margin:0!important;
+    padding:18px 0 4px!important;
+    border:1px solid color-mix(in srgb,var(--line) 78%,transparent);
+    border-radius:22px;
+    background:color-mix(in srgb,var(--card) 58%,transparent);
+    box-shadow:0 12px 28px rgba(20,40,42,.045);
+  }
+  #root>.sec .sec-h{padding-inline:20px!important;}
+  #root>.sec .item{margin-inline:20px!important;}
+}
+@supports not selector(:has(*)){
+  @media(min-width:1100px){
+    body:not(.guided-view) #root{
+      display:grid!important;
+      grid-template-columns:repeat(2,minmax(0,1fr))!important;
+      align-items:start!important;
+      gap:20px 28px!important;
+      padding:18px 20px 0!important;
+    }
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto!important;}
+  .sheet,.scrim,.item,.sec-h{transition:none!important;animation:none!important;}
+}
+
 </style>
 </head>
 <body>
@@ -1922,7 +2061,7 @@ body.motion-off .photo-stage img,body.motion-soft .photo-stage.img-ready img{
 <div class="wrap">
 
   <header class="head">
-    <button type="button" class="mark-link" id="topMarkBtn" aria-label="Πάνω στην αρχή">
+    <button type="button" class="mark-link" id="topMarkBtn" aria-label="Πάνω στην αρχή" data-testid="back-to-top">
       <img class="mark" src="media/mark.png" alt="Tsigoura Verde Resort">
     </button>
     <div class="brand">
@@ -1932,17 +2071,17 @@ body.motion-off .photo-stage img,body.motion-soft .photo-stage.img-ready img{
     <button type="button" class="wifibtn" id="bookBtn" aria-label="book a table">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M8 3v4M16 3v4M3 10h18"/><path d="M9 14.5h2.5"/></svg>
     </button>
-    <button type="button" class="wifibtn" id="socialBtn" aria-label="social">
+    <button type="button" class="wifibtn" id="socialBtn" aria-label="Κοινωνικά δίκτυα" data-testid="social-open">
       <img class="social-img" src="media/social/social.svg" alt="" aria-hidden="true">
     </button>
-    <button type="button" class="wifibtn" id="wifiBtn" aria-label="wifi">
+    <button type="button" class="wifibtn" id="wifiBtn" aria-label="Στοιχεία Wi-Fi" data-testid="wifi-open">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8.5a15 15 0 0 1 20 0"/><path d="M5 12a10 10 0 0 1 14 0"/><path d="M8.5 15.5a5 5 0 0 1 7 0"/><circle cx="12" cy="19" r="1"/></svg>
     </button>
     <button type="button" class="carticon" id="cartIcon" aria-label="cart">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.4 11.2a1.5 1.5 0 0 0 1.5 1.2h7.6a1.5 1.5 0 0 0 1.5-1.2L20 7H6.3"/><circle cx="9.5" cy="20" r="1.2"/><circle cx="17" cy="20" r="1.2"/></svg>
       <span class="cbadge" id="cBadge">0</span>
     </button>
-    <button type="button" class="langbtn" id="langBtn"><span id="lFlag">🇬🇷</span> <span id="lCode">EL</span> ▾</button>
+    <button type="button" class="langbtn" id="langBtn" aria-label="Επιλογή γλώσσας" data-testid="language-open"><span id="lFlag">🇬🇷</span> <span id="lCode">EL</span> ▾</button>
   </header>
 
   <section class="updates" id="updatesSlot">
@@ -1951,8 +2090,8 @@ body.motion-off .photo-stage img,body.motion-soft .photo-stage.img-ready img{
 
   <div class="search">
     <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
-    <input id="q" type="text" autocomplete="off" maxlength="40" enterkeyhint="search" inputmode="search">
-    <button type="button" class="search-clear" id="clearSearch" aria-label="clear search">×</button>
+    <input id="q" type="text" autocomplete="off" maxlength="40" enterkeyhint="search" inputmode="search" data-testid="menu-search">
+    <button type="button" class="search-clear" id="clearSearch" aria-label="Καθαρισμός αναζήτησης" data-testid="search-clear">×</button>
   </div>
 
   <div class="guest-filters" id="guestFilters" hidden></div>
@@ -3083,8 +3222,8 @@ function rowHTML(i){
       <span class="lead"></span>
       <span class="pr">${priceDisp(i)}</span>
       <span class="row-act">
-        <button class="info-b" data-dish="${i.id}" aria-label="info">i</button>
-        ${ i.available && canAdd(i) ? `<button class="add-sm" data-add="${i.id}">+</button>` : '' }
+        <button type="button" class="info-b" data-dish="${i.id}" aria-label="${esc(T('guideInfo'))}: ${esc(t.n)}">i</button>
+        ${ i.available && canAdd(i) ? `<button type="button" class="add-sm" data-add="${i.id}" aria-label="${esc(T('add'))}: ${esc(t.n)}">+</button>` : '' }
       </span>
     </div>
     ${desc?`<div class="desc">${esc(desc)}</div>`:''}
@@ -3817,6 +3956,21 @@ function wireTopShortcut(){
 }
 
 /* ═══════════════ sheets / events ═══════════════ */
+let sheetReturnFocus=null;
+const sheetFocusables=sheet=>Array.from(sheet.querySelectorAll(
+  'button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'
+)).filter(el=>el.offsetWidth>0&&el.offsetHeight>0);
+document.querySelectorAll('.sheet').forEach(sheet=>{
+  sheet.setAttribute('role','dialog');
+  sheet.setAttribute('aria-modal','true');
+  sheet.setAttribute('aria-hidden','true');
+  const close=sheet.querySelector('[data-x]');
+  if(close){
+    close.setAttribute('type','button');
+    close.setAttribute('aria-label','Κλείσιμο');
+    close.setAttribute('data-testid','sheet-close');
+  }
+});
 function unlockPageScroll(){
   document.body.classList.remove('sheet-open');
   document.documentElement.classList.remove('scroll-stuck-guard');
@@ -3827,25 +3981,70 @@ function unlockPageScroll(){
   document.body.style.touchAction='';
 }
 function openSheet(id){
+  const fallbackTrigger={
+    wifiSheet:'wifiBtn',socialSheet:'socialBtn',langSheet:'langBtn',cartSheet:'cartIcon',
+    bookSheet:'bookBtn',privSheet:'ckMore'
+  }[id];
+  const active=document.activeElement;
+  const trigger=active&&active!==document.body?active:(fallbackTrigger?document.getElementById(fallbackTrigger):null);
   forceCloseFloatingUI();
   const sheet=document.getElementById(id);
   if(!sheet) return;
+  sheetReturnFocus=trigger&&typeof trigger.focus==='function'?trigger:null;
   sheet.classList.add('on');
+  sheet.setAttribute('aria-hidden','false');
   replayMotionClass(sheet,'motion-arrive',620);
   document.getElementById('scrim').classList.add('on');
   document.body.classList.add('sheet-open');
   renderTabs();
+  requestAnimationFrame(()=>{
+    const close=sheet.querySelector('[data-x]');
+    const target=close||sheetFocusables(sheet)[0];
+    if(target) target.focus({preventScroll:true});
+  });
 }
-function closeSheets(){
-  document.querySelectorAll('.sheet,.scrim').forEach(el=>el.classList.remove('on'));
+function closeSheets(opts={}){
+  document.querySelectorAll('.sheet').forEach(el=>{
+    el.classList.remove('on');
+    el.setAttribute('aria-hidden','true');
+  });
+  document.getElementById('scrim').classList.remove('on');
   unlockPageScroll();
+  const returnTo=sheetReturnFocus;
+  sheetReturnFocus=null;
+  if(opts.restoreFocus!==false&&returnTo&&returnTo.isConnected){
+    requestAnimationFrame(()=>returnTo.focus({preventScroll:true}));
+  }
   requestAnimationFrame(()=>{ renderTabs(); setStickyMetrics(); syncPinnedNav(); });
 }
 function forceCloseFloatingUI(){
-  document.querySelectorAll('.sheet,.scrim,.cookie,.panel,.social-ad').forEach(el=>el.classList.remove('on'));
+  document.querySelectorAll('.sheet').forEach(el=>{
+    el.classList.remove('on');
+    el.setAttribute('aria-hidden','true');
+  });
+  document.querySelectorAll('.scrim,.cookie,.panel,.social-ad').forEach(el=>el.classList.remove('on'));
   document.body.classList.remove('social-ad-open');
   unlockPageScroll();
 }
+document.addEventListener('keydown',e=>{
+  const sheet=document.querySelector('.sheet.on');
+  if(e.key==='Escape'){
+    if(sheet){ e.preventDefault(); closeSheets(); return; }
+    const panel=document.getElementById('panel');
+    if(panel&&panel.classList.contains('on')){
+      e.preventDefault();
+      panel.classList.remove('on');
+      document.getElementById('help').focus({preventScroll:true});
+    }
+    return;
+  }
+  if(e.key!=='Tab'||!sheet) return;
+  const focusables=sheetFocusables(sheet);
+  if(!focusables.length){ e.preventDefault(); return; }
+  const first=focusables[0],last=focusables[focusables.length-1];
+  if(e.shiftKey&&document.activeElement===first){ e.preventDefault();last.focus(); }
+  else if(!e.shiftKey&&document.activeElement===last){ e.preventDefault();first.focus(); }
+});
 document.getElementById('scrim').onclick=closeSheets;
 let sheetClosePointerId=null;
 document.addEventListener('pointerdown',e=>{
