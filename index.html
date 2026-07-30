@@ -9,7 +9,7 @@
 <title>Tsigoura Verde Resort</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
 <style>
 /* ============================================================================
    TSIGOURA VERDE — guest menu
@@ -1903,6 +1903,260 @@ body.motion-off .photo-stage img,body.motion-soft .photo-stage.img-ready img{
   opacity:1!important;filter:none!important;transform:none!important;
 }
 
+/* ═════════ CALM GUEST UI — one clear hierarchy, fewer competing surfaces ═════════
+   Brand → search → view/category navigation → menu content.  Motion remains,
+   but decoration, gradients and shadows no longer compete with the food. */
+:root{
+  --ui-bg:#F6F3EB;
+  --ui-surface:#FFFDF9;
+  --ui-soft:#EFEBE1;
+  --ui-line:#E5DFD1;
+  --ui-ink:#1F2F30;
+  --ui-muted:#706E66;
+  --ui-shadow:0 10px 28px rgba(31,47,48,.07);
+}
+body{background:var(--ui-bg)!important;color:var(--ui-ink)!important;}
+body::after{display:none!important;}
+.wrap{background:var(--ui-bg)!important;}
+
+/* Compact utility header. On phones the crest carries the brand so controls
+   are never crushed by a wrapping title. */
+.head,
+body.guided-view .head,
+body.nav-pinned .head{
+  min-height:64px!important;padding:10px 16px!important;gap:7px!important;
+  background:rgba(246,243,235,.96)!important;border-bottom:1px solid var(--ui-line)!important;
+  box-shadow:none!important;backdrop-filter:blur(18px)!important;
+}
+.mark-link,.head .mark{width:40px!important;height:40px!important;}
+.head .brand h1{font-size:18px!important;font-weight:600!important;line-height:1.05!important;}
+.head .brand .sub{display:none!important;}
+.wifibtn,.carticon{
+  width:36px!important;height:36px!important;margin:0!important;
+  background:transparent!important;border:0!important;box-shadow:none!important;color:var(--pine)!important;
+}
+.wifibtn:hover,.carticon:hover{background:rgba(56,86,79,.07)!important;}
+.wifibtn svg,.carticon svg{width:18px!important;height:18px!important;}
+.social-img{width:20px!important;height:20px!important;}
+.langbtn{
+  min-height:34px!important;padding:6px 9px!important;border:0!important;border-radius:10px!important;
+  background:rgba(56,86,79,.07)!important;font-size:11px!important;
+}
+.carticon .cbadge{top:-1px!important;right:-1px!important;}
+
+/* Search is the primary tool; the mode switch is a quiet secondary choice. */
+.search{
+  min-height:48px!important;margin:14px 16px 7px!important;padding:0 14px!important;
+  border:1px solid var(--ui-line)!important;border-radius:15px!important;
+  background:var(--ui-surface)!important;box-shadow:none!important;
+}
+.search:focus-within{
+  border-color:rgba(56,86,79,.55)!important;
+  box-shadow:0 0 0 3px rgba(56,86,79,.09)!important;
+}
+.search svg{width:17px!important;height:17px!important;stroke:var(--ui-muted)!important;}
+.search input{font-size:15px!important;color:var(--ui-ink)!important;}
+.search-clear{
+  width:30px!important;height:30px!important;border:0!important;background:var(--ui-soft)!important;
+  font-size:19px!important;
+}
+.view-switch{
+  margin:3px 16px 5px!important;padding:0!important;gap:4px!important;
+  border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;
+}
+.view-switch button{
+  min-height:38px!important;border-radius:11px!important;padding:7px 10px!important;
+  color:var(--ui-muted)!important;font-size:12.5px!important;font-weight:650!important;
+}
+.view-switch button.on{
+  color:var(--pine)!important;background:rgba(56,86,79,.10)!important;box-shadow:none!important;
+}
+.view-switch button .ic{width:15px!important;height:15px!important;}
+
+/* One restrained category rail instead of a second row of decorative cards. */
+.nav,.nav.nav-fixed{
+  margin:0 auto!important;background:transparent!important;border:0!important;
+  box-shadow:none!important;contain:none!important;
+}
+.nav::before,.nav::after{display:none!important;}
+.nav .row{gap:5px!important;padding:7px 16px 12px!important;scroll-padding-inline:16px!important;}
+.tab{
+  min-height:36px!important;padding:8px 12px!important;gap:0!important;border:0!important;
+  border-radius:999px!important;background:transparent!important;box-shadow:none!important;
+  color:var(--ui-muted)!important;font-size:12.5px!important;font-weight:650!important;
+}
+.tab .ic,.tab .greek-ic{display:none!important;}
+.tab.on{
+  color:#fff!important;background:var(--tab-acc,var(--olive))!important;
+  border:0!important;box-shadow:none!important;
+}
+.tab.util-tab{background:transparent!important;opacity:.65!important;}
+
+/* Each category becomes one coherent surface. The heading establishes the
+   group once; rows then stay quiet and easy to scan. */
+.sec{
+  width:calc(100% - 24px)!important;max-width:calc(var(--maxw) - 24px)!important;
+  margin:16px auto!important;padding:0 16px 3px!important;
+  border:1px solid var(--ui-line)!important;border-radius:22px!important;
+  background:var(--ui-surface)!important;box-shadow:none!important;
+}
+.sec-h{
+  display:grid!important;grid-template-columns:36px minmax(0,1fr)!important;column-gap:10px!important;
+  min-height:0!important;margin:0!important;padding:17px 0 13px!important;
+  border:0!important;border-bottom:1px solid var(--ui-line)!important;
+}
+.sec-h .sic{
+  display:flex!important;width:36px!important;height:36px!important;border:0!important;border-radius:11px!important;
+  background:var(--ui-soft)!important;box-shadow:none!important;
+}
+.sec-h .sic .ic{width:20px!important;height:20px!important;}
+.sec-h .sic .greek-ic{width:29px!important;height:29px!important;filter:none!important;}
+.sec-h .t{
+  font-size:24px!important;font-weight:650!important;line-height:1.08!important;color:var(--ui-ink)!important;
+}
+.sec-h .num,.sec-h .cat-art,.sec-h::before,.sec-h::after{display:none!important;}
+.item{padding:14px 0!important;border-bottom:1px solid var(--ui-line)!important;background:transparent!important;}
+.item:last-child{border-bottom:0!important;}
+.item .top{
+  grid-template-columns:38px minmax(0,1fr) auto auto!important;gap:10px!important;
+}
+.item .dish-ic{
+  width:38px!important;height:38px!important;border:0!important;border-radius:11px!important;
+  background:var(--ui-soft)!important;box-shadow:none!important;
+}
+.item .dish-ic .greek-ic{width:29px!important;height:29px!important;filter:none!important;}
+.item .dish-ic .ic{width:19px!important;height:19px!important;}
+.item .nm{
+  font-family:Inter,system-ui,sans-serif!important;font-size:14.5px!important;font-weight:650!important;
+  line-height:1.3!important;color:var(--ui-ink)!important;
+}
+.item .pr{
+  font-family:Inter,system-ui,sans-serif!important;font-size:14px!important;font-weight:700!important;
+  color:var(--pine)!important;
+}
+.item .row-act{display:flex!important;align-items:center!important;gap:3px!important;margin:0!important;}
+.info-b{
+  width:28px!important;height:32px!important;border:0!important;border-radius:9px!important;
+  color:var(--ui-muted)!important;font-size:12px!important;
+}
+.add-sm{
+  width:36px!important;height:36px!important;border:1px solid rgba(56,86,79,.38)!important;
+  border-radius:11px!important;background:transparent!important;box-shadow:none!important;font-size:18px!important;
+}
+.add-sm.on{background:var(--olive)!important;color:#fff!important;}
+.item .desc,.item .meta{
+  margin-left:48px!important;max-width:calc(100% - 48px)!important;
+}
+.item .desc{
+  margin-top:4px!important;font-family:Inter,system-ui,sans-serif!important;font-style:normal!important;
+  font-size:12px!important;line-height:1.45!important;color:var(--ui-muted)!important;
+}
+.item .alg,.cust-hint{font-size:10.5px!important;color:var(--ui-muted)!important;}
+.item.feat::after{opacity:.32!important;}
+
+/* Category overview: compact two-column map instead of four oversized banners. */
+.guide-landing{padding:12px 16px 28px!important;}
+.guide-landing-copy{
+  margin:4px 2px 14px!important;padding:10px 2px 13px!important;border:0!important;border-radius:0!important;
+  background:transparent!important;box-shadow:none!important;
+}
+.guide-landing-copy small{margin-bottom:4px!important;font-size:10px!important;letter-spacing:1.8px!important;}
+.guide-landing-copy h2{font-size:clamp(28px,8vw,40px)!important;line-height:1.05!important;}
+.guide-landing-copy p{margin-top:6px!important;font-size:12.5px!important;}
+.guide-menu{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important;}
+.guide-menu-card{
+  min-height:148px!important;display:flex!important;flex-direction:column!important;align-items:flex-start!important;
+  justify-content:space-between!important;gap:10px!important;padding:14px!important;border-radius:20px!important;
+  background:color-mix(in srgb,var(--accbg,#E7EEEA) 58%,var(--ui-surface))!important;
+  border:1px solid color-mix(in srgb,var(--acc) 22%,var(--ui-line))!important;box-shadow:none!important;
+}
+.guide-menu-card::after{display:none!important;}
+.guide-menu-icon{
+  width:50px!important;height:50px!important;border:0!important;border-radius:14px!important;
+  background:rgba(255,255,255,.64)!important;box-shadow:none!important;
+}
+.guide-menu-icon .greek-ic{width:42px!important;height:42px!important;filter:none!important;}
+.guide-menu-icon .ic{width:26px!important;height:26px!important;}
+.guide-menu-card b{font-size:22px!important;line-height:1.08!important;}
+.guide-menu-card i{position:absolute!important;right:13px!important;bottom:12px!important;font-size:22px!important;}
+.guide-picker{
+  margin:2px 0 8px!important;padding:6px 16px!important;gap:5px!important;background:transparent!important;
+}
+.guide-pick{
+  min-height:36px!important;padding:7px 10px!important;border:0!important;border-radius:999px!important;
+  background:var(--ui-soft)!important;box-shadow:none!important;font-size:11.5px!important;
+}
+.guide-pick span{display:none!important;}
+.guide-progress{height:3px!important;margin:0 16px 6px!important;}
+body.guided-view .guide-sec{
+  width:calc(100% - 24px)!important;max-width:calc(var(--maxw) - 24px)!important;
+  margin:14px auto!important;padding:0!important;border:0!important;background:transparent!important;
+}
+.guide-chapter{
+  min-height:108px!important;padding:18px!important;border:1px solid var(--ui-line)!important;border-radius:20px!important;
+  background:var(--ui-surface)!important;box-shadow:none!important;
+}
+.guide-chapter::before{display:none!important;}
+.guide-chapter h2{font-size:30px!important;}
+.guide-chapter .gicon{width:66px!important;height:66px!important;right:12px!important;}
+.guide-chapter .gicon .greek-ic{width:56px!important;height:56px!important;filter:none!important;}
+body.guided-view .guide-hero-dish,
+body.guided-view .guide-card{
+  border:1px solid var(--ui-line)!important;background:var(--ui-surface)!important;box-shadow:none!important;
+}
+body.guided-view .guide-card .gthumb,
+body.guided-view .guide-hero-dish .gphoto{background:var(--ui-soft)!important;box-shadow:none!important;}
+.guide-card .mini-actions button,.guide-actions button{
+  border-radius:10px!important;box-shadow:none!important;
+}
+
+/* Ordering and assistance stay visible, but stop floating like advertisements. */
+.cart{
+  bottom:12px!important;width:calc(100% - 24px)!important;max-width:calc(var(--maxw) - 24px)!important;
+  min-height:58px!important;padding:12px 15px!important;border-radius:18px!important;
+  background:var(--pine)!important;box-shadow:0 12px 30px rgba(31,47,48,.22)!important;
+}
+.cart .n{width:24px!important;height:24px!important;}
+.cart .go{display:block!important;}
+.cart:focus-visible{outline-color:var(--gold-lt)!important;}
+.sheet{
+  padding:12px 20px 26px!important;border-radius:24px 24px 0 0!important;
+  background:var(--ui-bg)!important;
+}
+.checkout-card,.guide-step{box-shadow:none!important;background:var(--ui-surface)!important;}
+.help{
+  right:14px!important;bottom:82px!important;padding:9px 12px!important;border-color:var(--ui-line)!important;
+  background:var(--ui-surface)!important;box-shadow:var(--ui-shadow)!important;font-size:11px!important;
+}
+.closing{width:calc(100% - 32px)!important;padding:22px 0 10px!important;border-color:var(--ui-line)!important;}
+button:focus-visible,a:focus-visible,input:focus-visible{
+  outline:3px solid color-mix(in srgb,var(--olive) 55%,#fff)!important;
+  outline-offset:2px!important;
+}
+
+@media(max-width:480px){
+  .head .brand{display:none!important;}
+  .head .mark-link{margin-right:auto!important;}
+  .help{
+    width:36px!important;height:36px!important;padding:0!important;border-radius:50%!important;
+    font-size:0!important;
+  }
+  .help::before{content:'?';font-size:14px;font-weight:800;}
+  .cart:not(.hide) + .help{display:none!important;}
+}
+@media(max-width:360px){
+  .head{padding-left:10px!important;padding-right:10px!important;gap:3px!important;}
+  .wifibtn,.carticon{width:33px!important;height:33px!important;}
+  .langbtn{padding:5px 7px!important;}
+  .sec{width:calc(100% - 16px)!important;padding-left:12px!important;padding-right:12px!important;}
+  .item .top{grid-template-columns:34px minmax(0,1fr) auto auto!important;gap:7px!important;}
+  .item .dish-ic{width:34px!important;height:34px!important;}
+  .item .nm{font-size:13.5px!important;}
+  .item .pr{font-size:13px!important;}
+  .info-b{width:24px!important;}
+  .add-sm{width:34px!important;height:34px!important;}
+}
+
 </style>
 </head>
 <body>
@@ -1966,7 +2220,7 @@ body.motion-off .photo-stage img,body.motion-soft .photo-stage.img-ready img{
   <section class="closing" id="closing"></section>
 </div>
 
-<div class="cart hide" id="cart">
+<div class="cart hide" id="cart" role="button" tabindex="0" aria-label="cart">
   <span class="n" id="cN">0</span>
   <span class="l" id="cL"></span>
   <div class="r"><span class="tot" id="cT"></span><button class="go" id="cGo"></button></div>
@@ -3855,6 +4109,9 @@ document.getElementById('socialAdClose').onclick=()=>closeSocialAd(true);
 document.getElementById('socialAdLater').onclick=()=>closeSocialAd(true);
 document.getElementById('socialAd').onclick=e=>{ if(e.target.id==='socialAd') closeSocialAd(true); };
 document.getElementById('cart').onclick=()=>{renderCartSheet();openSheet('cartSheet');};
+document.getElementById('cart').onkeydown=e=>{
+  if(e.key==='Enter'||e.key===' '){e.preventDefault();document.getElementById('cart').click();}
+};
 document.getElementById('cartIcon').onclick=()=>{renderCartSheet();openSheet('cartSheet');};
 /* the cart sheet always offers "my orders tonight" when there is history */
 function wireHistLink(){
@@ -4641,13 +4898,25 @@ function initInteractionMotion(){
 (function watchPhotoTiles(){
   var SEL = '.dish-ic,.gphoto,.gthumb,.cat-card .art';
   var seenAt = new WeakMap();
+  /* loading="lazy" intentionally defers fetching rows the guest hasn't
+     scrolled to. Only ever act on a tile once its row is actually revealed
+     (or it's not gated by the reveal system at all) — otherwise we'd force
+     a "failed" state onto perfectly good images that simply haven't been
+     asked to load yet, which is worse than the original bug. */
+  function isRelevant(el){
+    var row = el.closest('.item');
+    if(row && !row.classList.contains('in')) return false;
+    var r = el.getBoundingClientRect();
+    return r.bottom > -200 && r.top < window.innerHeight + 800;
+  }
   function sweep(){
     document.querySelectorAll(SEL).forEach(function(el){
       if(el.classList.contains('img-ready')) return;
       var img = el.querySelector('img'); if(!img) return;
-      if(img.complete){
+      if(!isRelevant(el)){ seenAt.delete(el); return; }
+      if(img.complete && img.naturalWidth>0){
         el.classList.remove('img-failed');
-        el.classList.add(img.naturalWidth>0 ? 'img-ready' : 'img-failed');
+        el.classList.add('img-ready');
         return;
       }
       if(el.classList.contains('img-failed')) return;
