@@ -21,6 +21,11 @@ Ready to upload to **Vercel**. No build step. The menu works as a static site; b
 
 ## Owner safety and smart menu behaviour
 
+- The **Επισκόπηση** starts with a launch-readiness command centre that checks
+  live publishing, required business details, guest contact links, booking
+  setup, prices, translations, media, announcements, and category visibility.
+- Every finding explains the impact and links directly to the owner screen
+  where it can be handled.
 - Every owner edit can be reversed immediately with **Αναίρεση**.
 - A category with no visible dishes disappears automatically from the guest
   menu; Pro mode labels this clearly as automatic hiding.

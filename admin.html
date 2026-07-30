@@ -476,6 +476,39 @@ nav.tabs button .ico{width:15px;height:15px;stroke-width:1.9;}
 .zone-chip{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;background:var(--cream);
   border:1px solid var(--line);border-radius:11px;padding:6px 10px;}
 .zone-chip .ico{width:12px;height:12px;stroke:var(--forest-3);stroke-width:2;}
+.ops-shell{margin:0 0 14px;background:linear-gradient(135deg,#173728,#2F6042 72%,#3A6B4C);
+  color:var(--cream);border-radius:22px;padding:18px;box-shadow:0 18px 42px rgba(30,59,42,.20);overflow:hidden;position:relative;}
+.ops-shell::after{content:'';position:absolute;right:-60px;top:-90px;width:230px;height:230px;border-radius:50%;
+  background:radial-gradient(circle,rgba(218,190,108,.24),transparent 68%);pointer-events:none;}
+.ops-head{position:relative;z-index:1;display:flex;align-items:flex-start;gap:14px;justify-content:space-between;flex-wrap:wrap;}
+.ops-kicker{font-size:10px;font-weight:900;letter-spacing:1.2px;text-transform:uppercase;color:#E8D9A0;}
+.ops-head h3{font-size:25px;margin-top:4px;color:#fff;}
+.ops-head p{font-size:12px;line-height:1.5;color:rgba(247,244,236,.72);margin:6px 0 0;max-width:620px;}
+.ops-score{min-width:112px;text-align:right;}
+.ops-score b{display:block;font-family:Fraunces,serif;font-size:34px;line-height:1;color:#F0D889;}
+.ops-score span{font-size:10px;color:rgba(247,244,236,.66);}
+.ops-progress{position:relative;z-index:1;height:7px;border-radius:99px;background:rgba(255,255,255,.12);margin:15px 0 16px;overflow:hidden;}
+.ops-progress i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#D2AE48,#F0D889);transition:width .45s ease;}
+.ops-grid{position:relative;z-index:1;display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.ops-card{background:rgba(255,255,255,.085);border:1px solid rgba(255,255,255,.12);border-radius:17px;padding:13px;backdrop-filter:blur(6px);}
+.ops-card h4{display:flex;align-items:center;gap:7px;margin:0 0 10px;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:#F0D889;}
+.ops-card h4 .ico{width:14px;height:14px;}
+.ops-row{display:grid;grid-template-columns:25px minmax(0,1fr) auto;align-items:center;gap:9px;padding:9px 0;border-top:1px solid rgba(255,255,255,.10);}
+.ops-row:first-of-type{border-top:0;padding-top:0;}
+.ops-state{width:24px;height:24px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.10);}
+.ops-state .ico{width:13px;height:13px;}
+.ops-row.ok .ops-state{background:rgba(91,208,138,.17);color:#8BE6AE;}
+.ops-row.warn .ops-state{background:rgba(240,216,137,.16);color:#F0D889;}
+.ops-row.bad .ops-state{background:rgba(224,122,95,.18);color:#FFAE97;}
+.ops-copy b{display:block;font-size:12px;color:#fff;}
+.ops-copy small{display:block;margin-top:2px;font-size:10.5px;line-height:1.35;color:rgba(247,244,236,.64);}
+.ops-go{font-size:10.5px;font-weight:800;color:#F3E3A7;border:1px solid rgba(243,227,167,.27);border-radius:9px;padding:6px 8px;white-space:nowrap;}
+.ops-go:hover{background:rgba(243,227,167,.10);}
+.ops-actions{position:relative;z-index:1;display:flex;gap:8px;flex-wrap:wrap;margin-top:13px;}
+.ops-actions button{display:inline-flex;align-items:center;gap:6px;border-radius:11px;padding:8px 11px;background:rgba(255,255,255,.10);
+  border:1px solid rgba(255,255,255,.13);color:var(--cream);font-size:11px;font-weight:800;}
+.ops-actions button .ico{width:13px;height:13px;}
+.ops-local{position:relative;z-index:1;margin-top:10px;font-size:10.5px;color:rgba(247,244,236,.58);}
 
 /* final responsive hardening: mobile admin first, then desktop polish */
 @media(max-width:980px){
@@ -507,6 +540,12 @@ nav.tabs button .ico{width:15px;height:15px;stroke-width:1.9;}
   .panel-head .btn{flex:1 1 calc(50% - 8px);justify-content:center;min-width:130px;}
   .kpis{grid-template-columns:1fr 1fr;}
   .dash-grid,.grid.two{grid-template-columns:1fr;}
+  .ops-grid{grid-template-columns:1fr;}
+  .ops-shell{border-radius:17px;padding:15px;}
+  .ops-head h3{font-size:22px;}
+  .ops-score{text-align:left;}
+  .ops-row{grid-template-columns:25px minmax(0,1fr);}
+  .ops-go{grid-column:2;justify-self:start;}
   .floor-card,.layout-form,.design-card,.phone-sim,.card,.dcard,.qr-card{border-radius:14px;}
   .floor-top{align-items:flex-start;flex-wrap:wrap;}
   .floor-top span{margin-left:0;width:100%;line-height:1.35;}
@@ -558,7 +597,7 @@ nav.tabs button .ico{width:15px;height:15px;stroke-width:1.9;}
 @media(max-width:390px){
   .wrap{padding-left:10px;padding-right:10px;}
   .panel-head .btn,.layout-actions .btn{flex-basis:100%;min-width:0;}
-  .layout-actions,.scan-actions,.phone-actions,.kpis{grid-template-columns:1fr;}
+  .layout-actions,.scan-actions,.phone-actions{grid-template-columns:1fr;}
   .floor-plan{height:520px;min-height:500px;}
   .floor-plan::before,.io-tablemap::before{font-size:23px;}
   .floor-plan::after,.io-tablemap::after{font-size:24px;}
@@ -634,6 +673,7 @@ nav.tabs button .ico{width:15px;height:15px;stroke-width:1.9;}
       <p class="hint">Ζωντανή εικόνα του καταλόγου και της αίθουσας. Όλα τα γραφήματα
         υπολογίζονται από τα πραγματικά δεδομένα — τίποτα δεν είναι διακοσμητικό.</p>
     </div>
+    <div id="opsCommand"></div>
     <div class="kpis" id="kpis"></div>
     <div class="dash-grid" id="dashGrid"></div>
   </section>
@@ -720,9 +760,9 @@ nav.tabs button .ico{width:15px;height:15px;stroke-width:1.9;}
   <!-- ---------- SETTINGS ---------- -->
   <section class="panel" id="panel-settings">
     <div class="panel-head"><h2>Ρυθμίσεις</h2></div>
-    <div class="warnbox"><span id="warnIco"></span><div>Πριν το online άνοιγμα, συμπληρώστε τα πραγματικά νομικά στοιχεία της επιχείρησης
-      (επωνυμία, ΑΦΜ, ΔΟΥ, ΓΕΜΗ, διεύθυνση, τηλέφωνο) στο αρχείο <code>tsigoura-data.js</code> → <code>VENUE.legal</code>.
-      Εμφανίζονται υποχρεωτικά στο υποσέλιδο του μενού.</div></div>
+    <div class="warnbox"><span id="warnIco"></span><div>Πριν το online άνοιγμα, συμπληρώστε τα πραγματικά στοιχεία της επιχείρησης
+      (επωνυμία, ΑΦΜ, ΔΟΥ, ΓΕΜΗ, διεύθυνση, τηλέφωνο) στις μεταβλητές περιβάλλοντος του Vercel.
+      Η Επισκόπηση τα ελέγχει αυτόματα και το <code>/api/status</code> δείχνει τι λείπει χωρίς να εμφανίζει μυστικά.</div></div>
     <div id="settingsArea"></div>
     <div style="margin-top:20px;display:flex;gap:8px;flex-wrap:wrap;">
       <button class="btn danger sm" id="resetBtn" data-ico="trash">Επαναφορά demo δεδομένων</button>
@@ -918,8 +958,135 @@ function renderDash(){
     </div>`;
 
   document.querySelectorAll('.kcount').forEach(el=>MOT.count(el, parseFloat(el.dataset.to)));
+  renderOpsCommand();
+  refreshOperationalReadiness(false);
   hydrateIcons($('panel-dash'));
   MOT.reveal($('panel-dash'));
+}
+
+let opsSnapshot={loading:true,status:null,config:null,failed:false,checkedAt:0};
+let opsPromise=null;
+function localYmd(d){
+  d=d||new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function menuHealth(){
+  const visible=S.menu.filter(i=>!i.hidden);
+  const hidden=S.menu.length-visible.length;
+  const hiddenCats=S.categories.filter(c=>c.hidden).length;
+  const autoEmpty=S.categories.filter(c=>!c.hidden&&!S.menu.some(i=>i.cat===c.id&&!i.hidden)).length;
+  const noPrice=visible.filter(i=>Number(i.price)<=0&&!i.priceText).length;
+  const noImage=visible.filter(i=>!knownDishImagePath(i)).length;
+  const missingNames=visible.filter(i=>LANGUAGES.some(l=>!i.t||!i.t[l.code]||!String(i.t[l.code].n||'').trim())).length;
+  const described=visible.filter(i=>i.t&&i.t.el&&String(i.t.el.d||'').trim()).length;
+  const A=normalizeAnnouncement(S.settings.announcement||{});
+  const today=localYmd();
+  const staleAnnouncement=!!(A.on&&A.to&&A.to<today);
+  return {visible,hidden,hiddenCats,autoEmpty,noPrice,noImage,missingNames,described,staleAnnouncement};
+}
+function opsRow(state,title,desc,action,label){
+  const icon=state==='ok'?'check':state==='bad'?'close':'warn';
+  return `<div class="ops-row ${state}">
+    <span class="ops-state">${ICO.get(icon)}</span>
+    <span class="ops-copy"><b>${title}</b><small>${desc}</small></span>
+    ${action?`<button class="ops-go" data-ops="${action}">${label||'Διόρθωση'} →</button>`:''}
+  </div>`;
+}
+function renderOpsCommand(){
+  const root=$('opsCommand'); if(!root) return;
+  const h=menuHealth(), st=opsSnapshot.status, cfg=opsSnapshot.config;
+  const localPreview=/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+  const setup=[];
+  if(opsSnapshot.loading){
+    setup.push(opsRow('warn','Έλεγχος online ρυθμίσεων','Γίνεται ασφαλής έλεγχος χωρίς εμφάνιση κωδικών ή κλειδιών.','',''));
+  }else if(opsSnapshot.failed){
+    setup.push(opsRow('warn',localPreview?'Τοπική προεπισκόπηση':'Δεν απάντησε ο online έλεγχος',
+      localPreview?'Οι ρυθμίσεις Vercel ελέγχονται όταν ανοίξετε το online admin.':'Ελέγξτε ξανά τη σύνδεση ή ανοίξτε /api/status.','refresh','Ξανά'));
+  }else{
+    const live=!!(st&&st.liveStore&&st.liveStore.configured&&st.adminPinSet);
+    setup.push(opsRow(live?'ok':'bad','Ζωντανή δημοσίευση',
+      live?'Κάθε αλλαγή φτάνει αυτόματα στα κινητά.':(st&&st.liveStore&&st.liveStore.configured?'Η βάση υπάρχει αλλά λείπει το ADMIN_PIN.':'Συνδέστε Vercel KV και ορίστε ADMIN_PIN.'),'settings',live?'Ρυθμίσεις':'Οδηγίες'));
+    const legal=cfg&&cfg.legal||{}, contact=cfg&&cfg.contact||{};
+    const legalReady=!!(legal.companyName&&legal.afm&&legal.address&&legal.agoranomikos);
+    setup.push(opsRow(legalReady?'ok':'bad','Νομικά στοιχεία',
+      legalReady?'Επωνυμία, ΑΦΜ, διεύθυνση και υπεύθυνος είναι συμπληρωμένα.':'Λείπουν υποχρεωτικά στοιχεία από το υποσέλιδο.','settings',legalReady?'Έλεγχος':'Οδηγίες'));
+    const contactReady=!!(contact.phone&&contact.maps);
+    setup.push(opsRow(contactReady?'ok':'warn','Επικοινωνία επισκέπτη',
+      contactReady?'Τηλέφωνο και χάρτης είναι διαθέσιμα.':'Προσθέστε τηλέφωνο και σύνδεσμο Google Maps.','settings',contactReady?'Έλεγχος':'Οδηγίες'));
+    const wifi=cfg&&cfg.wifi||{}, wifiReady=!!(wifi.ssid&&wifi.pass);
+    setup.push(opsRow(wifiReady?'ok':'warn','Wi‑Fi επισκεπτών',
+      wifiReady?`Το δίκτυο «${ioEsc(wifi.ssid)}» είναι διαθέσιμο στο menu.`:'Προσθέστε όνομα δικτύου και κωδικό Wi‑Fi.','settings',wifiReady?'Έλεγχος':'Οδηγίες'));
+    const bookingOn=S.settings.headerActions&&S.settings.headerActions.booking!==false;
+    const bookingReady=!bookingOn||!!(st&&st.booking&&st.booking.resendKeySet&&st.booking.toEmailSet);
+    setup.push(opsRow(bookingReady?'ok':'warn','Κρατήσεις',
+      !bookingOn?'Το κουμπί είναι σκόπιμα κλειστό.':bookingReady?'Τα email κρατήσεων είναι έτοιμα.':'Η κράτηση είναι ορατή αλλά το email δεν έχει πλήρη ρύθμιση.','settings',bookingReady?'Ρύθμιση':'Διόρθωση'));
+  }
+  const quality=[
+    opsRow(h.noPrice?'bad':'ok','Τιμές καταλόγου',h.noPrice?`${h.noPrice} ορατά πιάτα δεν έχουν τιμή ή κείμενο τιμής.`:'Όλα τα ορατά πιάτα έχουν σαφή τιμή.','menu',h.noPrice?'Διόρθωση':'Μενού'),
+    opsRow(h.missingNames?'bad':'ok','Έξι γλώσσες',h.missingNames?`${h.missingNames} πιάτα έχουν κενό όνομα σε κάποια γλώσσα.`:'Όλα τα ορατά ονόματα είναι συμπληρωμένα.','menu',h.missingNames?'Διόρθωση':'Έλεγχος'),
+    opsRow(h.noImage?'warn':'ok','Εικόνες πιάτων',h.noImage?`${h.noImage} πιάτα χρησιμοποιούν καθαρό vector fallback.`:'Κάθε ορατό πιάτο έχει αντιστοιχισμένη εικόνα.','menu',h.noImage?'Βελτίωση':'Έλεγχος'),
+    opsRow(h.staleAnnouncement?'warn':'ok','Ανακοίνωση',h.staleAnnouncement?'Το ενεργό banner έχει λήξει και δεν εμφανίζεται στους πελάτες.':'Δεν υπάρχει ληγμένο ενεργό banner.','announcement',h.staleAnnouncement?'Ενημέρωση':'Ρυθμίσεις'),
+    opsRow((h.autoEmpty||h.hiddenCats)?'warn':'ok','Κατηγορίες',
+      `${S.categories.length-h.hiddenCats-h.autoEmpty} ορατές · ${h.hiddenCats} κρυφές · ${h.autoEmpty} αυτόματα κενές.`,'menu','Διαχείριση')
+  ];
+  const setupStates=setup.map(x=>/ops-row ok/.test(x));
+  const qualityStates=quality.map(x=>/ops-row ok/.test(x));
+  const done=setupStates.filter(Boolean).length+qualityStates.filter(Boolean).length;
+  const total=setupStates.length+qualityStates.length;
+  const pct=Math.round(done/Math.max(total,1)*100);
+  const allRows=setup.join('')+quality.join('');
+  const blockers=allRows.match(/ops-row bad/g)||[];
+  const warnings=allRows.match(/ops-row warn/g)||[];
+  const readinessTitle=blockers.length
+    ? `Χρειάζονται ${blockers.length} βασικές διορθώσεις`
+    : warnings.length ? `Έτοιμο με ${warnings.length} ${warnings.length===1?'σύσταση':'συστάσεις'}` : 'Έτοιμο για άνοιγμα';
+  root.innerHTML=`<section class="ops-shell reveal">
+    <div class="ops-head">
+      <div><div class="ops-kicker">Κέντρο λειτουργίας</div><h3>${readinessTitle}</h3>
+      <p>Ένας πρακτικός έλεγχος για το τι βλέπουν οι πελάτες και τι χρειάζεται ο ιδιοκτήτης πριν τη βάρδια.</p></div>
+      <div class="ops-score"><b>${pct}%</b><span>${done} από ${total} έλεγχοι</span></div>
+    </div>
+    <div class="ops-progress"><i style="width:${pct}%"></i></div>
+    <div class="ops-grid">
+      <div class="ops-card"><h4>${ICO.get('gear')}Online ετοιμότητα</h4>${setup.join('')}</div>
+      <div class="ops-card"><h4>${ICO.get('bowl')}Υγεία καταλόγου</h4>${quality.join('')}</div>
+    </div>
+    <div class="ops-actions">
+      <button data-ops="preview">${ICO.get('eye')}Δες το menu ως πελάτης</button>
+      <button data-ops="qr">${ICO.get('qr')}QR τραπεζιών</button>
+      <button data-ops="menu">${ICO.get('bowl')}Επεξεργασία menu</button>
+      <button data-ops="refresh">${ICO.get('sparkle')}Νέος έλεγχος</button>
+    </div>
+    <div class="ops-local">${h.visible.length} ορατά πιάτα · ${h.hidden} κρυφά · ${h.described} με ελληνική περιγραφή</div>
+  </section>`;
+  root.querySelectorAll('[data-ops]').forEach(b=>b.onclick=()=>runOpsAction(b.dataset.ops));
+  hydrateIcons(root); MOT.reveal(root);
+}
+function runOpsAction(action){
+  if(action==='menu') return switchAdminTab('menu');
+  if(action==='settings') return switchAdminTab('settings');
+  if(action==='qr') return switchAdminTab('qr');
+  if(action==='announcement') return openAnnouncementSettings();
+  if(action==='preview') return window.open(menuPreviewUrl(),'_blank','noopener');
+  if(action==='refresh') return refreshOperationalReadiness(true);
+}
+async function refreshOperationalReadiness(force){
+  if(opsPromise) return opsPromise;
+  if(!force&&opsSnapshot.checkedAt&&Date.now()-opsSnapshot.checkedAt<60000) return;
+  opsSnapshot.loading=true; opsSnapshot.failed=false; renderOpsCommand();
+  opsPromise=(async()=>{
+    try{
+      const [sr,cr]=await Promise.all([fetch('/api/status',{cache:'no-store'}),fetch('/api/public-config',{cache:'no-store'})]);
+      if(!sr.ok||!cr.ok) throw new Error('status_unavailable');
+      const [status,config]=await Promise.all([sr.json(),cr.json()]);
+      opsSnapshot={loading:false,status,config,failed:false,checkedAt:Date.now()};
+    }catch(e){
+      opsSnapshot={loading:false,status:null,config:null,failed:true,checkedAt:Date.now()};
+    }finally{
+      opsPromise=null; renderOpsCommand();
+    }
+  })();
+  return opsPromise;
 }
 
 function persist(){
@@ -2307,9 +2474,10 @@ function renderSettings(){
 
     <div class="announce-editor">
       <h3>${ICO.get('save')}Δημοσίευση μενού</h3>
-      <p class="hint">Δεν υπάρχει βάση δεδομένων. Το ζωντανό μενού είναι το αρχείο <b>menu-live.js</b>.
-        Κατεβάστε το εδώ, ανεβάστε το στο project (GitHub) και κάντε redeploy —
-        τότε όλα τα κινητά δείχνουν αυτό ακριβώς το μενού.</p>
+      <p class="hint">Όταν το επάνω badge είναι πράσινο, οι αλλαγές δημοσιεύονται αυτόματα.
+        Αν η βάση δεν είναι ακόμη συνδεδεμένη, κατεβάστε το <b>menu-live.js</b>,
+        αντικαταστήστε το στο project και κάντε redeploy. Το αρχείο λειτουργεί
+        επίσης ως χειροκίνητο αντίγραφο ασφαλείας.</p>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
         <button class="btn sm pressable" id="dbPush">${ICO.get('download')}Κατέβασμα menu-live.js</button>
         <button class="btn ghost sm pressable" id="dbCopy">${ICO.get('save')}Αντιγραφή περιεχομένου</button>

@@ -39,13 +39,13 @@ guest scans the table QR:
 
 ### Release 2 — owner command centre
 
-- Service checklist: database, PIN, public details, Wi-Fi, booking email, and
+- [x] Service checklist: database, PIN, public details, Wi-Fi, booking email, and
   legal data in one place.
-- Menu health: missing translations, missing descriptions, broken media,
+- [x] Menu health: missing translations, missing descriptions, media coverage,
   zero-price items, hidden items, and stale announcements.
-- Scheduled availability and announcements.
-- Reusable event presets instead of manually hiding many dishes.
-- Automatic daily backup and a visible change log.
+- [ ] Scheduled dish availability.
+- [ ] Reusable event presets instead of manually hiding many dishes.
+- [ ] Automatic daily backup and a visible change log.
 
 ### Release 3 — guest conversion
 
