@@ -2421,14 +2421,6 @@ let specialMenuActive = false;
 
 const T = k => (VIEW_UI[lang]&&VIEW_UI[lang][k]) || (VIEW_UI.en&&VIEW_UI.en[k]) || (UI[lang] && UI[lang][k]) || UI.en[k] || k;
 const F = k => (FILTER_UI[lang]&&FILTER_UI[lang][k]) || FILTER_UI.en[k] || k;
-const LIVE_UPDATED = {
-  el:'Το μενού ενημερώθηκε ζωντανά ✓',
-  en:'The menu was updated live ✓',
-  de:'Die Speisekarte wurde live aktualisiert ✓',
-  ro:'Meniul a fost actualizat live ✓',
-  sr:'Мени је ажуриран уживо ✓',
-  bg:'Менюто беше обновено на живо ✓'
-};
 /* robust access to the general-allergen notice (data key may be .allergens or .allergensGeneral) */
 const NOTE = k => { const n=(VENUE.notices||{}); const o=n[k]||(k==='allergensGeneral'?n.allergens:null)||{}; return o[lang]||o.en||''; };
 const money = n => S.settings.currency + Number(n).toFixed(2);
@@ -3969,7 +3961,6 @@ async function checkLiveMenuUpdate(force){
     apply();
     replayMotionClass(document.getElementById('root'),'motion-live-update',760);
     requestAnimationFrame(()=>window.scrollTo(0,Math.min(y,Math.max(0,document.documentElement.scrollHeight-innerHeight))));
-    toast(LIVE_UPDATED[lang]||LIVE_UPDATED.en);
     return true;
   }catch(e){
     return false;
