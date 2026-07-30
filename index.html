@@ -1787,12 +1787,121 @@ body.sheet-open .head{
   45%{transform:scale(1.16) rotate(-4deg)}
   100%{transform:scale(1) rotate(0)}
 }
+.empty{
+  position:relative;overflow:hidden;animation:emptyArrive .58s var(--ez-out) both!important;
+}
+.empty::before{
+  content:'';display:block;width:34px;height:34px;margin:0 auto 16px;border-radius:50%;
+  border:3px solid color-mix(in srgb,var(--gold) 68%,transparent);
+  box-shadow:inset 0 0 0 7px var(--card);animation:emptySearch 2.3s ease-in-out infinite!important;
+}
+.empty::after{
+  content:'';position:absolute;width:17px;height:3px;border-radius:4px;background:var(--gold);
+  left:calc(50% + 9px);top:51px;transform:rotate(45deg);transform-origin:left center;
+}
+@keyframes emptyArrive{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes emptySearch{
+  0%,100%{transform:translateX(-5px) rotate(-5deg)}
+  50%{transform:translateX(6px) rotate(7deg)}
+}
+.photo-stage{
+  position:relative;display:grid;place-items:center;min-height:280px;margin:4px 0 20px;
+  border-radius:24px;overflow:hidden;background:
+    radial-gradient(circle at 50% 42%,#fff 0%,#F5EEDC 58%,#E8DEC6 100%);
+  border:1px solid rgba(211,186,130,.46);box-shadow:inset 0 0 0 10px rgba(255,255,255,.3);
+}
+.photo-stage::after{
+  content:'';position:absolute;inset:auto 14% 8%;height:18%;border-radius:50%;
+  background:rgba(20,40,42,.13);filter:blur(16px);transform:scaleX(.72);opacity:0;
+}
+.photo-stage img{
+  position:relative;z-index:1;width:min(76%,320px);max-height:320px;object-fit:contain;
+  opacity:0;filter:blur(12px) saturate(.72);transform:translateY(18px) scale(.86) rotate(-3deg);
+}
+.photo-stage.img-ready img{animation:photoReveal .78s var(--ez-spring) both!important;}
+.photo-stage.img-ready::after{animation:photoShadow .7s ease .12s both!important;}
+@keyframes photoReveal{
+  0%{opacity:0;filter:blur(12px) saturate(.72);transform:translateY(18px) scale(.86) rotate(-3deg)}
+  62%{opacity:1;filter:blur(0) saturate(1.08);transform:translateY(-5px) scale(1.035) rotate(1deg)}
+  100%{opacity:1;filter:blur(0) saturate(1);transform:none}
+}
+@keyframes photoShadow{to{opacity:1;transform:scaleX(1)}}
+@keyframes removalToggle{
+  0%{transform:scale(1)}
+  42%{transform:scale(.9) rotate(-2deg)}
+  72%{transform:scale(1.06) rotate(1deg)}
+  100%{transform:scale(1)}
+}
+.rem.motion-toggle{animation:removalToggle .42s var(--ez-spring)!important;}
+@keyframes numberFlip{
+  0%{opacity:.2;transform:translateY(-9px) rotateX(65deg)}
+  65%{opacity:1;transform:translateY(2px) rotateX(-8deg)}
+  100%{opacity:1;transform:none}
+}
+.motion-number{animation:numberFlip .34s var(--ez-spring)!important;transform-origin:center bottom;}
+@keyframes rowRemove{
+  0%{opacity:1;transform:none;max-height:120px}
+  62%{opacity:0;transform:translateX(22px) scale(.96);max-height:120px}
+  100%{opacity:0;transform:translateX(28px) scale(.94);max-height:0;padding-top:0;padding-bottom:0;border:0}
+}
+.crow.motion-remove{animation:rowRemove .28s var(--ez-inout) forwards!important;overflow:hidden;pointer-events:none;}
+@keyframes checkoutChoiceIn{
+  from{opacity:0;transform:translateY(12px) scale(.97)}
+  to{opacity:1;transform:none}
+}
+.sheet.on .checkout-card{animation:checkoutChoiceIn .48s var(--ez-out) both!important;}
+.sheet.on .checkout-card:nth-child(2){animation-delay:.07s!important;}
+.sheet.on .checkout-card:nth-child(3){animation-delay:.14s!important;}
+.success-sparks{position:absolute;left:50%;top:36px;width:0;height:0;pointer-events:none;z-index:2;}
+.success-sparks i{
+  position:absolute;width:7px;height:7px;border-radius:50%;background:var(--spark,var(--gold));
+  animation:successSpark .72s var(--ez-out) var(--delay,0s) both!important;
+}
+@keyframes successSpark{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.2)}
+  20%{opacity:1}
+  100%{opacity:0;transform:translate(calc(-50% + var(--x)),calc(-50% + var(--y))) scale(1)}
+}
+@keyframes successRing{
+  from{opacity:.8;transform:scale(.55)}
+  to{opacity:0;transform:scale(1.65)}
+}
+.okmark.motion-success::after{
+  content:'';position:absolute;inset:-2px;border:2px solid var(--gold);border-radius:50%;
+  animation:successRing .7s var(--ez-out) both!important;
+}
+.okmark{position:relative;}
+@keyframes liveRefresh{
+  0%{opacity:.35;filter:blur(5px);transform:translateY(8px)}
+  100%{opacity:1;filter:blur(0);transform:none}
+}
+#root.motion-live-update{animation:liveRefresh .65s var(--ez-out) both!important;}
+@keyframes formShake{
+  0%,100%{transform:none}
+  20%{transform:translateX(-7px)}
+  40%{transform:translateX(6px)}
+  60%{transform:translateX(-4px)}
+  80%{transform:translateX(3px)}
+}
+.motion-shake{animation:formShake .42s ease both!important;}
+@keyframes bookedGlow{
+  0%{box-shadow:0 0 0 0 rgba(56,86,79,.28)}
+  100%{box-shadow:0 0 0 12px rgba(56,86,79,0)}
+}
+.book-status.motion-booked{animation:bookedGlow .8s ease both!important;border-radius:8px;}
 @media (prefers-reduced-motion:reduce){
-  .motion-progress,.motion-ripple{display:none!important;}
+  .motion-progress,.motion-ripple,.success-sparks{display:none!important;}
   .guide-menu-card,.guide-card,.guide-hero-dish{transform:none!important;}
+  .photo-stage img{opacity:1!important;filter:none!important;transform:none!important;}
 }
 body.motion-off .motion-progress,body.motion-soft .motion-progress,
 body.motion-off .motion-ripple,body.motion-soft .motion-ripple{display:none!important;}
+body.motion-off *,body.motion-off *::before,body.motion-off *::after{
+  animation:none!important;transition:none!important;scroll-behavior:auto!important;
+}
+body.motion-off .photo-stage img,body.motion-soft .photo-stage.img-ready img{
+  opacity:1!important;filter:none!important;transform:none!important;
+}
 
 </style>
 </head>
@@ -2496,7 +2605,7 @@ function renderCategoryMosaic(){
     return `<button class="cat-card ${art?'':'no-art'}" data-jump="${esc(c.id)}" style="--acc:${acc[0]};--tint:${acc[1]}">
       <span class="icwrap">${catIcon(c)}</span>
       <b>${esc(catName(c))}</b>
-      ${art?`<i class="art"><span class="photo-fallback">${catIcon(c)}</span><img src="${esc(art)}" alt="" loading="lazy" decoding="async" onload="this.parentElement.classList.add('img-ready')" onerror="this.parentElement.classList.add('img-failed')"></i>`:''}
+      ${art?`<i class="art"><span class="photo-fallback">${catIcon(c)}</span><img src="${esc(art)}" alt="" loading="lazy" decoding="async" onload="this.parentElement.classList.remove('img-failed');this.parentElement.classList.add('img-ready')" onerror="this.parentElement.classList.add('img-failed')"></i>`:''}
     </button>`;
   }).join('');
   slot.querySelectorAll('[data-jump]').forEach(b=>b.onclick=()=>scrollToCategory(b.dataset.jump));
@@ -2902,7 +3011,7 @@ function guideSectionHTML(c,ix,cats){
 }
 function guideVisual(i,cls,large){
   const t=tx(i), art=(typeof dishArt==='function'&&dishArt(i)) ? dishArt(i) : '';
-  if(art) return `<button type="button" class="${cls}" data-admin-dish="${i.id}" data-photo="${i.id}" aria-label="${esc(T('guidePhoto'))}: ${esc(t.n)}"><span class="photo-fallback">${svgFor(DISH_ICON[i.icon]||i.icon||'dish')}</span><img src="${esc(art)}" alt="" loading="lazy" decoding="async" width="${large?180:120}" height="${large?180:120}" onload="this.parentElement.classList.add('img-ready')" onerror="this.parentElement.classList.add('img-failed')"></button>`;
+  if(art) return `<button type="button" class="${cls}" data-admin-dish="${i.id}" data-photo="${i.id}" aria-label="${esc(T('guidePhoto'))}: ${esc(t.n)}"><span class="photo-fallback">${svgFor(DISH_ICON[i.icon]||i.icon||'dish')}</span><img src="${esc(art)}" alt="" loading="lazy" decoding="async" width="${large?180:120}" height="${large?180:120}" onload="this.parentElement.classList.remove('img-failed');this.parentElement.classList.add('img-ready')" onerror="this.parentElement.classList.add('img-failed')"></button>`;
   return `<button type="button" class="${cls}" data-admin-dish="${i.id}" data-dish="${i.id}" aria-label="${esc(T('guideInfo'))}: ${esc(t.n)}">${dishIcon(i)}</button>`;
 }
 function guideHeroDishHTML(i){
@@ -2971,7 +3080,7 @@ function rowHTML(i){
     ${i.chefPick?`<div class="badge">★ ${esc(F('chef'))}</div>`:''}
     <div class="top">
       ${art
-        ? `<button type="button" class="dish-ic photo-b" data-photo="${i.id}" aria-label="${esc(t.n)}"><span class="photo-fallback">${svgFor(DISH_ICON[i.icon]||i.icon||'dish')}</span><img src="${esc(art)}" alt="" loading="lazy" decoding="async" width="144" height="144" onload="this.parentElement.classList.add('img-ready')" onerror="this.parentElement.classList.add('img-failed')"></button>`
+        ? `<button type="button" class="dish-ic photo-b" data-photo="${i.id}" aria-label="${esc(t.n)}"><span class="photo-fallback">${svgFor(DISH_ICON[i.icon]||i.icon||'dish')}</span><img src="${esc(art)}" alt="" loading="lazy" decoding="async" width="144" height="144" onload="this.parentElement.classList.remove('img-failed');this.parentElement.classList.add('img-ready')" onerror="this.parentElement.classList.add('img-failed')"></button>`
         : `<span class="dish-ic">${dishIcon(i)}</span>`}
       <span class="nm">${esc(t.n)}</span>
       <span class="lead"></span>
@@ -3093,7 +3202,20 @@ function renderCartSheet(){
         ${rmv?`<div class="rmv">✕ ${esc(rmv)}</div>`:''}${l.note?`<div class="cnote">✎ ${esc(l.note)}</div>`:''}</div>
       <div class="step"><button data-dec="${l.lid}">−</button><b>${l.qty}</b><button data-inc="${l.lid}">+</button></div></div>`;}).join('');
   rows.querySelectorAll('[data-inc]').forEach(b=>b.onclick=()=>{const l=cart.find(x=>x.lid===b.dataset.inc); if(l){ if(count()>=LIMITS.totalItems){toast(T('tooMany'));return;} l.qty=clampInt(l.qty+1,1,LIMITS.qtyPerItem);} saveCart(); renderCartSheet(); updateCart();});
-  rows.querySelectorAll('[data-dec]').forEach(b=>b.onclick=()=>{const idx=cart.findIndex(x=>x.lid===b.dataset.dec); if(idx>-1){ cart[idx].qty--; if(cart[idx].qty<=0) cart.splice(idx,1);} saveCart(); renderCartSheet(); updateCart();});
+  rows.querySelectorAll('[data-dec]').forEach(b=>b.onclick=()=>{
+    const idx=cart.findIndex(x=>x.lid===b.dataset.dec); if(idx<0) return;
+    const finish=()=>{
+      const current=cart.findIndex(x=>x.lid===b.dataset.dec);
+      if(current>-1){ cart[current].qty--; if(cart[current].qty<=0) cart.splice(current,1); }
+      saveCart(); renderCartSheet(); updateCart();
+    };
+    if(cart[idx].qty<=1&&richMotionAllowed()){
+      b.disabled=true;
+      const row=b.closest('.crow');
+      if(row) row.classList.add('motion-remove');
+      setTimeout(finish,270);
+    }else finish();
+  });
   const sub=total();
   document.getElementById('cartSum').innerHTML=`<div class="sum"><span>${esc(T('subtotal'))}</span><span>${money(sub)}</span></div>
     <div class="sum tot"><span>${esc(T('total'))}</span><span>${money(sub)}</span></div>`;
@@ -3259,9 +3381,12 @@ function openPhoto(id){
   const i=itemOf(id); if(!i) return;
   const art=(typeof dishArt==='function') ? dishArt(i) : '';
   if(!art){ openInfo(id); return; }
-  const t=tx(i), img=document.getElementById('photoImg');
+  const t=tx(i), img=document.getElementById('photoImg'), stage=img.closest('.photo-stage');
+  if(stage) stage.classList.remove('img-ready');
+  img.onload=()=>{ if(stage) stage.classList.add('img-ready'); };
   img.onerror=()=>{ closeSheets(); openInfo(id); };
   img.src=art; img.alt=t.n;
+  if(img.complete&&img.naturalWidth&&stage) requestAnimationFrame(()=>stage.classList.add('img-ready'));
   document.getElementById('photoEye').textContent=catNameById(i.cat);
   document.getElementById('photoName').textContent=t.n;
   document.getElementById('photoDesc').textContent=t.d||'';
@@ -3377,6 +3502,10 @@ function socialAdLinks(){
     [T('maps'), CONTACT.maps, 'maps', false],
   ].map(([label,url,ic,primary])=>[label,safeUrl(url),ic,primary]).filter(([,href])=>href);
 }
+let lastGuestInteractionAt=Date.now();
+['pointerdown','keydown','input','scroll'].forEach(type=>{
+  window.addEventListener(type,()=>{ lastGuestInteractionAt=Date.now(); },{passive:true});
+});
 function closeSocialAd(remember=true){
   const ad=document.getElementById('socialAd');
   if(ad) ad.classList.remove('on');
@@ -3389,6 +3518,10 @@ function canShowSocialAd(){
   if(sp && sp.style.display!=='none' && !sp.classList.contains('gone')) return false;
   if(document.querySelector('.sheet.on,.panel.on,.cookie.on')) return false;
   if(document.body.classList.contains('sheet-open')) return false;
+  if(document.body.classList.contains('searching')) return false;
+  if(document.activeElement&&document.activeElement.matches('input,textarea,select')) return false;
+  if(Date.now()-lastGuestInteractionAt<12000) return false;
+  if(window.scrollY>Math.max(180,window.innerHeight*.35)) return false;
   return true;
 }
 function showSocialAd(){
@@ -3462,12 +3595,17 @@ async function submitBooking(e){
   e.preventDefault();
   const status=document.getElementById('bookStatus'), btn=document.getElementById('bookSend');
   const p=bookingPayload();
-  if(!p.name || !p.phone || !p.date || !p.time){ status.textContent=T('bookMissing'); return; }
+  if(!p.name || !p.phone || !p.date || !p.time){
+    status.textContent=T('bookMissing');
+    replayMotionClass(document.getElementById('bookForm'),'motion-shake',520);
+    return;
+  }
   btn.disabled=true; status.textContent=T('bookSending');
   try{
     const r=await fetch('/api/book',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
     if(!r.ok) throw new Error('mail failed');
     status.textContent=T('bookSent'); toast(T('bookSent'));
+    replayMotionClass(status,'motion-booked',900);
     document.getElementById('bookForm').reset();
   }catch(err){
     status.textContent=T('bookFallback');
@@ -3505,6 +3643,7 @@ function showSent(order,opts={}){
   sh.textContent=T('myOrders');
   sh.onclick=()=>{ closeSheets(); setTimeout(()=>{ renderHist(); openSheet('histSheet'); },120); };
   openSheet('sentSheet');
+  celebrateSuccess();
 }
 
 /* ─── my orders tonight: keep every sent order, allow adding more later ─── */
@@ -3799,6 +3938,7 @@ async function checkLiveMenuUpdate(force){
     cart=cart.filter(l=>{ const i=itemOf(l.id); return i&&isGuestVisible(i)&&i.available&&i.price>0; });
     saveCart();
     apply();
+    replayMotionClass(document.getElementById('root'),'motion-live-update',760);
     requestAnimationFrame(()=>window.scrollTo(0,Math.min(y,Math.max(0,document.documentElement.scrollHeight-innerHeight))));
     toast(LIVE_UPDATED[lang]||LIVE_UPDATED.en);
     return true;
@@ -3812,7 +3952,8 @@ async function checkLiveMenuUpdate(force){
 /* cross-tab sync (admin ↔ menu) */
 window.addEventListener('storage',e=>{
   if(e.key===STORAGE_KEY||e.key===STORAGE_KEY+'_ping'){ S=loadState();
-    cart=cart.filter(l=>{const i=itemOf(l.id);return i&&isGuestVisible(i)&&i.available&&i.price>0;}); saveCart(); apply(); }
+    cart=cart.filter(l=>{const i=itemOf(l.id);return i&&isGuestVisible(i)&&i.available&&i.price>0;}); saveCart(); apply();
+    replayMotionClass(document.getElementById('root'),'motion-live-update',760); }
 });
 
 /* ═══════════════ splash (first visit) ═══════════════ */
@@ -4101,6 +4242,7 @@ function openDish(id){
     rem.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{ const ix=+b.dataset.rm;
       if(dishState.removed.has(ix)){ dishState.removed.delete(ix); b.classList.remove('off'); b.querySelector('.x').textContent='−'; }
       else{ dishState.removed.add(ix); b.classList.add('off'); b.querySelector('.x').textContent='✕'; }
+      replayMotionClass(b,'motion-toggle',480);
       syncDishAdd(i); });
   } else rb.style.display='none';
 
@@ -4110,8 +4252,8 @@ function openDish(id){
   nt.oninput=()=>{ dishState.note=nt.value.slice(0,120); };
 
   const qEl=document.getElementById('dishQty'); qEl.textContent='1';
-  document.getElementById('dishMinus').onclick=()=>{ dishState.qty=Math.max(1,dishState.qty-1); qEl.textContent=dishState.qty; syncDishAdd(i); };
-  document.getElementById('dishPlus').onclick=()=>{ dishState.qty=clampInt(dishState.qty+1,1,LIMITS.qtyPerItem); qEl.textContent=dishState.qty; syncDishAdd(i); };
+  document.getElementById('dishMinus').onclick=()=>{ dishState.qty=Math.max(1,dishState.qty-1); qEl.textContent=dishState.qty; replayMotionClass(qEl,'motion-number',400); syncDishAdd(i); };
+  document.getElementById('dishPlus').onclick=()=>{ dishState.qty=clampInt(dishState.qty+1,1,LIMITS.qtyPerItem); qEl.textContent=dishState.qty; replayMotionClass(qEl,'motion-number',400); syncDishAdd(i); };
 
   document.getElementById('dishWarn').textContent=T('allergyWarn');
   addBtn.disabled=!canAdd(i);
@@ -4339,7 +4481,8 @@ setInterval(()=>repairScrollLock('interval'),1800);
 /* ─── interaction motion: delegated so it survives every menu re-render ─── */
 function richMotionAllowed(){
   const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches;
-  return !reduce && design().motion==='rich' &&
+  const ownerMotion=design().motion;
+  return !reduce && ownerMotion!=='off' && ownerMotion!=='soft' &&
     !document.body.classList.contains('motion-off') &&
     !document.body.classList.contains('motion-soft');
 }
@@ -4349,6 +4492,28 @@ function replayMotionClass(el,name,delay){
   void el.offsetWidth;
   el.classList.add(name);
   setTimeout(()=>el.classList.remove(name),delay||700);
+}
+function celebrateSuccess(){
+  if(!richMotionAllowed()) return;
+  const ok=document.querySelector('#sentSheet .okmark');
+  if(!ok) return;
+  ok.querySelectorAll('.success-sparks').forEach(el=>el.remove());
+  replayMotionClass(ok,'motion-success',800);
+  const burst=document.createElement('span');
+  burst.className='success-sparks';
+  burst.setAttribute('aria-hidden','true');
+  const points=[[0,-52],[36,-38],[52,0],[38,36],[0,52],[-38,36],[-52,0],[-36,-38]];
+  const colors=['var(--gold)','var(--terra)','var(--olive)','var(--gold-lt)'];
+  points.forEach((point,index)=>{
+    const spark=document.createElement('i');
+    spark.style.setProperty('--x',point[0]+'px');
+    spark.style.setProperty('--y',point[1]+'px');
+    spark.style.setProperty('--delay',(index%2*.035)+'s');
+    spark.style.setProperty('--spark',colors[index%colors.length]);
+    burst.appendChild(spark);
+  });
+  ok.appendChild(burst);
+  setTimeout(()=>burst.remove(),980);
 }
 function initInteractionMotion(){
   const progress=document.getElementById('motionProgress');
@@ -4464,6 +4629,36 @@ function initInteractionMotion(){
     });
   },2500);
 })();
+
+/* ─── photo tiles: never stay blank ───────────────────────────────────────
+   Some devices/browsers can fail to fire onload/onerror for an <img> that
+   is already resolved (e.g. served from a warm cache) by the time the inline
+   handler attaches during innerHTML parsing — the tile then shows neither
+   the photo nor the fallback icon. This sweep guarantees one always appears:
+   resolved almost immediately if the image is already complete, or forced
+   to the fallback icon after a few seconds if the load genuinely stalls.
+   A later onload still overrides the forced fallback with the real photo. */
+(function watchPhotoTiles(){
+  var SEL = '.dish-ic,.gphoto,.gthumb,.cat-card .art';
+  var seenAt = new WeakMap();
+  function sweep(){
+    document.querySelectorAll(SEL).forEach(function(el){
+      if(el.classList.contains('img-ready')) return;
+      var img = el.querySelector('img'); if(!img) return;
+      if(img.complete){
+        el.classList.remove('img-failed');
+        el.classList.add(img.naturalWidth>0 ? 'img-ready' : 'img-failed');
+        return;
+      }
+      if(el.classList.contains('img-failed')) return;
+      var t0 = seenAt.get(el);
+      if(t0 === undefined){ seenAt.set(el, Date.now()); return; }
+      if(Date.now() - t0 > 4000) el.classList.add('img-failed');
+    });
+  }
+  setInterval(sweep, 700);
+})();
+
 initInteractionMotion();
 </script>
 </body>
