@@ -35,6 +35,10 @@ header h1{font-size:19px;color:var(--cream);}
 header .sub{font-size:11px;opacity:.65;}
 .status-pill{margin-left:auto;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.10);
   padding:8px 14px;border-radius:20px;font-size:12px;font-weight:600;}
+.undo-pill{margin-left:0;color:var(--cream);border:1px solid rgba(255,255,255,.16);transition:.18s;}
+.undo-pill:not(:disabled):hover{background:rgba(255,255,255,.18);transform:translateY(-1px);}
+.undo-pill:disabled{opacity:.38;cursor:not-allowed;}
+.undo-pill .ico{width:15px;height:15px;}
 .dot{width:8px;height:8px;border-radius:50%;background:#5BD08A;}
 .dot.off{background:#E07A5F;}
 nav.tabs{display:flex;gap:2px;max-width:1080px;margin:0 auto;padding:0 14px;overflow-x:auto;scrollbar-width:none;scroll-snap-type:x proximity;}
@@ -349,6 +353,10 @@ nav.tabs button.on{color:var(--cream);border-bottom-color:var(--gold);}
 .cat-edit .cat-preview .ico{width:22px;height:22px;stroke-width:1.9;}
 .cat-edit input,.cat-edit select{min-width:0;}
 .cat-edit input[type="color"]{width:54px;height:42px;padding:4px;border-radius:11px;}
+.cat-state{display:inline-flex;align-items:center;gap:5px;margin-top:5px;padding:3px 7px;border-radius:999px;
+  background:#EDF4EE;color:var(--forest-2);font-size:10px;font-weight:800;}
+.cat-state.auto{background:#FBF0D8;color:#8A6500;}
+.cat-state.off{background:#FBEAE5;color:var(--bad);}
 .cat-media{grid-column:3 / -1;display:grid;grid-template-columns:130px minmax(0,1fr);gap:8px;align-items:center;}
 .cat-media label{font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);}
 .cat-media input{width:100%;}
@@ -491,6 +499,7 @@ nav.tabs button .ico{width:15px;height:15px;stroke-width:1.9;}
   header h1{font-size:18px;line-height:1.05;}
   header .sub{font-size:10.5px;line-height:1.35;}
   .status-pill{margin-left:0;max-width:none;width:100%;border-radius:14px;}
+  .undo-pill{width:auto;flex:1;justify-content:center;}
   nav.tabs{padding:0 8px;}
   nav.tabs button{padding:11px 12px;}
   .panel{padding-top:16px;}
@@ -604,6 +613,7 @@ nav.tabs button .ico{width:15px;height:15px;stroke-width:1.9;}
     </div>
     <div class="status-pill" id="servicePill"><span class="dot"></span> <span id="serviceText"></span></div>
     <div class="status-pill sync-pill" id="syncPill" title="Πού αποθηκεύονται οι αλλαγές σας"><span class="dot"></span> <span id="syncText">Έλεγχος βάσης…</span></div>
+    <button class="status-pill undo-pill" id="undoBtn" type="button" data-ico="undo" disabled title="Αναίρεση τελευταίας αλλαγής">Αναίρεση</button>
   </div>
   <nav class="tabs" id="tabs">
     <button data-tab="dash" class="on" data-ico="sparkle">Επισκόπηση</button>
@@ -768,6 +778,9 @@ let proLang = 'el';
 let selectedTableId = '';
 let previewSelection = null;
 const $ = (id) => document.getElementById(id);
+const UNDO_LIMIT = 20;
+let undoStack = [];
+let lastSavedSnapshot = JSON.stringify(S);
 const MENU_ICON_KEYS = ['dip','cheese','pot','fries','zucchini','fish','salad','meat','chop','burger','shank','chicken','drumstick','skewer','spit','pizza','wine','beer','mug','soda','juice','bottle','carafe','ouzo','pepper','star','leaf'];
 const HEADER_ACTIONS = [
   ['booking','Κράτηση τραπεζιού','Κρύβει/εμφανίζει το κουμπί κράτησης και το shortcut.'],
@@ -911,10 +924,42 @@ function renderDash(){
 
 function persist(){
   S=normalizeState(S||defaultState());
+  const nextSnapshot=JSON.stringify(S);
+  if(nextSnapshot!==lastSavedSnapshot){
+    undoStack.push(lastSavedSnapshot);
+    if(undoStack.length>UNDO_LIMIT) undoStack.shift();
+    lastSavedSnapshot=nextSnapshot;
+  }
   saveState(S);
   notifyFreshMenu();
   scheduleRemoteSave();
+  refreshUndoBtn();
 }
+function refreshUndoBtn(){
+  const b=$('undoBtn'); if(!b) return;
+  b.disabled=!undoStack.length;
+  b.title=undoStack.length
+    ? `Αναίρεση τελευταίας αλλαγής · ${undoStack.length} διαθέσιμες`
+    : 'Δεν υπάρχει αλλαγή για αναίρεση';
+}
+function undoLastChange(){
+  if(!undoStack.length){ toast('Δεν υπάρχει αλλαγή για αναίρεση'); return; }
+  try{
+    S=normalizeState(JSON.parse(undoStack.pop()));
+    lastSavedSnapshot=JSON.stringify(S);
+    saveState(S);
+    notifyFreshMenu();
+    scheduleRemoteSave();
+    renderAll();
+    refreshUndoBtn();
+    toast('Η τελευταία αλλαγή αναιρέθηκε');
+  }catch(e){
+    undoStack=[];
+    refreshUndoBtn();
+    toast('Δεν μπόρεσε να γίνει αναίρεση');
+  }
+}
+if($('undoBtn')) $('undoBtn').onclick=undoLastChange;
 function notifyFreshMenu(){
   try{
     localStorage.setItem(STORAGE_KEY+'_admin_revision', String((S&&S.updatedAt)||Date.now()));
@@ -981,6 +1026,33 @@ function markPublishedNow(){
    When a KV store is attached in Vercel, every admin edit is pushed here and
    customers see it on their next page load — no redeploy, no file to upload. */
 let liveState='unknown';           /* live | pending | offline | nopin */
+async function loadRemoteMenu({silent=false}={}){
+  const pin=adminPin();
+  if(!pin){ setSyncState('nopin'); return false; }
+  try{
+    const r=await fetch('/api/admin-menu?pin='+encodeURIComponent(pin),{cache:'no-store'});
+    const data=await r.json().catch(()=>null);
+    if(!r.ok || !data || !data.ok){
+      const why=(data&&data.error)||'load_failed';
+      setSyncState(why==='admin_pin_not_set'?'nopin':'offline',why);
+      return false;
+    }
+    if(data.state && Array.isArray(data.state.menu) && Array.isArray(data.state.categories)){
+      S=normalizeState(data.state);
+      saveState(S);
+      undoStack=[];
+      lastSavedSnapshot=JSON.stringify(S);
+      renderAll();
+      refreshUndoBtn();
+    }
+    setSyncState('live');
+    if(!silent) toast('Φορτώθηκε το ζωντανό μενού ✓');
+    return true;
+  }catch(e){
+    setSyncState('offline','network');
+    return false;
+  }
+}
 async function saveLiveMenu({silent=false}={}){
   const pin=adminPin();
   if(!pin){ setSyncState('nopin'); if(!silent) toast('Ξανακάντε είσοδο'); return false; }
@@ -1709,6 +1781,10 @@ function renderCategoryManager(area){
   const list=wrap.querySelector('.cat-list');
   S.categories.slice().sort((a,b)=>a.order-b.order).forEach((c,ix)=>{
     const used=S.menu.filter(i=>i.cat===c.id).length;
+    const visible=S.menu.filter(i=>i.cat===c.id&&!i.hidden).length;
+    const autoHidden=!c.hidden&&visible===0;
+    const stateText=c.hidden?'Κρυφή από τον ιδιοκτήτη':autoHidden?'Αυτόματη απόκρυψη · 0 ορατά πιάτα':`${visible} ορατά πιάτα`;
+    const stateClass=c.hidden?'off':autoHidden?'auto':'';
     const acc=c.accent||accents[ix%accents.length], tint=c.tint||'#E7EEEA';
     const row=document.createElement('div');
     row.className='cat-edit';
@@ -1722,6 +1798,7 @@ function renderCategoryManager(area){
       <div>
         <input data-cat-name value="${catLabel(c,'el')}" maxlength="40" placeholder="Όνομα κατηγορίας">
         <div class="cat-mini">${used} πιάτα · id ${ioEsc(c.id)}</div>
+        <span class="cat-state ${stateClass}">${stateText}</span>
       </div>
       <select data-cat-icon>${icons.map(ic=>`<option value="${ic}" ${ic===(c.icon||'bowl')?'selected':''}>${ic}</option>`).join('')}</select>
       <input type="color" data-cat-accent value="${ioEsc(acc)}" title="Χρώμα">
@@ -1779,12 +1856,17 @@ function addCategory(){
 }
 function deleteCategory(c){
   const used=S.menu.filter(i=>i.cat===c.id).length;
-  if(used){ toast('Δεν διαγράφεται: έχει '+used+' πιάτα'); return; }
   if(S.categories.length<=1){ toast('Χρειάζεται τουλάχιστον μία κατηγορία'); return; }
-  if(!confirm('Διαγραφή κατηγορίας «'+catLabel(c,'el')+'»;')) return;
+  const label=catLabel(c,'el');
+  const question=used
+    ? `Διαγραφή κατηγορίας «${label}» και των ${used} πιάτων της;\n\nΜπορείτε να το αναιρέσετε αμέσως με το κουμπί «Αναίρεση».`
+    : `Διαγραφή κενής κατηγορίας «${label}»;`;
+  if(!confirm(question)) return;
+  if(used) S.menu=S.menu.filter(i=>i.cat!==c.id);
   S.categories=S.categories.filter(x=>x!==c);
   S.categories.forEach((x,ix)=>x.order=ix+1);
-  persist(); renderPro();
+  persist(); renderPro(); renderDash();
+  toast(used?`Διαγράφηκαν η κατηγορία και ${used} πιάτα`:'Η κατηγορία διαγράφηκε');
 }
 function moveCategory(from,to){
   if(!from || !to || from===to) return;

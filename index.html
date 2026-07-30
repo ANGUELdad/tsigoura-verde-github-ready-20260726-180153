@@ -585,13 +585,17 @@ body.traditional-mode .wrap{padding-bottom:44px;}
   display:flex;align-items:center;justify-content:center;margin-top:1px;box-shadow:0 3px 8px rgba(20,40,42,.06);}
 .item .dish-ic .ic{width:22px;height:22px;color:var(--olive);}
 .item .dish-ic img{width:40px;height:40px;object-fit:contain;display:block;}
+.dish-ic,.gphoto,.gthumb{position:relative;}
+.photo-fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--olive);
+  opacity:1;transition:opacity .16s ease;}
+.photo-fallback .ic{width:24px!important;height:24px!important;}
+.dish-ic img,.gphoto img,.gthumb img,.cat-card .art img{position:relative;z-index:1;opacity:0;transition:opacity .16s ease;}
+.dish-ic.img-ready img,.gphoto.img-ready img,.gthumb.img-ready img,.cat-card .art.img-ready img{opacity:1;}
+.dish-ic.img-ready .photo-fallback,.gphoto.img-ready .photo-fallback,.gthumb.img-ready .photo-fallback,
+.cat-card .art.img-ready .photo-fallback{opacity:0;}
 .item .dish-ic.img-failed img,.gphoto.img-failed img,.gthumb.img-failed img,.cat-card .art.img-failed img{display:none!important;}
-.item .dish-ic.img-failed::after,.gphoto.img-failed::after,.gthumb.img-failed::after,.cat-card .art.img-failed::after{
-  content:'';display:block;width:28px;height:28px;border-radius:50%;
-  background:radial-gradient(circle,var(--gold-lt),transparent 62%);
-}
 .item .dish-ic .greek-ic{width:32px;height:32px;}
-.item.out .dish-ic img{opacity:.45;filter:grayscale(.5);}
+.item.out .dish-ic.img-ready img{opacity:.45;filter:grayscale(.5);}
 .item .desc,.item .meta{margin-left:58px;}
 /* compact row layout */
 .item{padding:11px 0;}
@@ -2172,6 +2176,7 @@ function usePublishedFile(){
     return true;
   }catch(e){ return false; }
 }
+let liveMenuRevision=0;
 async function hydrateRemoteMenu(){
   try{
     const r=await fetch('/api/menu',{cache:'no-store'});
@@ -2179,7 +2184,10 @@ async function hydrateRemoteMenu(){
       const data=await r.json();
       if(data && data.ok && data.state && Array.isArray(data.state.menu) && data.state.menu.length){
         S=normalizeState(data.state);
-        if(data.revision && S.settings) S.settings.cacheRevision=Number(data.revision)||S.settings.cacheRevision;
+        if(data.revision){
+          liveMenuRevision=Number(data.revision)||0;
+          if(S.settings) S.settings.cacheRevision=liveMenuRevision||S.settings.cacheRevision;
+        }
         saveState(S);
         return true;
       }
@@ -2191,6 +2199,14 @@ let activeCat = null;
 let specialMenuActive = false;
 
 const T = k => (VIEW_UI[lang]&&VIEW_UI[lang][k]) || (VIEW_UI.en&&VIEW_UI.en[k]) || (UI[lang] && UI[lang][k]) || UI.en[k] || k;
+const LIVE_UPDATED = {
+  el:'Το μενού ενημερώθηκε ζωντανά ✓',
+  en:'The menu was updated live ✓',
+  de:'Die Speisekarte wurde live aktualisiert ✓',
+  ro:'Meniul a fost actualizat live ✓',
+  sr:'Мени је ажуриран уживо ✓',
+  bg:'Менюто беше обновено на живо ✓'
+};
 /* robust access to the general-allergen notice (data key may be .allergens or .allergensGeneral) */
 const NOTE = k => { const n=(VENUE.notices||{}); const o=n[k]||(k==='allergensGeneral'?n.allergens:null)||{}; return o[lang]||o.en||''; };
 const money = n => S.settings.currency + Number(n).toFixed(2);
@@ -2365,7 +2381,7 @@ function renderCategoryMosaic(){
     return `<button class="cat-card ${art?'':'no-art'}" data-jump="${esc(c.id)}" style="--acc:${acc[0]};--tint:${acc[1]}">
       <span class="icwrap">${catIcon(c)}</span>
       <b>${esc(catName(c))}</b>
-      ${art?`<i class="art"><img src="${esc(art)}" alt="" onerror="this.parentElement.classList.add('img-failed')"></i>`:''}
+      ${art?`<i class="art"><span class="photo-fallback">${catIcon(c)}</span><img src="${esc(art)}" alt="" loading="lazy" decoding="async" onload="this.parentElement.classList.add('img-ready')" onerror="this.parentElement.classList.add('img-failed')"></i>`:''}
     </button>`;
   }).join('');
   slot.querySelectorAll('[data-jump]').forEach(b=>b.onclick=()=>scrollToCategory(b.dataset.jump));
@@ -2720,7 +2736,7 @@ function guideSectionHTML(c,ix,cats){
 }
 function guideVisual(i,cls,large){
   const t=tx(i), art=(typeof dishArt==='function'&&dishArt(i)) ? dishArt(i) : '';
-  if(art) return `<button type="button" class="${cls}" data-admin-dish="${i.id}" data-photo="${i.id}" aria-label="${esc(T('guidePhoto'))}: ${esc(t.n)}"><img src="${esc(art)}" alt="" loading="lazy" decoding="async" width="${large?180:120}" height="${large?180:120}" onerror="this.parentElement.classList.add('img-failed')"></button>`;
+  if(art) return `<button type="button" class="${cls}" data-admin-dish="${i.id}" data-photo="${i.id}" aria-label="${esc(T('guidePhoto'))}: ${esc(t.n)}"><span class="photo-fallback">${svgFor(DISH_ICON[i.icon]||i.icon||'dish')}</span><img src="${esc(art)}" alt="" loading="lazy" decoding="async" width="${large?180:120}" height="${large?180:120}" onload="this.parentElement.classList.add('img-ready')" onerror="this.parentElement.classList.add('img-failed')"></button>`;
   return `<button type="button" class="${cls}" data-admin-dish="${i.id}" data-dish="${i.id}" aria-label="${esc(T('guideInfo'))}: ${esc(t.n)}">${dishIcon(i)}</button>`;
 }
 function guideHeroDishHTML(i){
@@ -2783,7 +2799,7 @@ function rowHTML(i){
   return `<div class="item ${i.available?'':'out'}" data-dish="${i.id}" data-admin-dish="${i.id}">
     <div class="top">
       ${art
-        ? `<button type="button" class="dish-ic photo-b" data-photo="${i.id}" aria-label="${esc(t.n)}"><img src="${esc(art)}" alt="" loading="lazy" decoding="async" width="144" height="144" onerror="this.parentElement.classList.add('img-failed')"></button>`
+        ? `<button type="button" class="dish-ic photo-b" data-photo="${i.id}" aria-label="${esc(t.n)}"><span class="photo-fallback">${svgFor(DISH_ICON[i.icon]||i.icon||'dish')}</span><img src="${esc(art)}" alt="" loading="lazy" decoding="async" width="144" height="144" onload="this.parentElement.classList.add('img-ready')" onerror="this.parentElement.classList.add('img-failed')"></button>`
         : `<span class="dish-ic">${dishIcon(i)}</span>`}
       <span class="nm">${esc(t.n)}</span>
       <span class="lead"></span>
@@ -3554,6 +3570,42 @@ function toast(m){
   });
 }
 
+/* Keep already-open phones fresh without interrupting a guest who is reading a
+   dish, using the cart, or interacting with another sheet. */
+let lastLiveCheckAt=0;
+let liveCheckBusy=false;
+function guestIsBusy(){
+  return !!document.querySelector('.sheet.on,.scrim.on,#panel.on');
+}
+async function checkLiveMenuUpdate(force){
+  const now=Date.now();
+  if(liveCheckBusy || document.hidden || guestIsBusy()) return false;
+  if(!force && now-lastLiveCheckAt<30000) return false;
+  liveCheckBusy=true; lastLiveCheckAt=now;
+  try{
+    const r=await fetch('/api/menu',{cache:'no-store'});
+    if(!r.ok) return false;
+    const data=await r.json();
+    const revision=Number(data&&data.revision)||0;
+    if(!data || !data.ok || !revision || revision<=liveMenuRevision || !data.state || !Array.isArray(data.state.menu)) return false;
+    const y=window.scrollY;
+    liveMenuRevision=revision;
+    S=normalizeState(data.state);
+    if(S.settings) S.settings.cacheRevision=revision;
+    saveState(S);
+    cart=cart.filter(l=>{ const i=itemOf(l.id); return i&&!i.hidden&&i.available&&i.price>0; });
+    saveCart();
+    apply();
+    requestAnimationFrame(()=>window.scrollTo(0,Math.min(y,Math.max(0,document.documentElement.scrollHeight-innerHeight))));
+    toast(LIVE_UPDATED[lang]||LIVE_UPDATED.en);
+    return true;
+  }catch(e){
+    return false;
+  }finally{
+    liveCheckBusy=false;
+  }
+}
+
 /* cross-tab sync (admin ↔ menu) */
 window.addEventListener('storage',e=>{
   if(e.key===STORAGE_KEY||e.key===STORAGE_KEY+'_ping'){ S=loadState();
@@ -4064,14 +4116,15 @@ async function boot(){
     /* first visit → splash + language pick; returning (saved lang) → skip */
     if(safeLS.get('tv_lang')){ const sp=document.getElementById('splash'); sp.classList.add('gone'); sp.style.display='none'; }
     else { buildSplash(); }
+    setInterval(()=>checkLiveMenuUpdate(false),45000);
   }
 }
 boot();
 window.addEventListener('resize',()=>requestAnimationFrame(()=>{ setStickyMetrics(); syncPinnedNav(); }));
 window.addEventListener('orientationchange',()=>setTimeout(()=>{ repairScrollLock('orientation'); setStickyMetrics(); syncPinnedNav(); },220));
 window.addEventListener('pageshow',()=>requestAnimationFrame(()=>{ clearMenuSelection(); forceCloseFloatingUI(); repairScrollLock('pageshow'); setStickyMetrics(); syncPinnedNav(); }));
-window.addEventListener('focus',()=>requestAnimationFrame(()=>repairScrollLock('focus')));
-document.addEventListener('visibilitychange',()=>{ if(!document.hidden) requestAnimationFrame(()=>{ clearMenuSelection(); repairScrollLock('visible'); setStickyMetrics(); syncPinnedNav(); }); });
+window.addEventListener('focus',()=>requestAnimationFrame(()=>{ repairScrollLock('focus'); checkLiveMenuUpdate(false); }));
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) requestAnimationFrame(()=>{ clearMenuSelection(); repairScrollLock('visible'); setStickyMetrics(); syncPinnedNav(); checkLiveMenuUpdate(false); }); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeSocialAd(false); closeSheets(); } });
 document.addEventListener('selectstart',e=>{ if(!canSelectTextTarget(e.target)) e.preventDefault(); },{capture:true});
 document.addEventListener('dragstart',e=>e.preventDefault(),{capture:true});

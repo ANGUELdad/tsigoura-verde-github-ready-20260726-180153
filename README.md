@@ -17,6 +17,19 @@ Ready to upload to **Vercel**. No build step. The menu works as a static site; b
 | `menu-live.js` | — | **The published menu.** Generated from /admin |
 | `.env.example` | — | Environment variable template |
 | `vercel.json` | — | Clean URLs + cache headers |
+| `PRODUCT_ROADMAP.md` | — | Product strategy, release sequence, success measures, and guardrails |
+
+## Owner safety and smart menu behaviour
+
+- Every owner edit can be reversed immediately with **Αναίρεση**.
+- A category with no visible dishes disappears automatically from the guest
+  menu; Pro mode labels this clearly as automatic hiding.
+- Categories can be deleted even when they contain dishes, after an explicit
+  confirmation. The complete deletion remains recoverable with **Αναίρεση**.
+- Dish images always have a vector fallback, so slow or broken media never
+  leaves a blank icon.
+- Guest phones already open on the menu check for live revisions in the
+  background and refresh when the guest is not interacting with a sheet.
 
 ## Deploy (2 minutes)
 1. Install once: `npm i -g vercel`
