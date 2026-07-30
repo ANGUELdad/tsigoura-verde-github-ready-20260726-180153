@@ -46,7 +46,8 @@ guest scans the table QR:
 - [x] Scheduled dish availability, using local calendar dates and automatic
   refresh on phones that remain open overnight.
 - [x] Reusable, undoable event presets instead of manually hiding many dishes.
-- [ ] Automatic daily backup and a visible change log.
+- [x] Automatic 14-day local/live backups, a visible change log, PIN-protected
+  full restore, and undo after restoration.
 
 ### Release 3 — guest conversion
 

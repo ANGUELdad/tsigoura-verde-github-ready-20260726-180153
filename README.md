@@ -13,6 +13,7 @@ Ready to upload to **Vercel**. No build step. The menu works as a static site; b
 | `media/` | — | Logo, acorn mark, hero photo |
 | `api/book.js` | `/api/book` | Booking email endpoint via Resend |
 | `api/admin-login.js` | `/api/admin-login` | Admin PIN check from Vercel env |
+| `api/admin-history.js` | `/api/admin-history` | PIN-protected backups, change log, and restore |
 | `api/public-config.js` | `/api/public-config` | Public contact/Wi-Fi/legal config from env |
 | `menu-live.js` | — | **The published menu.** Generated from /admin |
 | `.env.example` | — | Environment variable template |
@@ -43,6 +44,12 @@ Ready to upload to **Vercel**. No build step. The menu works as a static site; b
   announcement. Applying a preset is one click, confirmed, and fully undoable.
 - Phones left open across midnight re-evaluate schedules automatically, using
   the restaurant's local date rather than UTC.
+- Before the first owner change each day, the system keeps a complete snapshot.
+  **Ρυθμίσεις → Backup & change log** shows the latest 14 daily backups and 60
+  recent change summaries, with confirmed full restore and Undo afterward.
+- Backups work on the current owner device immediately. When KV is attached,
+  the same safety history is also stored server-side and protected by
+  `ADMIN_PIN`, so recovery does not depend on one browser.
 
 ### Owner workflow for events
 
@@ -51,6 +58,14 @@ Ready to upload to **Vercel**. No build step. The menu works as a static site; b
 3. Save the normal everyday menu as another preset.
 4. Apply either preset before service. If anything looks wrong, press
    **Αναίρεση** immediately.
+
+### Recovering an earlier menu
+
+1. Open **Ρυθμίσεις → Backup & change log**.
+2. Choose a dated **Συσκευή** or **Live** backup and press **Επαναφορά**.
+3. Confirm only after checking the date and item counts.
+4. If it was the wrong snapshot, press **Αναίρεση**; the state from immediately
+   before restoration returns.
 
 ## Deploy (2 minutes)
 1. Install once: `npm i -g vercel`

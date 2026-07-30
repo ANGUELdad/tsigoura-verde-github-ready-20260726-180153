@@ -10,6 +10,8 @@
    ========================================================================== */
 
 const KEY = 'tsigoura:menu:v1';
+const BACKUP_KEY = 'tsigoura:menu:backups:v1';
+const HISTORY_KEY = 'tsigoura:menu:history:v1';
 
 const clean = (v, max = 400) => String(v || '').trim().slice(0, max);
 
@@ -63,26 +65,124 @@ async function command(args) {
 }
 
 async function readMenu() {
-  const out = await command(['GET', KEY]);
+  return readJson(KEY);
+}
+
+async function readJson(key) {
+  const out = await command(['GET', key]);
   const raw = out && out.result;
   if (!raw) return null;
   try {
-    const doc = typeof raw === 'string' ? JSON.parse(raw) : raw;
-    return doc && doc.state ? doc : null;
+    return typeof raw === 'string' ? JSON.parse(raw) : raw;
   } catch (e) {
     return null;
   }
 }
 
+async function writeJson(key, value) {
+  await command(['SET', key, JSON.stringify(value)]);
+}
+
+function stable(v) {
+  try { return JSON.stringify(v == null ? null : v); } catch (e) { return ''; }
+}
+
+function changeCounts(before, after) {
+  before = before || {};
+  after = after || {};
+  const out = { prices:0, visibility:0, availability:0, schedules:0, dishes:0, content:0, categories:0, presets:0, announcement:0, settings:0, tables:0, orders:0 };
+  const oldItems = new Map((Array.isArray(before.menu) ? before.menu : []).map(x => [String(x && x.id), x || {}]));
+  const newItems = new Map((Array.isArray(after.menu) ? after.menu : []).map(x => [String(x && x.id), x || {}]));
+  const ids = new Set([...oldItems.keys(), ...newItems.keys()]);
+  ids.forEach(id => {
+    const a = oldItems.get(id), b = newItems.get(id);
+    if (!a || !b) { out.dishes++; return; }
+    if (Number(a.price) !== Number(b.price) || String(a.priceText||'') !== String(b.priceText||'')) out.prices++;
+    if (!!a.hidden !== !!b.hidden) out.visibility++;
+    if ((a.available !== false) !== (b.available !== false)) out.availability++;
+    if (stable(a.schedule) !== stable(b.schedule)) out.schedules++;
+    const contentKeys=['cat','unit','icon','image','order','t','allergens','removable','popular','chefPick','veg','spicy','prepMin'];
+    if(contentKeys.some(k=>stable(a[k])!==stable(b[k]))) out.content++;
+  });
+  const oldCats = new Map((Array.isArray(before.categories) ? before.categories : []).map(x => [String(x && x.id), x || {}]));
+  const newCats = new Map((Array.isArray(after.categories) ? after.categories : []).map(x => [String(x && x.id), x || {}]));
+  const catIds = new Set([...oldCats.keys(), ...newCats.keys()]);
+  catIds.forEach(id => {
+    const a=oldCats.get(id), b=newCats.get(id);
+    if(!a||!b||!!a.hidden!==!!b.hidden||stable(a.t)!==stable(b.t)||Number(a.order)!==Number(b.order)) out.categories++;
+  });
+  const oldSettings=before.settings||{}, newSettings=after.settings||{};
+  if(stable(oldSettings.eventPresets)!==stable(newSettings.eventPresets)) out.presets++;
+  if(stable(oldSettings.announcement)!==stable(newSettings.announcement)) out.announcement++;
+  const settingKeys=['serviceOpen','acceptOrders','traditionalMenuOnly','defaultLang','headerActions','design'];
+  if(settingKeys.some(k=>stable(oldSettings[k])!==stable(newSettings[k]))) out.settings++;
+  if(stable(before.tables)!==stable(after.tables)) out.tables++;
+  if(stable(before.orders)!==stable(after.orders)) out.orders++;
+  return out;
+}
+
+async function storeDailyBackup(previous, now) {
+  if (!previous || !previous.state) return false;
+  const day=now.slice(0,10);
+  const backups=await readJson(BACKUP_KEY);
+  const list=Array.isArray(backups)?backups:[];
+  if(list.some(x=>x&&x.day===day)) return false;
+  list.unshift({
+    id:`backup-${day}`,
+    day,
+    createdAt:now,
+    revision:Number(previous.revision)||0,
+    state:previous.state
+  });
+  await writeJson(BACKUP_KEY,list.slice(0,14));
+  return true;
+}
+
+async function recordHistory(previous, doc, reason) {
+  const history=await readJson(HISTORY_KEY);
+  const list=Array.isArray(history)?history:[];
+  list.unshift({
+    id:`change-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
+    createdAt:doc.updatedAt,
+    revision:doc.revision,
+    reason:clean(reason||'edit',24),
+    changes:changeCounts(previous&&previous.state,doc.state)
+  });
+  await writeJson(HISTORY_KEY,list.slice(0,60));
+}
+
 async function writeMenu(state, meta = {}) {
+  const previous=await readMenu();
+  const now=new Date().toISOString();
+  try { await storeDailyBackup(previous,now); } catch (e) {}
   const doc = {
     state,
     revision: Number(meta.revision) || Date.now(),
-    updatedAt: new Date().toISOString(),
+    updatedAt: now,
     updatedBy: clean(meta.updatedBy || 'admin', 80),
   };
   await command(['SET', KEY, JSON.stringify(doc)]);
+  try { await recordHistory(previous,doc,meta.reason); } catch (e) {}
   return doc;
+}
+
+async function readAdminHistory() {
+  const [backups,history]=await Promise.all([readJson(BACKUP_KEY),readJson(HISTORY_KEY)]);
+  return {
+    backups:(Array.isArray(backups)?backups:[]).map(x=>({
+      id:x.id,day:x.day,createdAt:x.createdAt,revision:Number(x.revision)||0,
+      dishes:x.state&&Array.isArray(x.state.menu)?x.state.menu.length:0,
+      categories:x.state&&Array.isArray(x.state.categories)?x.state.categories.length:0
+    })),
+    history:Array.isArray(history)?history:[]
+  };
+}
+
+async function restoreMenuBackup(id, meta = {}) {
+  const backups=await readJson(BACKUP_KEY);
+  const found=(Array.isArray(backups)?backups:[]).find(x=>x&&x.id===id&&x.state);
+  if(!found) return null;
+  return writeMenu(found.state,Object.assign({},meta,{reason:'restore'}));
 }
 
 /* Writes are only allowed when a real PIN has been set — otherwise anyone who
@@ -95,4 +195,7 @@ function adminPinOk(pin) {
   return !!(expected && clean(pin, 120) === expected);
 }
 
-module.exports = { configured, readMenu, writeMenu, adminPinOk, adminPinConfigured, clean, KEY };
+module.exports = {
+  configured, readMenu, writeMenu, readAdminHistory, restoreMenuBackup,
+  adminPinOk, adminPinConfigured, clean, KEY, BACKUP_KEY, HISTORY_KEY, changeCounts
+};

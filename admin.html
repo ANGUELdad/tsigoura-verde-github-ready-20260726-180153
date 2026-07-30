@@ -422,6 +422,11 @@ nav.tabs button.on{color:var(--cream);border-bottom-color:var(--gold);}
 .preset-card small{display:block;color:var(--muted);font-size:10.5px;margin-top:3px;line-height:1.35;}
 .preset-card .preset-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
 .schedule-note{font-size:10.5px;color:var(--muted);line-height:1.4;margin-top:6px;}
+.history-list{display:grid;gap:7px;margin-top:12px;}
+.history-row{display:grid;grid-template-columns:34px minmax(0,1fr);gap:9px;align-items:start;padding:9px 10px;border-radius:12px;background:rgba(255,255,255,.66);border:1px solid rgba(56,86,79,.1);}
+.history-row .history-ico{width:30px;height:30px;border-radius:9px;background:var(--cream);display:grid;place-items:center;color:var(--forest);}
+.history-row b{font-size:12.5px;color:var(--forest);display:block;}
+.history-row small{font-size:10.5px;color:var(--muted);line-height:1.4;display:block;margin-top:2px;}
 .announce-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
 .announce-actions .btn{flex:1 1 150px;justify-content:center;}
 
@@ -829,6 +834,10 @@ const $ = (id) => document.getElementById(id);
 const UNDO_LIMIT = 20;
 let undoStack = [];
 let lastSavedSnapshot = JSON.stringify(S);
+const OWNER_BACKUPS_KEY = STORAGE_KEY+'_owner_backups_v1';
+const OWNER_HISTORY_KEY = STORAGE_KEY+'_owner_history_v1';
+let ownerHistoryRemote={tried:false,loading:false,ok:false,backups:[],history:[],error:''};
+let ownerHistoryWriteError='';
 const MENU_ICON_KEYS = ['dip','cheese','pot','fries','zucchini','fish','salad','meat','chop','burger','shank','chicken','drumstick','skewer','spit','pizza','wine','beer','mug','soda','juice','bottle','carafe','ouzo','pepper','star','leaf'];
 const HEADER_ACTIONS = [
   ['booking','Κράτηση τραπεζιού','Κρύβει/εμφανίζει το κουμπί κράτησης και το shortcut.'],
@@ -1101,17 +1110,77 @@ async function refreshOperationalReadiness(force){
   return opsPromise;
 }
 
-function persist(){
+function ownerStorageList(key){
+  try{ const v=JSON.parse(localStorage.getItem(key)||'[]'); return Array.isArray(v)?v:[]; }catch(e){ return []; }
+}
+function stableOwnerValue(v){
+  try{return JSON.stringify(v==null?null:v);}catch(e){return '';}
+}
+function ownerChangeCounts(before,after){
+  before=before||{}; after=after||{};
+  const out={prices:0,visibility:0,availability:0,schedules:0,dishes:0,content:0,categories:0,presets:0,announcement:0,settings:0,tables:0,orders:0};
+  const oldItems=new Map((Array.isArray(before.menu)?before.menu:[]).map(x=>[String(x&&x.id),x||{}]));
+  const newItems=new Map((Array.isArray(after.menu)?after.menu:[]).map(x=>[String(x&&x.id),x||{}]));
+  new Set([...oldItems.keys(),...newItems.keys()]).forEach(id=>{
+    const a=oldItems.get(id),b=newItems.get(id);
+    if(!a||!b){out.dishes++;return;}
+    if(Number(a.price)!==Number(b.price)||String(a.priceText||'')!==String(b.priceText||''))out.prices++;
+    if(!!a.hidden!==!!b.hidden)out.visibility++;
+    if((a.available!==false)!==(b.available!==false))out.availability++;
+    if(stableOwnerValue(a.schedule)!==stableOwnerValue(b.schedule))out.schedules++;
+    const keys=['cat','unit','icon','image','order','t','allergens','removable','popular','chefPick','veg','spicy','prepMin'];
+    if(keys.some(k=>stableOwnerValue(a[k])!==stableOwnerValue(b[k])))out.content++;
+  });
+  const oldCats=new Map((Array.isArray(before.categories)?before.categories:[]).map(x=>[String(x&&x.id),x||{}]));
+  const newCats=new Map((Array.isArray(after.categories)?after.categories:[]).map(x=>[String(x&&x.id),x||{}]));
+  new Set([...oldCats.keys(),...newCats.keys()]).forEach(id=>{
+    const a=oldCats.get(id),b=newCats.get(id);
+    if(!a||!b||!!a.hidden!==!!b.hidden||stableOwnerValue(a.t)!==stableOwnerValue(b.t)||Number(a.order)!==Number(b.order)||String(a.image||'')!==String(b.image||''))out.categories++;
+  });
+  const a=before.settings||{},b=after.settings||{};
+  if(stableOwnerValue(a.eventPresets)!==stableOwnerValue(b.eventPresets))out.presets++;
+  if(stableOwnerValue(a.announcement)!==stableOwnerValue(b.announcement))out.announcement++;
+  if(['serviceOpen','acceptOrders','traditionalMenuOnly','defaultLang','headerActions','design'].some(k=>stableOwnerValue(a[k])!==stableOwnerValue(b[k])))out.settings++;
+  if(stableOwnerValue(before.tables)!==stableOwnerValue(after.tables))out.tables++;
+  if(stableOwnerValue(before.orders)!==stableOwnerValue(after.orders))out.orders++;
+  return out;
+}
+function ownerChangeTotal(changes){
+  return Object.values(changes||{}).reduce((a,n)=>a+(Number(n)||0),0);
+}
+function recordOwnerChange(previousSnapshot,nextSnapshot,reason){
+  try{
+    const before=JSON.parse(previousSnapshot||'{}'),after=JSON.parse(nextSnapshot||'{}');
+    const changes=ownerChangeCounts(before,after);
+    if(!ownerChangeTotal(changes))return false;
+    const day=localDateKey(),now=new Date().toISOString();
+    const backups=ownerStorageList(OWNER_BACKUPS_KEY);
+    if(!backups.some(x=>x&&x.day===day)){
+      backups.unshift({id:'local-'+day,day,createdAt:now,revision:Number(before.updatedAt)||0,snapshot:previousSnapshot});
+      localStorage.setItem(OWNER_BACKUPS_KEY,JSON.stringify(backups.slice(0,14)));
+    }
+    const history=ownerStorageList(OWNER_HISTORY_KEY);
+    history.unshift({id:'local-change-'+Date.now(),createdAt:now,reason:reason||'edit',changes});
+    localStorage.setItem(OWNER_HISTORY_KEY,JSON.stringify(history.slice(0,60)));
+    return true;
+  }catch(e){
+    ownerHistoryWriteError=String((e&&e.message)||e||'history_write_failed').slice(0,120);
+    console.warn('Owner backup could not be written:',ownerHistoryWriteError);
+    return false;
+  }
+}
+function persist(reason){
   S=normalizeState(S||defaultState());
   const nextSnapshot=JSON.stringify(S);
   if(nextSnapshot!==lastSavedSnapshot){
+    recordOwnerChange(lastSavedSnapshot,nextSnapshot,reason||'edit');
     undoStack.push(lastSavedSnapshot);
     if(undoStack.length>UNDO_LIMIT) undoStack.shift();
     lastSavedSnapshot=nextSnapshot;
   }
   saveState(S);
   notifyFreshMenu();
-  scheduleRemoteSave();
+  scheduleRemoteSave(reason||'edit');
   refreshUndoBtn();
 }
 function refreshUndoBtn(){
@@ -1124,11 +1193,13 @@ function refreshUndoBtn(){
 function undoLastChange(){
   if(!undoStack.length){ toast('Δεν υπάρχει αλλαγή για αναίρεση'); return; }
   try{
+    const before=JSON.stringify(S);
     S=normalizeState(JSON.parse(undoStack.pop()));
+    recordOwnerChange(before,JSON.stringify(S),'undo');
     lastSavedSnapshot=JSON.stringify(S);
     saveState(S);
     notifyFreshMenu();
-    scheduleRemoteSave();
+    scheduleRemoteSave('undo');
     renderAll();
     refreshUndoBtn();
     toast('Η τελευταία αλλαγή αναιρέθηκε');
@@ -1148,7 +1219,9 @@ function notifyFreshMenu(){
 function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('on'); setTimeout(()=>t.classList.remove('on'),2200); }
 function adminPin(){ try{return sessionStorage.getItem('tv_admin_pin')||'';}catch(e){return '';} }
 let remoteSaveTimer=null;
-function scheduleRemoteSave(){
+let pendingRemoteReason='edit';
+function scheduleRemoteSave(reason){
+  pendingRemoteReason=reason||pendingRemoteReason||'edit';
   clearTimeout(remoteSaveTimer);
   remoteSaveTimer=setTimeout(()=>saveLiveMenu({silent:true}),700);
 }
@@ -1242,7 +1315,7 @@ async function saveLiveMenu({silent=false}={}){
     const r=await fetch('/api/admin-menu',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({pin,state,revision:(S&&S.updatedAt)||Date.now()})
+      body:JSON.stringify({pin,state,revision:(S&&S.updatedAt)||Date.now(),reason:pendingRemoteReason})
     });
     const data=await r.json().catch(()=>null);
     if(!r.ok || !data || !data.ok){
@@ -1252,6 +1325,7 @@ async function saveLiveMenu({silent=false}={}){
       return false;
     }
     setSyncState('live');
+    pendingRemoteReason='edit';
     if(!silent) toast('Ενημερώθηκε ζωντανά ✓');
     return true;
   }catch(e){ setSyncState('offline','network'); if(!silent) toast('Χωρίς σύνδεση'); return false; }
@@ -2402,6 +2476,114 @@ function renderQR(){
 $('baseUrl').oninput = ()=>renderQR();
 
 /* ================= SETTINGS ================= */
+const HISTORY_LABELS={
+  prices:'τιμές',visibility:'εμφάνιση',availability:'διαθεσιμότητα',schedules:'προγραμματισμός',
+  dishes:'πιάτα',content:'περιεχόμενο',categories:'κατηγορίες',presets:'presets',
+  announcement:'banner',settings:'ρυθμίσεις',tables:'τραπέζια',orders:'παραγγελίες'
+};
+function ownerHistoryLabel(entry){
+  const changes=entry&&entry.changes||{};
+  const parts=Object.keys(HISTORY_LABELS).filter(k=>Number(changes[k])>0).map(k=>`${HISTORY_LABELS[k]} ×${changes[k]}`);
+  if(entry&&entry.reason==='restore')parts.unshift('επαναφορά backup');
+  if(entry&&entry.reason==='undo')parts.unshift('αναίρεση');
+  if(entry&&entry.reason==='reset')parts.unshift('επαναφορά demo');
+  return parts.length?parts.join(' · '):'ενημέρωση menu';
+}
+function ownerHistoryDate(value,withTime){
+  const d=new Date(value||Date.now());
+  if(!isFinite(d.getTime()))return '—';
+  return d.toLocaleString('el-GR',withTime?{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}:{weekday:'short',day:'numeric',month:'short'});
+}
+function localOwnerHistory(){
+  const backups=ownerStorageList(OWNER_BACKUPS_KEY).map(x=>{
+    let state=null;try{state=JSON.parse(x.snapshot||'{}');}catch(e){}
+    return Object.assign({},x,{source:'local',dishes:state&&Array.isArray(state.menu)?state.menu.length:0,categories:state&&Array.isArray(state.categories)?state.categories.length:0});
+  });
+  return {backups,history:ownerStorageList(OWNER_HISTORY_KEY).map(x=>Object.assign({source:'local'},x))};
+}
+function ownerHistoryPanelHTML(){
+  const local=localOwnerHistory();
+  const remote=ownerHistoryRemote.ok?{
+    backups:(ownerHistoryRemote.backups||[]).map(x=>Object.assign({source:'remote'},x)),
+    history:(ownerHistoryRemote.history||[]).map(x=>Object.assign({source:'remote'},x))
+  }:{backups:[],history:[]};
+  const backups=remote.backups.concat(local.backups).slice(0,16);
+  const history=(ownerHistoryRemote.ok?remote.history:local.history).slice(0,12);
+  const status=ownerHistoryWriteError?'Η συσκευή δεν μπόρεσε να γράψει backup. Κατεβάστε το τωρινό backup και ελέγξτε τον διαθέσιμο χώρο.':ownerHistoryRemote.loading?'Έλεγχος live backup…':ownerHistoryRemote.ok
+    ?'Live backups στη βάση + αντίγραφο ασφαλείας σε αυτή τη συσκευή.'
+    :'Αυτόματο αντίγραφο σε αυτή τη συσκευή. Με KV συνδεδεμένο, κρατιέται και δεύτερο live backup.';
+  const backupCards=backups.map(x=>`<div class="preset-card">
+    <div><b>${x.source==='remote'?'Live':'Συσκευή'} · ${ioEsc(ownerHistoryDate(x.day||x.createdAt,false))}</b>
+      <small>${Number(x.dishes)||0} πιάτα · ${Number(x.categories)||0} κατηγορίες${x.revision?` · rev ${Number(x.revision)}`:''}</small></div>
+    <div class="preset-actions"><button class="btn ghost sm pressable" data-backup-restore="${ioEsc(x.id)}" data-backup-source="${x.source}">${ICO.get('arrow')}Επαναφορά</button></div>
+  </div>`).join('');
+  const historyRows=history.map(x=>`<div class="history-row">
+    <span class="history-ico">${ICO.get(x.reason==='restore'?'arrow':x.reason==='undo'?'undo':'edit')}</span>
+    <div><b>${ioEsc(ownerHistoryLabel(x))}</b><small>${ioEsc(ownerHistoryDate(x.createdAt,true))}${x.source==='remote'?' · live store':' · αυτή η συσκευή'}</small></div>
+  </div>`).join('');
+  return `<div class="announce-editor" id="ownerHistoryPanel">
+    <h3>${ICO.get('save')}Backup & change log</h3>
+    <p class="hint">Πριν από την πρώτη αλλαγή κάθε ημέρας κρατιέται αυτόματα πλήρες αντίγραφο. Τα 14 τελευταία ημερήσια backups παραμένουν διαθέσιμα και κάθε επαναφορά μπορεί να αναιρεθεί.</p>
+    <div class="cat-mini">${ioEsc(status)}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+      <button class="btn ghost sm pressable" id="historyRefresh">${ICO.get('sparkle')}Ανανέωση ιστορικού</button>
+      <button class="btn ghost sm pressable" id="historyDownload">${ICO.get('download')}Τωρινό backup</button>
+    </div>
+    <div class="preset-list">${backupCards||'<div class="cat-mini">Το πρώτο ημερήσιο backup θα δημιουργηθεί αυτόματα πριν από την επόμενη αλλαγή.</div>'}</div>
+    <h4 style="margin:16px 0 4px;color:var(--forest);">Πρόσφατες αλλαγές</h4>
+    <div class="history-list">${historyRows||'<div class="cat-mini">Δεν υπάρχουν καταγεγραμμένες αλλαγές ακόμη.</div>'}</div>
+  </div>`;
+}
+async function refreshOwnerHistory(force){
+  if(ownerHistoryRemote.loading||(!force&&ownerHistoryRemote.tried))return;
+  ownerHistoryRemote.loading=true;ownerHistoryRemote.tried=true;
+  if($('ownerHistoryPanel'))renderSettings();
+  try{
+    const pin=adminPin();
+    if(!pin)throw new Error('no_pin');
+    const r=await fetch('/api/admin-history?pin='+encodeURIComponent(pin),{cache:'no-store'});
+    const data=await r.json().catch(()=>null);
+    if(!r.ok||!data||!data.ok)throw new Error((data&&data.error)||'history_unavailable');
+    ownerHistoryRemote={tried:true,loading:false,ok:true,backups:data.backups||[],history:data.history||[],error:''};
+  }catch(e){
+    ownerHistoryRemote={tried:true,loading:false,ok:false,backups:[],history:[],error:e.message||'history_unavailable'};
+  }
+  if($('ownerHistoryPanel'))renderSettings();
+}
+function restoreOwnerState(next,reason,remoteAlreadySaved){
+  const before=JSON.stringify(S);
+  S=normalizeState(next);
+  recordOwnerChange(before,JSON.stringify(S),reason||'restore');
+  undoStack.push(before);if(undoStack.length>UNDO_LIMIT)undoStack.shift();
+  lastSavedSnapshot=JSON.stringify(S);
+  saveState(S);notifyFreshMenu();
+  if(!remoteAlreadySaved)scheduleRemoteSave(reason||'restore');
+  renderAll();refreshUndoBtn();
+}
+async function restoreOwnerBackup(source,id){
+  if(!confirm('Να επανέλθει ολόκληρο το menu σε αυτό το backup; Η τωρινή κατάσταση θα παραμείνει διαθέσιμη με Αναίρεση.'))return;
+  if(source==='local'){
+    const found=ownerStorageList(OWNER_BACKUPS_KEY).find(x=>x&&x.id===id&&x.snapshot);
+    if(!found){toast('Το backup δεν βρέθηκε');return;}
+    try{restoreOwnerState(JSON.parse(found.snapshot),'restore',false);toast('Το backup επανήλθε');}
+    catch(e){toast('Το backup δεν μπόρεσε να ανοίξει');}
+    return;
+  }
+  try{
+    const r=await fetch('/api/admin-history',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:adminPin(),restoreId:id})});
+    const data=await r.json().catch(()=>null);
+    if(!r.ok||!data||!data.ok||!data.state)throw new Error((data&&data.error)||'restore_failed');
+    restoreOwnerState(data.state,'restore',true);
+    ownerHistoryRemote.tried=false;refreshOwnerHistory(true);toast('Το live backup επανήλθε');
+  }catch(e){toast('Η live επαναφορά απέτυχε');}
+}
+function wireOwnerHistory(){
+  const root=$('ownerHistoryPanel');if(!root)return;
+  $('historyRefresh').onclick=()=>{ownerHistoryRemote.tried=false;refreshOwnerHistory(true);};
+  $('historyDownload').onclick=()=>downloadMenuLive();
+  root.querySelectorAll('[data-backup-restore]').forEach(b=>b.onclick=()=>restoreOwnerBackup(b.dataset.backupSource,b.dataset.backupRestore));
+  if(!ownerHistoryRemote.tried&&!ownerHistoryRemote.loading)refreshOwnerHistory(false);
+}
 function presetSnapshot(name){
   return {
     id:'preset-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,6),
@@ -2579,7 +2761,7 @@ function renderSettings(){
         <button class="btn sm pressable" id="dbPush">${ICO.get('download')}Κατέβασμα menu-live.js</button>
         <button class="btn ghost sm pressable" id="dbCopy">${ICO.get('save')}Αντιγραφή περιεχομένου</button>
       </div>
-    </div>` + presetEditorHTML() + announcementEditorHTML() + `
+    </div>` + ownerHistoryPanelHTML() + presetEditorHTML() + announcementEditorHTML() + `
 
     <div class="setting-row">
       <div class="txt"><div class="t" style="display:flex;align-items:center;gap:7px;">${ICO.get('star')}Πρόταση βραδιάς στο αρχικό</div><div class="d">Κρύβει το μεγάλο “Η πρόταση της βραδιάς” από την αρχική οθόνη του menu. Δεν διαγράφει πιάτα.</div></div>
@@ -2605,10 +2787,17 @@ function renderSettings(){
   const dbPush=$('dbPush'); if(dbPush) dbPush.onclick=()=>downloadMenuLive();
   const dbCopy=$('dbCopy'); if(dbCopy) dbCopy.onclick=()=>copyMenuLive();
   $('defLang').onchange=e=>{ S.settings.defaultLang=e.target.value; persist(); };
+  wireOwnerHistory();
   wirePresetEditor();
   wireAnnouncementEditor();
 }
-$('resetBtn').onclick=()=>{ if(confirm('Επαναφορά όλων των demo δεδομένων;')){ resetState(); S=loadState(); renderAll(); toast('Έγινε επαναφορά'); } };
+$('resetBtn').onclick=()=>{ if(confirm('Επαναφορά όλων των demo δεδομένων;')){
+  const before=JSON.stringify(S), next=normalizeState(defaultState());
+  recordOwnerChange(before,JSON.stringify(next),'reset');
+  undoStack.push(before);if(undoStack.length>UNDO_LIMIT)undoStack.shift();
+  S=next;lastSavedSnapshot=JSON.stringify(S);saveState(S);notifyFreshMenu();scheduleRemoteSave('reset');
+  renderAll();refreshUndoBtn();toast('Έγινε επαναφορά — μπορείτε να την αναιρέσετε');
+} };
 
 function renderServicePill(){
   const open = S.settings.serviceOpen;

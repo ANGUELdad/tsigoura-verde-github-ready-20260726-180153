@@ -42,7 +42,7 @@ module.exports = async function handler(req, res) {
     if (JSON.stringify(state).length > 2_000_000) {
       return res.status(413).json({ ok:false, error:'state_too_large' });
     }
-    const doc = await writeMenu(state, { revision:data.revision, updatedBy:ipOf(req) });
+    const doc = await writeMenu(state, { revision:data.revision, updatedBy:ipOf(req), reason:data.reason });
     return res.status(200).json({ ok:true, configured:true, revision:doc.revision, updatedAt:doc.updatedAt });
   } catch (err) {
     return res.status(err.status || 500).json({ ok:false, error:err.message || 'server_error', detail:String(err.detail||'').slice(0,200) });
