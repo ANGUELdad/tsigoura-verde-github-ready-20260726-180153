@@ -2497,6 +2497,11 @@ function exitSpecialMenu(){
   renderAnnounce(); renderViewSwitch(); renderTabs(); renderList(); scrollMenuTop();
 }
 const VIEW_KEY = 'tv_menu_view';
+const CLASSIC_UI_VERSION = 'classic-list-2026-07-30';
+if(safeLS.get('tv_ui_version')!==CLASSIC_UI_VERSION){
+  safeLS.set(VIEW_KEY,'list');
+  safeLS.set('tv_ui_version',CLASSIC_UI_VERSION);
+}
 function menuView(){ return safeLS.get(VIEW_KEY)==='guide' ? 'guide' : 'list'; }
 function setMenuView(v){
   safeLS.set(VIEW_KEY, v==='guide' ? 'guide' : 'list');
