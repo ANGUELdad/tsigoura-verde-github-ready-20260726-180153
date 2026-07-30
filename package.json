@@ -6,6 +6,6 @@
     "@vercel/blob": "^2.6.1"
   },
   "scripts": {
-    "test": "node tests/security-and-persistence.test.js && node tests/upload-security.test.js"
+    "test": "node tests/security-and-persistence.test.js && node tests/upload-security.test.js && node tests/ui-interactions.test.js"
   }
 }
