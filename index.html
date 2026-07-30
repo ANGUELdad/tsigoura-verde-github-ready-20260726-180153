@@ -751,6 +751,11 @@ body.traditional-mode .wrap{padding-bottom:44px;}
 .checkout-card .co-ic .ic{width:20px;height:20px;stroke-width:1.9;}
 .checkout-card b{display:block;font-size:14px;color:var(--pine);line-height:1.2;}
 .checkout-card span{display:block;font-size:11.5px;color:var(--muted);line-height:1.35;margin-top:3px;}
+.checkout-card .recommended{
+  display:inline-flex;margin:0 0 5px;padding:3px 7px;border-radius:999px;
+  background:var(--gold);color:#fff;font-size:9px;font-style:normal;font-weight:850;
+  line-height:1;text-transform:uppercase;letter-spacing:.7px;
+}
 .checkout-card .arr{color:var(--gold);font-size:20px;}
 .checkout-card.waiter{border-color:rgba(160,126,60,.36);background:#FFF9EA;}
 .checkout-card.beta{border-color:rgba(56,86,79,.34);background:#EEF5EF;}
@@ -2093,13 +2098,28 @@ body.guided-view .guide-sec{
   margin:14px auto!important;padding:0!important;border:0!important;background:transparent!important;
 }
 .guide-chapter{
-  min-height:108px!important;padding:18px!important;border:1px solid var(--ui-line)!important;border-radius:20px!important;
+  min-height:0!important;padding:14px 16px!important;border:1px solid var(--ui-line)!important;border-radius:20px!important;
+  display:grid!important;grid-template-columns:minmax(0,1fr) 52px!important;
+  grid-template-areas:"home icon" "badge icon" "title icon" "intro intro"!important;
+  column-gap:12px!important;align-items:center!important;
   background:var(--ui-surface)!important;box-shadow:none!important;
 }
 .guide-chapter::before{display:none!important;}
-.guide-chapter h2{font-size:30px!important;}
-.guide-chapter .gicon{width:66px!important;height:66px!important;right:12px!important;}
-.guide-chapter .gicon .greek-ic{width:56px!important;height:56px!important;filter:none!important;}
+.guide-chapter .guide-home{
+  grid-area:home!important;justify-self:start!important;min-height:30px!important;margin:0 0 7px!important;
+  padding:0 10px!important;border:0!important;background:var(--ui-soft)!important;
+}
+.guide-chapter small{grid-area:badge!important;margin:0 0 3px!important;}
+.guide-chapter h2{grid-area:title!important;max-width:none!important;font-size:28px!important;line-height:1.05!important;}
+.guide-chapter p{
+  grid-area:intro!important;max-width:none!important;margin:8px 0 0!important;
+  font-size:12px!important;line-height:1.45!important;
+}
+.guide-chapter .gicon{
+  grid-area:icon!important;position:static!important;width:52px!important;height:52px!important;
+  justify-self:end!important;align-self:center!important;
+}
+.guide-chapter .gicon .greek-ic{width:46px!important;height:46px!important;filter:none!important;}
 body.guided-view .guide-hero-dish,
 body.guided-view .guide-card{
   border:1px solid var(--ui-line)!important;background:var(--ui-surface)!important;box-shadow:none!important;
@@ -2125,7 +2145,7 @@ body.guided-view .guide-hero-dish .gphoto{background:var(--ui-soft)!important;bo
 }
 .checkout-card,.guide-step{box-shadow:none!important;background:var(--ui-surface)!important;}
 .help{
-  right:14px!important;bottom:82px!important;padding:9px 12px!important;border-color:var(--ui-line)!important;
+  right:14px!important;bottom:14px!important;padding:9px 12px!important;border-color:var(--ui-line)!important;
   background:var(--ui-surface)!important;box-shadow:var(--ui-shadow)!important;font-size:11px!important;
 }
 .closing{width:calc(100% - 32px)!important;padding:22px 0 10px!important;border-color:var(--ui-line)!important;}
@@ -2138,7 +2158,8 @@ button:focus-visible,a:focus-visible,input:focus-visible{
   .head .brand{display:none!important;}
   .head .mark-link{margin-right:auto!important;}
   .help{
-    width:36px!important;height:36px!important;padding:0!important;border-radius:50%!important;
+    left:14px!important;right:auto!important;width:36px!important;height:36px!important;
+    padding:0!important;border-radius:50%!important;
     font-size:0!important;
   }
   .help::before{content:'?';font-size:14px;font-weight:800;}
@@ -2220,10 +2241,10 @@ button:focus-visible,a:focus-visible,input:focus-visible{
   <section class="closing" id="closing"></section>
 </div>
 
-<div class="cart hide" id="cart" role="button" tabindex="0" aria-label="cart">
+<div class="cart hide" id="cart" role="button" tabindex="-1" aria-hidden="true" aria-label="cart">
   <span class="n" id="cN">0</span>
   <span class="l" id="cL"></span>
-  <div class="r"><span class="tot" id="cT"></span><button class="go" id="cGo"></button></div>
+  <div class="r"><span class="tot" id="cT"></span><span class="go" id="cGo"></span></div>
 </div>
 
 <button class="help" id="help"></button>
@@ -3243,8 +3264,6 @@ function guidePickerHTML(cats,current,ix){
 }
 function guideSectionHTML(c,ix,cats){
   const items=S.menu.filter(i=>isGuestVisible(i)&&i.cat===c.id&&matches(i));
-  const pick=items.find(i=>i.chefPick&&i.available&&i.price>0) || items.find(i=>i.available&&i.price>0) || items[0];
-  const rest=items.filter(i=>i!==pick);
   const acc=[c.accent||CAT_ACC[ix%CAT_ACC.length][0], c.tint||CAT_ACC[ix%CAT_ACC.length][1]];
   const prev=cats[ix-1], next=cats[ix+1];
   return `<section class="sec guide-sec guide-stage ${esc(c.id)}" id="sec-${c.id}" data-admin-cat="${esc(c.id)}" style="--stage:${ix}">
@@ -3255,8 +3274,7 @@ function guideSectionHTML(c,ix,cats){
       <h2>${esc(catName(c))}</h2>
       <p>${esc(T('guideIntro'))}</p>
     </div>
-    ${pick?guideHeroDishHTML(pick):''}
-    ${rest.length?`<div class="guide-dishes">${rest.map((i,k)=>guideCardHTML(i,k)).join('')}</div>`:''}
+    ${items.length?`<div class="guide-dishes">${items.map((i,k)=>guideCardHTML(i,k)).join('')}</div>`:''}
     <div class="guide-nav">
       <button type="button" class="guide-prev" ${prev?`data-guide-jump="${esc(prev.id)}"`:'disabled'}>‹ ${esc(prev?catName(prev):T('guidePrev'))}</button>
       <button type="button" class="guide-next" ${next?`data-guide-jump="${esc(next.id)}"`:'disabled'}>${esc(next?catName(next):T('guideNext'))} ›</button>
@@ -3420,8 +3438,15 @@ function updateCart(bump){
     replayMotionClass(badge,'motion-roll',520);
   }
   const bar=document.getElementById('cart');
-  if(!n){bar.classList.add('hide');return;}
+  if(!n){
+    bar.classList.add('hide');
+    bar.setAttribute('aria-hidden','true');
+    bar.tabIndex=-1;
+    return;
+  }
   bar.classList.remove('hide');
+  bar.setAttribute('aria-hidden','false');
+  bar.tabIndex=0;
   document.getElementById('cN').textContent=n;
   document.getElementById('cL').textContent=(n===1?T('item'):T('items'));
   document.getElementById('cT').textContent=money(total());
@@ -3447,7 +3472,7 @@ function renderCartSheet(){
   const checkoutTitle=document.getElementById('checkoutTitle');
   if(!cart.length){ rows.innerHTML=`<div class="empty">${esc(T('empty'))}<br><span style="font-size:12.5px">${esc(T('emptyHint'))}</span></div>`;
     document.getElementById('cartSum').innerHTML=''; document.getElementById('savedNote').innerHTML=''; if(beta)beta.innerHTML=''; if(guide)guide.innerHTML=''; if(checkout)checkout.innerHTML=''; if(checkoutTitle)checkoutTitle.textContent=''; btn.disabled=true; return; }
-  if(beta) beta.innerHTML=`<span class="bdot">BETA</span><span>${esc(T('betaCart'))}</span>`;
+  if(beta) beta.innerHTML='';
   btn.disabled=!canOrder();
   rows.innerHTML=cart.map(l=>{const i=itemOf(l.id),t=tx(i);
     const rmv=removedText(i,l.removed);
@@ -3473,18 +3498,14 @@ function renderCartSheet(){
   const sub=total();
   document.getElementById('cartSum').innerHTML=`<div class="sum"><span>${esc(T('subtotal'))}</span><span>${money(sub)}</span></div>
     <div class="sum tot"><span>${esc(T('total'))}</span><span>${money(sub)}</span></div>`;
-  if(guide) guide.innerHTML=`<div class="checkout-guide">
-    <div class="guide-step"><b data-n="1">${esc(T('guideTraditional'))}</b><span>${esc(T('guideTraditionalD'))}</span></div>
-    <div class="guide-step rec"><b data-n="2">${esc(T('guideWaiter'))}</b><span>${esc(T('guideWaiterD'))}</span></div>
-    <div class="guide-step ${hasRealTable()?'':'lock'}"><b data-n="3">${esc(T('guideBeta'))}</b><span>${esc(hasRealTable()?T('guideBetaD'):T('guideBetaLocked'))}</span></div>
-  </div>`;
+  if(guide) guide.innerHTML='';
   if(checkoutTitle) checkoutTitle.textContent=T('checkoutTitle');
   if(checkout) checkout.innerHTML=`
+    <button class="checkout-card waiter" data-checkout="waiter">
+      <span class="co-ic">${checkoutIcon('qr')}</span><span><em class="recommended">${esc(T('guideWaiter'))}</em><b>${esc(T('optWaiter'))}</b><span>${esc(T('optWaiterD'))}</span></span><i class="arr">›</i>
+    </button>
     <button class="checkout-card traditional" data-checkout="traditional">
       <span class="co-ic">${checkoutIcon('hand')}</span><span><b>${esc(T('optTraditional'))}</b><span>${esc(T('optTraditionalD'))}</span></span><i class="arr">›</i>
-    </button>
-    <button class="checkout-card waiter" data-checkout="waiter">
-      <span class="co-ic">${checkoutIcon('qr')}</span><span><b>${esc(T('optWaiter'))}</b><span>${esc(T('optWaiterD'))}</span></span><i class="arr">›</i>
     </button>
     <button class="checkout-card beta" data-checkout="beta" ${(canOrder()&&hasRealTable())?'':'disabled'}>
       <span class="co-ic">${checkoutIcon('send')}</span><span><b>${esc(T('optBeta'))}</b><span>${esc(T('optBetaD'))}</span></span><i class="arr">›</i>
@@ -4220,7 +4241,14 @@ function buildSplash(){
     b.style.animationDelay=(1.0+idx*0.08)+'s';
     b.dataset.c=l.code;
     b.innerHTML=`<span class="fl">${l.flag}</span>${esc(l.label)}`;
-    b.onclick=()=>{ setLang(l.code); closeSplash(); };
+    b.onclick=()=>{
+      if(!safeLS.get(VIEW_KEY)){
+        safeLS.set(VIEW_KEY,'guide');
+        activeCat=null;
+      }
+      setLang(l.code);
+      closeSplash();
+    };
     grid.appendChild(b); });
   // iPhone-style: welcome word + subtitle cycle TOGETHER, same language, and the
   // matching language button glows in sync.
