@@ -12,6 +12,7 @@
 const KEY = 'tsigoura:menu:v1';
 const BACKUP_KEY = 'tsigoura:menu:backups:v1';
 const HISTORY_KEY = 'tsigoura:menu:history:v1';
+const crypto = require('crypto');
 
 const clean = (v, max = 400) => String(v || '').trim().slice(0, max);
 
@@ -192,10 +193,63 @@ function adminPinConfigured() {
 }
 function adminPinOk(pin) {
   const expected = clean(process.env.ADMIN_PIN || process.env.ADMIN_PASSWORD || process.env.TSIGOURA_ADMIN_PIN, 120);
-  return !!(expected && clean(pin, 120) === expected);
+  const supplied = clean(pin, 120);
+  if (!expected || !supplied) return false;
+  const a = Buffer.from(supplied);
+  const b = Buffer.from(expected);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+function adminPinFromReq(req, data = {}) {
+  const headers = (req && req.headers) || {};
+  const auth = clean(headers.authorization, 180);
+  const bearer = /^Bearer\s+(.+)$/i.exec(auth);
+  return clean(
+    headers['x-admin-pin'] ||
+    (bearer && bearer[1]) ||
+    data.pin ||
+    data.password,
+    120
+  );
+}
+
+/* Never trust a browser to remove private operational state. Every database
+   write is projected to the catalogue shape on the server as well. */
+function sanitizeMenuState(input, options = {}) {
+  const state = JSON.parse(JSON.stringify(input || {}));
+  state.orders = [];
+  if (Array.isArray(state.tables)) {
+    state.tables = state.tables.slice(0, 200).map(table => {
+      const safe = Object.assign({}, table, { status: 'open' });
+      if (options.public) safe.note = '';
+      return safe;
+    });
+  } else {
+    state.tables = [];
+  }
+  return state;
+}
+function validateMenuState(state) {
+  if (!state || !Array.isArray(state.menu) || !Array.isArray(state.categories) || !state.settings || typeof state.settings !== 'object') {
+    return 'invalid_state';
+  }
+  if (state.menu.length > 500 || state.categories.length > 50) return 'state_limits_exceeded';
+  const categoryIds = new Set();
+  for (const category of state.categories) {
+    const id = clean(category && category.id, 48);
+    if (!id || categoryIds.has(id)) return 'invalid_categories';
+    categoryIds.add(id);
+  }
+  const dishIds = new Set();
+  for (const dish of state.menu) {
+    const id = clean(dish && dish.id, 48);
+    if (!id || dishIds.has(id) || !categoryIds.has(clean(dish && dish.cat, 48))) return 'invalid_menu';
+    dishIds.add(id);
+  }
+  return '';
 }
 
 module.exports = {
   configured, readMenu, writeMenu, readAdminHistory, restoreMenuBackup,
-  adminPinOk, adminPinConfigured, clean, KEY, BACKUP_KEY, HISTORY_KEY, changeCounts
+  adminPinOk, adminPinConfigured, adminPinFromReq, sanitizeMenuState, validateMenuState,
+  clean, KEY, BACKUP_KEY, HISTORY_KEY, changeCounts
 };

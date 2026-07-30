@@ -1,13 +1,21 @@
-const { configured, readMenu, writeMenu, adminPinOk, adminPinConfigured, clean } = require('./_store');
+const {
+  configured, readMenu, writeMenu, adminPinOk, adminPinConfigured,
+  adminPinFromReq, sanitizeMenuState, validateMenuState, clean
+} = require('./_store');
 
 const attempts = globalThis.__tvMenuAttempts || (globalThis.__tvMenuAttempts = new Map());
 const ipOf = req => clean((req.headers && (req.headers['x-forwarded-for'] || req.headers['x-real-ip'])) || 'local', 120).split(',')[0].trim() || 'local';
 
-function tooMany(key) {
+function blocked(key) {
   const now = Date.now(), windowMs = 5 * 60 * 1000;
   const recent = (attempts.get(key) || []).filter(t => now - t < windowMs);
-  recent.push(now); attempts.set(key, recent);
-  return recent.length > 60;
+  attempts.set(key, recent);
+  return recent.length >= 12;
+}
+function failed(key) {
+  const recent = attempts.get(key) || [];
+  recent.push(Date.now());
+  attempts.set(key, recent.slice(-12));
 }
 
 function body(req) {
@@ -26,19 +34,23 @@ module.exports = async function handler(req, res) {
     if (!configured()) return res.status(503).json({ ok:false, configured:false, error:'store_not_configured' });
     if (!adminPinConfigured()) return res.status(503).json({ ok:false, configured:true, error:'admin_pin_not_set' });
 
-    const data = req.method === 'POST' ? body(req) : (req.query || {});
-    if (tooMany(ipOf(req))) return res.status(429).json({ ok:false, error:'too_many_attempts' });
-    if (!adminPinOk(data.pin || data.password)) return res.status(401).json({ ok:false, error:'wrong_pin' });
+    const data = req.method === 'POST' ? body(req) : {};
+    const ip = ipOf(req);
+    if (blocked(ip)) return res.status(429).json({ ok:false, error:'too_many_attempts' });
+    if (!adminPinOk(adminPinFromReq(req, data))) {
+      failed(ip);
+      return res.status(401).json({ ok:false, error:'wrong_pin' });
+    }
+    attempts.delete(ip);
 
     if (req.method === 'GET') {
       const doc = await readMenu();
       return res.status(200).json({ ok:true, configured:true, state:doc && doc.state, revision:doc && doc.revision, updatedAt:doc && doc.updatedAt });
     }
 
-    const state = data.state;
-    if (!state || !Array.isArray(state.menu) || !Array.isArray(state.categories) || !state.settings) {
-      return res.status(400).json({ ok:false, error:'invalid_state' });
-    }
+    const state = sanitizeMenuState(data.state);
+    const invalid = validateMenuState(state);
+    if (invalid) return res.status(400).json({ ok:false, error:invalid });
     if (JSON.stringify(state).length > 2_000_000) {
       return res.status(413).json({ ok:false, error:'state_too_large' });
     }

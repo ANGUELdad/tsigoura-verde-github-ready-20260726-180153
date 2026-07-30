@@ -360,6 +360,10 @@ nav.tabs button.on{color:var(--cream);border-bottom-color:var(--gold);}
 .cat-media{grid-column:3 / -1;display:grid;grid-template-columns:130px minmax(0,1fr);gap:8px;align-items:center;}
 .cat-media label{font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);}
 .cat-media input{width:100%;}
+.cat-translations{grid-column:3 / -1;}
+.cat-translation-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:5px;}
+.cat-translation-grid label{display:grid;gap:4px;font-size:9px;font-weight:900;color:var(--muted);text-transform:uppercase;}
+.cat-translation-grid input{width:100%;}
 .cat-mini{font-size:10.5px;color:var(--muted);line-height:1.3;margin-top:3px;}
 .cat-actions{display:flex;gap:6px;justify-content:flex-end;}
 .cat-actions button{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--cream);color:var(--forest);}
@@ -372,6 +376,8 @@ nav.tabs button.on{color:var(--cream);border-bottom-color:var(--gold);}
   .cat-edit{grid-template-columns:28px 42px minmax(0,1fr);align-items:start;}
   .cat-edit select,.cat-edit input[type="color"],.cat-actions{grid-column:3 / 4;}
   .cat-media{grid-column:1 / -1;grid-template-columns:1fr;}
+  .cat-translations{grid-column:1 / -1;}
+  .cat-translation-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
   .cat-actions{justify-content:flex-start;}
 }
 
@@ -1285,7 +1291,7 @@ async function loadRemoteMenu({silent=false}={}){
   const pin=adminPin();
   if(!pin){ setSyncState('nopin'); return false; }
   try{
-    const r=await fetch('/api/admin-menu?pin='+encodeURIComponent(pin),{cache:'no-store'});
+    const r=await fetch('/api/admin-menu',{cache:'no-store',headers:{'X-Admin-Pin':pin}});
     const data=await r.json().catch(()=>null);
     if(!r.ok || !data || !data.ok){
       const why=(data&&data.error)||'load_failed';
@@ -1317,8 +1323,8 @@ async function saveLiveMenu({silent=false}={}){
     if(Array.isArray(state.tables)) state.tables=state.tables.map(t=>Object.assign({},t,{status:'open'}));
     const r=await fetch('/api/admin-menu',{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({pin,state,revision:(S&&S.updatedAt)||Date.now(),reason:pendingRemoteReason})
+      headers:{'Content-Type':'application/json','X-Admin-Pin':pin},
+      body:JSON.stringify({state,revision:(S&&S.updatedAt)||Date.now(),reason:pendingRemoteReason})
     });
     const data=await r.json().catch(()=>null);
     if(!r.ok || !data || !data.ok){
@@ -1444,7 +1450,7 @@ function drawFloorPlan(root, opts){
   });
 }
 
-/* ---------------- login (persisted so a scanned QR doesn't re-prompt) ---------------- */
+/* ---------------- login (session-only so closing the browser locks admin) ---------------- */
 function unlock(){
   $('loginScreen').style.display='none';
   $('adminApp').style.display='block';
@@ -1468,7 +1474,7 @@ $('loginBtn').onclick = async () => {
   btn.disabled=true; btn.textContent='Έλεγχος...';
   const ok=await checkAdminPin(pin);
   btn.disabled=false; btn.textContent='Είσοδος';
-  if(ok){ try{localStorage.setItem('tv_admin_ok','1');sessionStorage.setItem('tv_admin_pin',pin);}catch(e){} unlock(); }
+  if(ok){ try{sessionStorage.setItem('tv_admin_ok','1');sessionStorage.setItem('tv_admin_pin',pin);}catch(e){} unlock(); }
   else { input.value=''; input.placeholder='Λάθος κωδικός'; }
 };
 $('pinInput').onkeydown = e => { if(e.key==='Enter') $('loginBtn').click(); };
@@ -1899,6 +1905,7 @@ function renderEasy(){
       const scheduleText=ss.enabled?(ss.active?'Προγραμματισμένο · live':(ss.upcoming?'Έρχεται '+ss.schedule.from:'Έληξε '+ss.schedule.to)):'';
       const row=document.createElement('div');
       row.className='easy-row reveal'+(i.available?'':' off')+(i.hidden||!ss.active?' hidden':'');
+      row.dataset.id=String(i.id);
       row.innerHTML=`
         <div class="rico">${ICO.get(i.icon)}</div>
         <div>
@@ -1972,6 +1979,18 @@ function renderPro(){
           <div><label>Κατηγορία</label><select data-cat>${S.categories.map(c=>`<option value="${c.id}" ${c.id===i.cat?'selected':''}>${catLabel(c,'el')}</option>`).join('')}</select></div>
         </div>
         <div class="fieldrow">
+          <div><label>Κείμενο τιμής (προαιρετικό)</label><input data-price-text maxlength="40" value="${ioEsc(i.priceText||'')}" placeholder="π.χ. 20–29€"></div>
+          <div><label>Μονάδα</label><select data-unit>${Object.keys(UNITS).map(unit=>`<option value="${unit}" ${unit===i.unit?'selected':''}>${unit}</option>`).join('')}</select></div>
+        </div>
+        <div class="fieldrow">
+          <div><label>Χρόνος προετοιμασίας (λεπτά)</label><input type="number" min="0" max="240" step="1" data-prep-min value="${Math.max(0,Number(i.prepMin)||0)}"></div>
+          <div><label>Υλικά (${proLang})</label><input data-ingredients maxlength="300" value="${ioEsc((i.ing&&i.ing[proLang])||'')}" placeholder="χωρισμένα με κόμμα"></div>
+        </div>
+        <div class="field"><label>Επιλογές «χωρίς…» (${proLang})</label>
+          <input data-removable maxlength="400" value="${ioEsc((i.removable||[]).map(r=>r&&r[proLang]).filter(Boolean).join(', '))}" placeholder="κρεμμύδι, ελιές, πιπεριά">
+          <div class="cat-mini">Χωρίστε τις επιλογές με κόμμα. Δεν αντικαθιστούν τον έλεγχο αλλεργιογόνων.</div>
+        </div>
+        <div class="fieldrow">
           <div><label>Icon</label><select data-icon>${iconOptions(i.icon||'bowl')}</select></div>
           <div><label>Εικόνα πιάτου</label><input data-image list="mediaPathList" value="${ioEsc(knownDishImagePath(i))}" placeholder="media/dishes/01-tzatziki.png ή https://..."></div>
         </div>
@@ -2028,7 +2047,15 @@ function renderPro(){
       i.t[proLang].n = box.querySelector('[data-n]').value;
       i.t[proLang].d = box.querySelector('[data-d]').value;
       i.price = parseFloat(box.querySelector('[data-price]').value)||0;
+      i.priceText = box.querySelector('[data-price-text]').value.trim().slice(0,40);
       i.cat = box.querySelector('[data-cat]').value;
+      i.unit = box.querySelector('[data-unit]').value || 'portion';
+      i.prepMin = Math.max(0,Math.min(240,parseInt(box.querySelector('[data-prep-min]').value,10)||0));
+      i.ing = i.ing&&typeof i.ing==='object'?i.ing:{};
+      i.ing[proLang] = box.querySelector('[data-ingredients]').value.trim().slice(0,300);
+      const oldRemovable=Array.isArray(i.removable)?i.removable:[];
+      i.removable=box.querySelector('[data-removable]').value.split(',').map(v=>v.trim()).filter(Boolean).slice(0,20)
+        .map((value,idx)=>Object.assign({},oldRemovable[idx]||{},{[proLang]:value}));
       i.icon = box.querySelector('[data-icon]').value || 'bowl';
       i.iconOverride = true;
       i.image = cleanAdminPath(box.querySelector('[data-image]').value);
@@ -2086,7 +2113,12 @@ function renderCategoryManager(area){
         <button data-cat-save title="Αποθήκευση">${ICO.get('check')}</button>
         <button class="danger" data-cat-del title="Διαγραφή">${ICO.get('trash')}</button>
       </div>
-      <div class="cat-media"><label>Εικόνα κατηγορίας</label><input data-cat-image list="mediaPathList" value="${ioEsc(knownCategoryImagePath(c))}" placeholder="media/dishes/05-bougiourdi.png ή https://..."></div>`;
+      <div class="cat-media"><label>Εικόνα κατηγορίας</label><input data-cat-image list="mediaPathList" value="${ioEsc(knownCategoryImagePath(c))}" placeholder="media/dishes/05-bougiourdi.png ή https://..."></div>
+      <div class="cat-media"><label>Χρώμα φόντου</label><input type="color" data-cat-tint value="${ioEsc(c.tint||'#E7EEEA')}" style="width:70px"></div>
+      <div class="cat-translations">
+        <div class="cat-mini">Ονομασία σε όλες τις γλώσσες</div>
+        <div class="cat-translation-grid">${LANGUAGES.map(l=>`<label>${l.flag} ${l.code.toUpperCase()}<input data-cat-lang="${l.code}" value="${ioEsc(catLabel(c,l.code))}" maxlength="40"></label>`).join('')}</div>
+      </div>`;
     if(c.hidden) row.classList.add('hidden');
     row.addEventListener('dragstart',e=>{ row.classList.add('dragging'); e.dataTransfer.setData('text/plain',String(c.id)); });
     row.addEventListener('dragend',()=>row.classList.remove('dragging'));
@@ -2101,6 +2133,8 @@ function renderCategoryManager(area){
     row.querySelector('[data-cat-icon]').onchange=()=>saveCategoryRow(c,row);
     row.querySelector('[data-cat-image]').onchange=()=>saveCategoryRow(c,row);
     row.querySelector('[data-cat-accent]').onchange=()=>saveCategoryRow(c,row);
+    row.querySelector('[data-cat-tint]').onchange=()=>saveCategoryRow(c,row);
+    row.querySelectorAll('[data-cat-lang]').forEach(input=>input.onchange=()=>saveCategoryRow(c,row));
     row.querySelector('[data-cat-hide]').onclick=()=>{ c.hidden=!c.hidden; persist(); renderPro(); toast(c.hidden?'Η κατηγορία κρύφτηκε':'Η κατηγορία εμφανίζεται'); };
     row.querySelector('[data-cat-del]').onclick=()=>deleteCategory(c);
     list.appendChild(row);
@@ -2113,15 +2147,15 @@ function saveCategoryRow(c,row){
   const name=row.querySelector('[data-cat-name]').value.trim().slice(0,40) || 'Νέα κατηγορία';
   const icon=row.querySelector('[data-cat-icon]').value || 'bowl';
   const accent=row.querySelector('[data-cat-accent]').value || '#38564F';
+  const tint=row.querySelector('[data-cat-tint]').value || '#E7EEEA';
   const image=cleanAdminPath(row.querySelector('[data-cat-image]').value);
   if(!c.t || typeof c.t!=='object') c.t={};
   LANGUAGES.forEach(l=>{
-    const cur=c.t[l.code];
-    c.t[l.code]=typeof cur==='string' ? cur : (cur&&cur.n) ? cur.n : name;
+    const input=row.querySelector(`[data-cat-lang="${l.code}"]`);
+    c.t[l.code]=(input&&input.value.trim().slice(0,40)) || (l.code==='el'?name:catLabel(c,l.code)) || name;
   });
   c.t.el=name;
-  if(!c.t.en || c.t.en===c.id) c.t.en=name;
-  c.icon=icon; c.accent=accent; c.image=image;
+  c.icon=icon; c.accent=accent; c.tint=tint; c.image=image;
   persist(); renderPro(); toast('Η κατηγορία αποθηκεύτηκε');
 }
 function addCategory(){
@@ -2550,7 +2584,7 @@ async function refreshOwnerHistory(force){
   try{
     const pin=adminPin();
     if(!pin)throw new Error('no_pin');
-    const r=await fetch('/api/admin-history?pin='+encodeURIComponent(pin),{cache:'no-store'});
+    const r=await fetch('/api/admin-history',{cache:'no-store',headers:{'X-Admin-Pin':pin}});
     const data=await r.json().catch(()=>null);
     if(!r.ok||!data||!data.ok)throw new Error((data&&data.error)||'history_unavailable');
     ownerHistoryRemote={tried:true,loading:false,ok:true,backups:data.backups||[],history:data.history||[],error:''};
@@ -2579,7 +2613,7 @@ async function restoreOwnerBackup(source,id){
     return;
   }
   try{
-    const r=await fetch('/api/admin-history',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:adminPin(),restoreId:id})});
+    const r=await fetch('/api/admin-history',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Pin':adminPin()},body:JSON.stringify({restoreId:id})});
     const data=await r.json().catch(()=>null);
     if(!r.ok||!data||!data.ok||!data.state)throw new Error((data&&data.error)||'restore_failed');
     restoreOwnerState(data.state,'restore',true);
@@ -2831,8 +2865,8 @@ window.addEventListener('storage', e=>{
 });
 setInterval(()=>{ const fresh=loadState(); if(fresh.updatedAt!==S.updatedAt){ S=fresh; renderOrders(); renderTables(); renderMenuArea(); renderSettings(); renderServicePill(); renderQR(); renderDash(); } }, 4000);
 
-/* stay logged in across a QR scan (waiter unlocks once per device) */
-try{ if(localStorage.getItem('tv_admin_ok')==='1') unlock(); }catch(e){}
+/* stay logged in across a QR scan during this browser session only */
+try{ if(sessionStorage.getItem('tv_admin_ok')==='1' && sessionStorage.getItem('tv_admin_pin')) unlock(); }catch(e){}
 </script>
 </body>
 </html>

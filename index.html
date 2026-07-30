@@ -2297,6 +2297,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{
   <h2 id="dishName"></h2>
   <div class="dsh-price" id="dishPrice"></div>
   <div class="dsh-desc" id="dishDesc"></div>
+  <div id="dishDetails"></div>
   <div id="dishAlg" style="margin:8px 0 2px"></div>
   <div class="dsh-block" id="dishRemBlock" style="display:none">
     <h4 id="dishRemT"></h4><div class="sub" id="dishRemSub"></div>
@@ -4503,6 +4504,14 @@ function openDish(id){
   document.getElementById('dishPrice').innerHTML = priceDisp(i);
   const desc=t.d||'';
   const dd=document.getElementById('dishDesc'); dd.textContent=desc; dd.style.display=desc?'':'none';
+  const ing=i.ing ? (i.ing[lang] || i.ing.en || '') : '';
+  const prep=Math.max(0,Number(i.prepMin)||0);
+  const details=document.getElementById('dishDetails');
+  details.innerHTML=[
+    ing?`<div class="info-row"><span class="k">${esc(T('ingredients'))}</span><span>${esc(ing)}</span></div>`:'',
+    prep?`<div class="info-row"><span class="k">⏱</span><span>${prep} min</span></div>`:''
+  ].join('');
+  details.style.display=(ing||prep)?'':'none';
   document.getElementById('dishAlg').innerHTML=(i.allergens||[]).map(a=>`<span class="ichip">${esc(ALLERGENS[a][lang]||ALLERGENS[a].en)}</span>`).join('');
 
   const rb=document.getElementById('dishRemBlock'), rem=document.getElementById('dishRem');

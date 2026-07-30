@@ -1,16 +1,20 @@
 const {
   configured, adminPinOk, adminPinConfigured, clean,
-  readAdminHistory, restoreMenuBackup
+  adminPinFromReq, readAdminHistory, restoreMenuBackup
 } = require('./_store');
 
 const attempts = globalThis.__tvHistoryAttempts || (globalThis.__tvHistoryAttempts = new Map());
 const ipOf = req => clean((req.headers && (req.headers['x-forwarded-for'] || req.headers['x-real-ip'])) || 'local',120).split(',')[0].trim() || 'local';
 
-function tooMany(key) {
+function blocked(key) {
   const now=Date.now(), windowMs=5*60*1000;
   const recent=(attempts.get(key)||[]).filter(t=>now-t<windowMs);
-  recent.push(now); attempts.set(key,recent);
-  return recent.length>60;
+  attempts.set(key,recent);
+  return recent.length>=12;
+}
+function failed(key) {
+  const recent=attempts.get(key)||[];
+  recent.push(Date.now()); attempts.set(key,recent.slice(-12));
 }
 
 function body(req) {
@@ -26,9 +30,14 @@ module.exports = async function handler(req,res) {
   try{
     if(!configured()) return res.status(503).json({ok:false,configured:false,error:'store_not_configured'});
     if(!adminPinConfigured()) return res.status(503).json({ok:false,configured:true,error:'admin_pin_not_set'});
-    const data=req.method==='POST'?body(req):(req.query||{});
-    if(tooMany(ipOf(req))) return res.status(429).json({ok:false,error:'too_many_attempts'});
-    if(!adminPinOk(data.pin||data.password)) return res.status(401).json({ok:false,error:'wrong_pin'});
+    const data=req.method==='POST'?body(req):{};
+    const ip=ipOf(req);
+    if(blocked(ip)) return res.status(429).json({ok:false,error:'too_many_attempts'});
+    if(!adminPinOk(adminPinFromReq(req,data))){
+      failed(ip);
+      return res.status(401).json({ok:false,error:'wrong_pin'});
+    }
+    attempts.delete(ip);
     if(req.method==='GET'){
       const result=await readAdminHistory();
       return res.status(200).json({ok:true,configured:true,backups:result.backups,history:result.history});
