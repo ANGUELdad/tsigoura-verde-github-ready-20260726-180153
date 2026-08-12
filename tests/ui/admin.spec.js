@@ -52,13 +52,20 @@ test('traditional mode hides inactive table and ordering systems', async ({ page
   await expect(page.getByTestId('admin-tab-orders')).toBeVisible();
 });
 
-test('original categories can hide, auto-hide when empty, and reappear', async ({ page }) => {
+test('admin can add, edit, hide, and delete categories and dishes', async ({ page }) => {
   await login(page, { width: 1280, height: 800 });
   await page.getByTestId('admin-tab-menu').click();
   await page.locator('#modeSwitch [data-mode="pro"]').click();
   const categoryNames = await page.locator('.cat-edit [data-cat-name]').evaluateAll(inputs => inputs.map(input => input.value));
   expect(categoryNames).toEqual(expect.arrayContaining(['Ορεκτικά', 'Σαλάτες', 'Της ώρας', 'Ποτά']));
-  await expect(page.locator('[data-cat-del]')).toHaveCount(0);
+
+  const beforeCats = await page.locator('.cat-edit').count();
+  await page.getByTestId('add-category').click();
+  await expect(page.locator('.cat-edit')).toHaveCount(beforeCats + 1);
+  const newCat = page.locator('.cat-edit').last();
+  await newCat.locator('[data-cat-name]').fill('Test Category');
+  await newCat.locator('[data-cat-save]').click();
+  await expect(newCat.locator('[data-cat-name]')).toHaveValue('Test Category');
 
   const firstCategoryId = await page.locator('.cat-edit').first().getAttribute('data-id');
   const toggle = page.getByTestId(`category-visibility-${firstCategoryId}`);
@@ -81,6 +88,51 @@ test('original categories can hide, auto-hide when empty, and reappear', async (
     renderPro();
   }, firstCategoryId);
   await expect(page.locator('.cat-edit').first().locator('.cat-state')).not.toContainText('Αυτόματη απόκρυψη');
+
+  page.once('dialog', dialog => dialog.accept());
+  await newCat.locator('[data-cat-del]').click();
+  await expect(page.locator('.cat-edit')).toHaveCount(beforeCats);
+
+  const beforeDishes = await page.locator('.pro-item').count();
+  await page.getByTestId('admin-add-dish').click();
+  await expect(page.locator('.pro-item')).toHaveCount(beforeDishes + 1);
+  const newDish = page.locator('.pro-item.open').first();
+  await expect(newDish).toBeVisible();
+  const dishName = `CRUD Guest ${Date.now()}`;
+  await newDish.locator('[data-n]').fill(dishName);
+  await newDish.locator('[data-price]').fill('6.50');
+  await newDish.locator('[data-save]').click();
+  await expect(page.locator('.pro-item').filter({ hasText: dishName }).first()).toBeVisible();
+  await expect.poll(async () => page.locator('#syncText').innerText(), { timeout: 8000 }).toContain('Δημοσιεύτηκε');
+});
+
+test('admin dish edits appear on the guest menu via /api/menu', async ({ page, browser }) => {
+  await login(page, { width: 1280, height: 800 });
+  await page.getByTestId('admin-tab-menu').click();
+  await page.locator('#modeSwitch [data-mode="pro"]').click();
+  const dishName = `Live Guest ${Date.now()}`;
+  await page.getByTestId('admin-add-dish').click();
+  const newDish = page.locator('.pro-item.open').first();
+  await expect(newDish).toBeVisible();
+  await newDish.locator('[data-n]').fill(dishName);
+  await newDish.locator('[data-price]').fill('7.25');
+  await newDish.locator('[data-save]').click();
+  await expect.poll(async () => {
+    const res = await page.request.get('/api/menu');
+    const data = await res.json();
+    const names = ((data.state && data.state.menu) || []).map(i => (i.t && i.t.el && i.t.el.n) || '');
+    return names.includes(dishName);
+  }, { timeout: 10000 }).toBe(true);
+
+  const guest = await browser.newPage();
+  await guest.addInitScript(() => {
+    localStorage.clear();
+    localStorage.setItem('tv_lang', 'el');
+  });
+  await guest.goto('/');
+  await expect(guest.locator('#splash')).toBeHidden();
+  await expect(guest.getByText(dishName, { exact: false })).toBeVisible({ timeout: 10000 });
+  await guest.close();
 });
 
 test('device upload and manual path controls remain available', async ({ page }) => {

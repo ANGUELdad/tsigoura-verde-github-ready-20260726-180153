@@ -7,7 +7,7 @@
  * Menu source, best first: the live KV store (/api/menu), then the published
  * file `menu-live.js`, then the built-in catalogue in tsigoura-data.js.
  */
-const { configured } = require('./_store');
+const { configured, storeKind } = require('./_store');
 const present = name => !!String(process.env[name] || '').trim();
 
 module.exports = async function handler(req, res) {
@@ -17,20 +17,27 @@ module.exports = async function handler(req, res) {
   }
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
 
+  const kind = storeKind();
+  const howToEnable = kind === 'vercel-blob'
+    ? 'Using Vercel Blob for the live menu. Prefer attaching KV in Storage for lower latency; Blob remains a valid fallback.'
+    : kind === 'fs'
+      ? 'Using local filesystem store (.data/menu-store.json or MENU_STORE_PATH). Attach Vercel KV for production multi-device sync.'
+      : 'Vercel → Storage → Create → KV (preferred) or Blob. KV connection variables are added automatically; just redeploy.';
+
   const out = {
     ok: true,
     checkedAt: new Date().toISOString(),
     liveStore: {
       configured: configured(),
-      kind: 'vercel-kv',
-      howToEnable: 'Vercel → Storage → Create → KV. The connection variables are added automatically; just redeploy.',
+      kind,
+      howToEnable,
     },
     menuSource: {
       kind: configured() ? 'live-store' : 'script-file',
       file: 'menu-live.js',
-      howToPublish: 'With a KV store attached, admin edits go live instantly. Without one, use /admin → Ρυθμίσεις → "Κατέβασμα menu-live.js" → replace the file → redeploy.',
+      howToPublish: 'With KV or Blob attached, admin edits go live instantly. Without one, use /admin → Ρυθμίσεις → "Κατέβασμα menu-live.js" → replace the file → redeploy.',
     },
-    adminPinSet: present('ADMIN_PIN') || present('ADMIN_PASSWORD') || present('TSIGOURA_ADMIN_PIN'),
+    adminPinSet: present('ADMIN_PIN_LITERAL') || present('ADMIN_PIN') || present('ADMIN_PASSWORD') || present('TSIGOURA_ADMIN_PIN'),
     imageUploads: {
       configured: present('BLOB_READ_WRITE_TOKEN') || present('BLOB_STORE_ID'),
       kind: 'vercel-blob',

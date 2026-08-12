@@ -154,7 +154,7 @@ a blank page.
 - **Order QR** (on the customer's screen after ordering): shows the order so the waiter can read/scan it. In this version it carries the order text; the waiter assigns the table if no `?t=` was used.
 
 ## Πιάτο ημέρας (today's special)
-Owner sets it in **/admin → Επισκόπηση** (name + price + toggle). It appears as a highlighted banner at the top of the customer menu and can be ordered like any dish. Turn the toggle off to hide it.
+Owner sets it in **/admin → Επισκόπηση** (pick dish + price + toggle). Under the hood this is the existing `chefPick` flag on one menu item (plus `design.showFeaturedHero`). It appears as the featured hero on the customer menu and can be ordered like any dish. Turn the toggle off to clear the pick, or hide the hero without clearing chefPick.
 
 ## Wi-Fi
 Guests tap the Wi-Fi icon in the menu header → a **join QR** (camera auto-connects) **plus** a copy-password button.

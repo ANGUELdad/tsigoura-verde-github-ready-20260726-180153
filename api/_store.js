@@ -1,22 +1,36 @@
 /* ============================================================================
    Live menu store — no manual configuration.
 
-   Uses the Redis (Upstash / Vercel KV) REST API. When you add a KV store to the
-   project in the Vercel dashboard, Vercel injects KV_REST_API_URL and
-   KV_REST_API_TOKEN automatically, so there are no keys to copy anywhere.
+   Persistence backends (first available wins):
+   1. Vercel KV / Upstash Redis REST (`KV_REST_API_*`)
+   2. Vercel Blob (`BLOB_STORE_ID` or `BLOB_READ_WRITE_TOKEN`)
+   3. Local filesystem (`.data/menu-store.json`, or `MENU_STORE_PATH` /
+      `MENU_STORE_DIR`). Enabled automatically off Vercel; on Vercel only when
+      a path env is set (never uses ephemeral /tmp by accident).
 
-   Plain fetch, no npm dependency. If no store is attached, everything degrades
-   to the published menu-live.js file.
+   Plain fetch for KV. Blob uses `@vercel/blob`. If nothing is attached,
+   guests fall back to the published menu-live.js file.
    ========================================================================== */
 
 const KEY = 'tsigoura:menu:v1';
 const BACKUP_KEY = 'tsigoura:menu:backups:v1';
 const HISTORY_KEY = 'tsigoura:menu:history:v1';
+const PUBLIC_CONFIG_KEY = 'tsigoura:public-config:v1';
+const BLOB_PATHS = {
+  [KEY]: 'tsigoura/menu-v1.json',
+  [BACKUP_KEY]: 'tsigoura/menu-backups-v1.json',
+  [HISTORY_KEY]: 'tsigoura/menu-history-v1.json',
+  [PUBLIC_CONFIG_KEY]: 'tsigoura/public-config-v1.json',
+};
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 
 const clean = (v, max = 400) => String(v || '').trim().slice(0, max);
+/* IDs may be numeric 0 — never collapse with `|| ''`. */
+const idOf = (v, max = 48) => String(v == null ? '' : v).trim().slice(0, max);
 
-function config() {
+function kvConfig() {
   const url = clean(
     process.env.KV_REST_API_URL ||
     process.env.UPSTASH_REDIS_REST_URL ||
@@ -32,19 +46,49 @@ function config() {
   return { url, token };
 }
 
-function configured() {
-  const c = config();
+function kvConfigured() {
+  const c = kvConfig();
   return !!(c.url && c.token);
 }
 
+function blobConfigured() {
+  return !!(clean(process.env.BLOB_READ_WRITE_TOKEN, 800) || clean(process.env.BLOB_STORE_ID, 120));
+}
+
+function fsStorePath() {
+  if (process.env.MENU_STORE_PATH) return path.resolve(process.env.MENU_STORE_PATH);
+  if (process.env.MENU_STORE_DIR) return path.resolve(process.env.MENU_STORE_DIR, 'menu-store.json');
+  /* Durable local/dev fallback. Skip on Vercel unless a path was set above —
+     serverless /tmp is not shared across instances. */
+  if (process.env.VERCEL === '1') return '';
+  return path.join(process.cwd(), '.data', 'menu-store.json');
+}
+
+function fsConfigured() {
+  return !!fsStorePath();
+}
+
+function configured() {
+  return kvConfigured() || blobConfigured() || fsConfigured();
+}
+
+function storeKind() {
+  if (kvConfigured()) return 'vercel-kv';
+  if (blobConfigured()) return 'vercel-blob';
+  if (fsConfigured()) return 'fs';
+  return 'none';
+}
+
+function notConfiguredError() {
+  const err = new Error('store_not_configured');
+  err.status = 503;
+  return err;
+}
+
 /* Upstash REST accepts a command as a JSON array: ["SET", key, value] */
-async function command(args) {
-  const c = config();
-  if (!c.url || !c.token) {
-    const err = new Error('store_not_configured');
-    err.status = 503;
-    throw err;
-  }
+async function kvCommand(args) {
+  const c = kvConfig();
+  if (!c.url || !c.token) throw notConfiguredError();
   const r = await fetch(c.url, {
     method: 'POST',
     headers: {
@@ -65,23 +109,182 @@ async function command(args) {
   return json;
 }
 
-async function readMenu() {
-  return readJson(KEY);
+async function streamToText(stream) {
+  if (!stream) return '';
+  if (typeof Response !== 'undefined' && typeof stream.getReader === 'function') {
+    return await new Response(stream).text();
+  }
+  const chunks = [];
+  for await (const chunk of stream) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+  return Buffer.concat(chunks).toString('utf8');
 }
 
-async function readJson(key) {
-  const out = await command(['GET', key]);
-  const raw = out && out.result;
-  if (!raw) return null;
+function blobSdk() {
   try {
-    return typeof raw === 'string' ? JSON.parse(raw) : raw;
+    return require('@vercel/blob');
+  } catch (e) {
+    const err = new Error('blob_module_missing');
+    err.status = 503;
+    err.detail = String((e && e.message) || e).slice(0, 200);
+    throw err;
+  }
+}
+
+async function blobRead(pathname) {
+  const { get } = blobSdk();
+  /* Public Blob stores (needed for dish image URLs) reject access:'private'. */
+  const result = await get(pathname, { access: 'public', useCache: false });
+  if (!result || result.statusCode === 304 || !result.stream) return null;
+  const text = await streamToText(result.stream);
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
   } catch (e) {
     return null;
   }
 }
 
+async function blobWrite(pathname, value) {
+  const { put } = blobSdk();
+  await put(pathname, JSON.stringify(value), {
+    access: 'public',
+    addRandomSuffix: false,
+    allowOverwrite: true,
+    contentType: 'application/json',
+    cacheControlMaxAge: 0,
+  });
+}
+
+function readFsBundle() {
+  const file = fsStorePath();
+  if (!file) return {};
+  try {
+    if (!fs.existsSync(file)) return {};
+    const raw = fs.readFileSync(file, 'utf8');
+    const json = raw ? JSON.parse(raw) : {};
+    return json && typeof json === 'object' ? json : {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function writeFsBundle(bundle) {
+  const file = fsStorePath();
+  if (!file) throw notConfiguredError();
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const tmp = file + '.' + process.pid + '.tmp';
+  fs.writeFileSync(tmp, JSON.stringify(bundle), 'utf8');
+  fs.renameSync(tmp, file);
+}
+
+async function readJson(key) {
+  if (kvConfigured()) {
+    const out = await kvCommand(['GET', key]);
+    const raw = out && out.result;
+    if (!raw) return null;
+    try {
+      return typeof raw === 'string' ? JSON.parse(raw) : raw;
+    } catch (e) {
+      return null;
+    }
+  }
+  if (blobConfigured()) {
+    return blobRead(BLOB_PATHS[key] || ('tsigoura/' + key.replace(/:/g, '-') + '.json'));
+  }
+  if (fsConfigured()) {
+    const bundle = readFsBundle();
+    const value = bundle[key];
+    return value == null ? null : value;
+  }
+  throw notConfiguredError();
+}
+
 async function writeJson(key, value) {
-  await command(['SET', key, JSON.stringify(value)]);
+  if (kvConfigured()) {
+    await kvCommand(['SET', key, JSON.stringify(value)]);
+    return;
+  }
+  if (blobConfigured()) {
+    await blobWrite(BLOB_PATHS[key] || ('tsigoura/' + key.replace(/:/g, '-') + '.json'), value);
+    return;
+  }
+  if (fsConfigured()) {
+    const bundle = readFsBundle();
+    bundle[key] = value;
+    writeFsBundle(bundle);
+    return;
+  }
+  throw notConfiguredError();
+}
+
+async function readMenu() {
+  return readJson(KEY);
+}
+
+function sanitizePublicConfig(input) {
+  const src = input && typeof input === 'object' && !Array.isArray(input) ? input : {};
+  const venue = src.venue && typeof src.venue === 'object' ? src.venue : {};
+  const contact = src.contact && typeof src.contact === 'object' ? src.contact : {};
+  const wifi = src.wifi && typeof src.wifi === 'object' ? src.wifi : {};
+  const legal = src.legal && typeof src.legal === 'object' ? src.legal : {};
+  const encRaw = clean(wifi.enc, 16);
+  const encUpper = encRaw.toUpperCase();
+  let enc = 'WPA';
+  if (encUpper === 'WEP') enc = 'WEP';
+  else if (encUpper === 'NOPASS' || /^nopass$/i.test(encRaw)) enc = 'nopass';
+  else if (encUpper === 'WPA') enc = 'WPA';
+  return {
+    venue: {
+      name: clean(venue.name, 80),
+      subtitle: clean(venue.subtitle, 120),
+    },
+    contact: {
+      email: clean(contact.email, 120),
+      phone: clean(contact.phone, 40),
+      instagram: clean(contact.instagram, 300),
+      facebook: clean(contact.facebook, 300),
+      maps: clean(contact.maps, 300),
+      website: clean(contact.website, 300),
+    },
+    wifi: {
+      ssid: clean(wifi.ssid, 64),
+      pass: clean(wifi.pass, 64),
+      enc,
+    },
+    legal: {
+      companyName: clean(legal.companyName, 120),
+      afm: clean(legal.afm, 40),
+      doy: clean(legal.doy, 80),
+      gemi: clean(legal.gemi, 80),
+      address: clean(legal.address, 200),
+      mhte: clean(legal.mhte, 80),
+      agoranomikos: clean(legal.agoranomikos, 120),
+    },
+  };
+}
+
+async function readPublicConfig() {
+  const doc = await readJson(PUBLIC_CONFIG_KEY);
+  if (!doc || typeof doc !== 'object') return null;
+  const payload = doc.config && typeof doc.config === 'object' ? doc.config : doc;
+  return {
+    config: sanitizePublicConfig(payload),
+    updatedAt: clean(doc.updatedAt, 40) || null,
+    updatedBy: clean(doc.updatedBy, 80) || null,
+  };
+}
+
+async function writePublicConfig(config, meta = {}) {
+  const now = new Date().toISOString();
+  const doc = {
+    config: sanitizePublicConfig(config),
+    updatedAt: now,
+    updatedBy: clean(meta.updatedBy || 'admin', 80),
+  };
+  await writeJson(PUBLIC_CONFIG_KEY, doc);
+  return doc;
 }
 
 function stable(v) {
@@ -156,13 +359,14 @@ async function writeMenu(state, meta = {}) {
   const previous=await readMenu();
   const now=new Date().toISOString();
   try { await storeDailyBackup(previous,now); } catch (e) {}
+  const revisionNum = Number(meta.revision);
   const doc = {
     state,
-    revision: Number(meta.revision) || Date.now(),
+    revision: Number.isFinite(revisionNum) && revisionNum > 0 ? revisionNum : Date.now(),
     updatedAt: now,
     updatedBy: clean(meta.updatedBy || 'admin', 80),
   };
-  await command(['SET', KEY, JSON.stringify(doc)]);
+  await writeJson(KEY, doc);
   try { await recordHistory(previous,doc,meta.reason); } catch (e) {}
   return doc;
 }
@@ -188,46 +392,301 @@ async function restoreMenuBackup(id, meta = {}) {
 
 /* Writes are only allowed when a real PIN has been set — otherwise anyone who
    finds the URL could rewrite the menu. */
+
+/* Vercel treats values that start with "@" as shared-env references. Owners who
+   want a PIN that begins with "@" should prefix the value with "pin:"
+   (e.g. pin:@secret) in ADMIN_PIN or ADMIN_PIN_LITERAL. */
+function resolveAdminPin() {
+  const raw = clean(
+    process.env.ADMIN_PIN_LITERAL ||
+    process.env.ADMIN_PIN ||
+    process.env.ADMIN_PASSWORD ||
+    process.env.TSIGOURA_ADMIN_PIN,
+    120
+  );
+  if (raw.toLowerCase().startsWith('pin:')) return raw.slice(4);
+  return raw;
+}
+
 function adminPinConfigured() {
-  return !!clean(process.env.ADMIN_PIN || process.env.ADMIN_PASSWORD || process.env.TSIGOURA_ADMIN_PIN, 120);
+  return !!resolveAdminPin();
 }
 function adminPinOk(pin) {
-  const expected = clean(process.env.ADMIN_PIN || process.env.ADMIN_PASSWORD || process.env.TSIGOURA_ADMIN_PIN, 120);
+  const expected = resolveAdminPin();
   const supplied = clean(pin, 120);
   if (!expected || !supplied) return false;
   const a = Buffer.from(supplied);
   const b = Buffer.from(expected);
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
+
+const SESSION_COOKIE = 'tv_admin_session';
+const SESSION_MAX_AGE_SEC = 12 * 60 * 60;
+
+function sessionSecret() {
+  return clean(process.env.ADMIN_SESSION_SECRET, 200) || resolveAdminPin() || 'tv-dev-session';
+}
+function b64url(input) {
+  return Buffer.from(input).toString('base64url');
+}
+function fromB64url(input) {
+  return Buffer.from(String(input || ''), 'base64url').toString('utf8');
+}
+function signSession(payload) {
+  return crypto.createHmac('sha256', sessionSecret()).update(payload).digest('base64url');
+}
+function createAdminSessionToken(pin, maxAgeSec = SESSION_MAX_AGE_SEC) {
+  const body = JSON.stringify({
+    pin: clean(pin, 120),
+    exp: Date.now() + Math.max(60, Number(maxAgeSec) || SESSION_MAX_AGE_SEC) * 1000,
+  });
+  const payload = b64url(body);
+  return `${payload}.${signSession(payload)}`;
+}
+function pinFromSessionToken(token) {
+  const raw = clean(token, 800);
+  const parts = raw.split('.');
+  if (parts.length !== 2) return '';
+  const [payload, sig] = parts;
+  const expected = signSession(payload);
+  const a = Buffer.from(sig);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return '';
+  try {
+    const data = JSON.parse(fromB64url(payload));
+    if (!data || !data.exp || Date.now() > Number(data.exp)) return '';
+    return clean(data.pin, 120);
+  } catch (e) {
+    return '';
+  }
+}
+function parseCookies(req) {
+  const header = clean((req && req.headers && req.headers.cookie) || '', 4000);
+  const out = {};
+  header.split(';').forEach(part => {
+    const idx = part.indexOf('=');
+    if (idx <= 0) return;
+    const key = part.slice(0, idx).trim();
+    const value = part.slice(idx + 1).trim();
+    if (key) out[key] = decodeURIComponent(value);
+  });
+  return out;
+}
+function requestIsHttps(req) {
+  const proto = clean((req && req.headers && req.headers['x-forwarded-proto']) || '', 40)
+    .split(',')[0]
+    .trim()
+    .toLowerCase();
+  if (proto === 'https') return true;
+  if (proto === 'http') return false;
+  return !!(req && req.socket && req.socket.encrypted);
+}
+function buildSessionCookie(token, req, maxAgeSec = SESSION_MAX_AGE_SEC) {
+  const parts = [
+    `${SESSION_COOKIE}=${encodeURIComponent(token)}`,
+    'Path=/',
+    'HttpOnly',
+    'SameSite=Lax',
+    `Max-Age=${Math.max(60, Number(maxAgeSec) || SESSION_MAX_AGE_SEC)}`,
+  ];
+  if (requestIsHttps(req)) parts.push('Secure');
+  return parts.join('; ');
+}
+function clearSessionCookie(req) {
+  const parts = [
+    `${SESSION_COOKIE}=`,
+    'Path=/',
+    'HttpOnly',
+    'SameSite=Lax',
+    'Max-Age=0',
+  ];
+  if (requestIsHttps(req)) parts.push('Secure');
+  return parts.join('; ');
+}
+function appendSetCookie(res, value) {
+  if (!res || !value) return;
+  const prev = res.getHeader && res.getHeader('Set-Cookie');
+  if (!prev) {
+    res.setHeader('Set-Cookie', value);
+    return;
+  }
+  const list = Array.isArray(prev) ? prev.concat(value) : [prev, value];
+  res.setHeader('Set-Cookie', list);
+}
+function corsOriginAllowed(req) {
+  const origin = clean((req && req.headers && req.headers.origin) || '', 300);
+  if (!origin) return '';
+  const host = clean((req && req.headers && req.headers.host) || '', 200).toLowerCase();
+  try {
+    const url = new URL(origin);
+    const oh = url.host.toLowerCase();
+    if (host && oh === host) return origin;
+    if (oh.endsWith('.vercel.app') || (host && host.endsWith('.vercel.app'))) return origin;
+    if (oh === 'localhost' || oh.startsWith('localhost:') || oh === '127.0.0.1' || oh.startsWith('127.0.0.1:')) {
+      return origin;
+    }
+  } catch (e) {}
+  return '';
+}
+function applyCors(req, res) {
+  const allowed = corsOriginAllowed(req);
+  if (allowed) {
+    res.setHeader('Access-Control-Allow-Origin', allowed);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Vary', 'Origin');
+  }
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Authorization, X-Admin-Pin, X-Upload-Kind, X-Upload-Id, X-File-Name'
+  );
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Max-Age', '86400');
+}
+function handlePreflight(req, res) {
+  applyCors(req, res);
+  if (req.method === 'OPTIONS') {
+    if (typeof res.status === 'function') {
+      const out = res.status(204);
+      if (out && typeof out.end === 'function') out.end();
+      else if (typeof res.end === 'function') res.end();
+    } else {
+      res.statusCode = 204;
+      if (typeof res.end === 'function') res.end();
+    }
+    return true;
+  }
+  return false;
+}
+
 function adminPinFromReq(req, data = {}) {
   const headers = (req && req.headers) || {};
   const auth = clean(headers.authorization, 180);
   const bearer = /^Bearer\s+(.+)$/i.exec(auth);
+  const cookies = parseCookies(req);
+  const fromSession = pinFromSessionToken(cookies[SESSION_COOKIE]);
   return clean(
     headers['x-admin-pin'] ||
     (bearer && bearer[1]) ||
-    data.pin ||
-    data.password,
+    (data && data.pin) ||
+    (data && data.password) ||
+    fromSession,
     120
   );
 }
 
-/* Never trust a browser to remove private operational state. Every database
-   write is projected to the catalogue shape on the server as well. */
+/* Vercel may give JSON as object, string, Buffer, or an unread stream. */
+async function readRawBody(req, limit = 2_000_000) {
+  if (Buffer.isBuffer(req.body)) return req.body;
+  if (typeof req.body === 'string') return Buffer.from(req.body);
+  if (req.body && typeof req.body === 'object' && typeof req.body.pipe !== 'function' && !Buffer.isBuffer(req.body)) {
+    return null;
+  }
+  if (!req || typeof req.on !== 'function') return Buffer.alloc(0);
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of req) {
+    const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    size += buf.length;
+    if (size > limit) {
+      const err = new Error('body_too_large');
+      err.status = 413;
+      throw err;
+    }
+    chunks.push(buf);
+  }
+  return Buffer.concat(chunks);
+}
+
+async function parseJsonBody(req) {
+  if (Buffer.isBuffer(req.body)) {
+    const text = req.body.toString('utf8').trim();
+    return text ? JSON.parse(text) : {};
+  }
+  if (typeof req.body === 'string') {
+    const text = req.body.trim();
+    return text ? JSON.parse(text) : {};
+  }
+  if (req.body && typeof req.body === 'object') {
+    if (ArrayBuffer.isView(req.body)) {
+      const text = Buffer.from(req.body).toString('utf8').trim();
+      return text ? JSON.parse(text) : {};
+    }
+    if (typeof req.body.pipe !== 'function' && !Array.isArray(req.body)) {
+      return req.body;
+    }
+  }
+  const raw = await readRawBody(req, 2_000_000);
+  if (!raw || !raw.length) return {};
+  return JSON.parse(raw.toString('utf8'));
+}
+
+/* Sanitize catalogue shape/limits. Operational fields (orders, table status,
+   notes) are preserved on admin writes. Strip them only for public reads or
+   when the caller explicitly passes { resetOps:true }. */
+const TABLE_STATUSES = new Set(['open', 'occupied', 'reserved', 'closed']);
+
 function sanitizeMenuState(input, options = {}) {
-  const state = JSON.parse(JSON.stringify(input || {}));
-  state.orders = [];
+  let state;
+  try {
+    state = JSON.parse(JSON.stringify(input || {}));
+  } catch (e) {
+    state = {};
+  }
+
+  if (!Array.isArray(state.menu)) state.menu = [];
+  if (!Array.isArray(state.categories)) state.categories = [];
+  if (!state.settings || typeof state.settings !== 'object' || Array.isArray(state.settings)) {
+    state.settings = {};
+  }
+
+  const seenCats = new Set();
+  state.categories = state.categories.slice(0, 50).map((category, ix) => {
+    if (!category || typeof category !== 'object') return null;
+    const id = idOf(category.id, 48) || ('cat' + (ix + 1));
+    /* Keep duplicate ids intact so validateMenuState can reject them. */
+    seenCats.add(id);
+    return Object.assign({}, category, { id });
+  }).filter(Boolean);
+
+  const categoryIds = new Set(state.categories.map(c => c.id));
+  const fallbackCat = state.categories[0] && state.categories[0].id;
+  state.menu = state.menu.slice(0, 500).map((dish, ix) => {
+    if (!dish || typeof dish !== 'object') return null;
+    const id = idOf(dish.id, 48) || String(9000 + ix);
+    let cat = idOf(dish.cat, 48);
+    if (!categoryIds.has(cat)) cat = fallbackCat || cat;
+    return Object.assign({}, dish, { id, cat });
+  }).filter(Boolean);
+
+  const stripOps = !!(options.public || options.resetOps);
+  if (stripOps) {
+    state.orders = [];
+  } else if (Array.isArray(state.orders)) {
+    state.orders = state.orders.slice(0, 500).filter(o => o && typeof o === 'object');
+  } else {
+    state.orders = [];
+  }
+
   if (Array.isArray(state.tables)) {
     state.tables = state.tables.slice(0, 200).map(table => {
-      const safe = Object.assign({}, table, { status: 'open' });
-      if (options.public) safe.note = '';
+      if (!table || typeof table !== 'object') return null;
+      const safe = Object.assign({}, table);
+      if (stripOps) {
+        safe.status = 'open';
+        if (options.public) safe.note = '';
+      } else {
+        const status = clean(safe.status, 24);
+        safe.status = TABLE_STATUSES.has(status) ? status : 'open';
+        if (safe.note != null) safe.note = clean(safe.note, 240);
+      }
       return safe;
-    });
+    }).filter(Boolean);
   } else {
     state.tables = [];
   }
   return state;
 }
+
 function validateMenuState(state) {
   if (!state || !Array.isArray(state.menu) || !Array.isArray(state.categories) || !state.settings || typeof state.settings !== 'object') {
     return 'invalid_state';
@@ -235,21 +694,28 @@ function validateMenuState(state) {
   if (state.menu.length > 500 || state.categories.length > 50) return 'state_limits_exceeded';
   const categoryIds = new Set();
   for (const category of state.categories) {
-    const id = clean(category && category.id, 48);
+    const id = idOf(category && category.id, 48);
     if (!id || categoryIds.has(id)) return 'invalid_categories';
     categoryIds.add(id);
   }
+  if (state.menu.length && !categoryIds.size) return 'invalid_categories';
   const dishIds = new Set();
   for (const dish of state.menu) {
-    const id = clean(dish && dish.id, 48);
-    if (!id || dishIds.has(id) || !categoryIds.has(clean(dish && dish.cat, 48))) return 'invalid_menu';
+    const id = idOf(dish && dish.id, 48);
+    const cat = idOf(dish && dish.cat, 48);
+    if (!id || dishIds.has(id) || !categoryIds.has(cat)) return 'invalid_menu';
     dishIds.add(id);
   }
   return '';
 }
 
 module.exports = {
-  configured, readMenu, writeMenu, readAdminHistory, restoreMenuBackup,
+  configured, storeKind, kvConfigured, blobConfigured, fsConfigured,
+  readMenu, writeMenu, readAdminHistory, restoreMenuBackup,
+  readPublicConfig, writePublicConfig, sanitizePublicConfig,
   adminPinOk, adminPinConfigured, adminPinFromReq, sanitizeMenuState, validateMenuState,
-  clean, KEY, BACKUP_KEY, HISTORY_KEY, changeCounts
+  clean, idOf, KEY, BACKUP_KEY, HISTORY_KEY, PUBLIC_CONFIG_KEY, changeCounts,
+  resolveAdminPin, parseJsonBody, readRawBody, applyCors, handlePreflight,
+  createAdminSessionToken, buildSessionCookie, clearSessionCookie, appendSetCookie,
+  SESSION_COOKIE, SESSION_MAX_AGE_SEC
 };

@@ -9,9 +9,14 @@ function invoke(handler, { method='POST', headers={} } = {}) {
     const res = {
       headers:{},
       setHeader(name,value){ this.headers[name]=value; },
+      getHeader(name){ return this.headers[name]; },
       status(code){
-        return { json:body => resolve({status:code,body,headers:res.headers}) };
-      }
+        return {
+          json:body => resolve({status:code,body,headers:res.headers}),
+          end:() => resolve({status:code,body:null,headers:res.headers}),
+        };
+      },
+      end(){ resolve({status:204,body:null,headers:res.headers}); }
     };
     Promise.resolve(handler(req,res)).catch(reject);
   });
@@ -55,6 +60,14 @@ const upload = require('../api/admin-upload');
   assert.equal(result.status,413);
   assert.equal(result.body.error,'image_too_large');
 
+  result=await invoke(upload,{headers:{
+    'x-admin-pin':process.env.ADMIN_PIN,
+    'content-type':'image/jpg',
+    'content-length':'100'
+  }});
+  assert.equal(result.status,400);
+  assert.equal(result.body.error,'empty_body');
+
   delete process.env.BLOB_READ_WRITE_TOKEN;
   process.env.BLOB_STORE_ID='store_oidc_test';
   result=await invoke(upload,{headers:{
@@ -64,6 +77,9 @@ const upload = require('../api/admin-upload');
   }});
   assert.equal(result.status,415);
   assert.equal(result.body.error,'unsupported_image_type');
+
+  result=await invoke(upload,{method:'OPTIONS',headers:{origin:'https://x.vercel.app',host:'x.vercel.app'}});
+  assert.equal(result.status,204);
 
   delete process.env.BLOB_STORE_ID;
   delete process.env.ADMIN_PIN;
@@ -75,7 +91,7 @@ const upload = require('../api/admin-upload');
   assert.equal(result.status,503);
   assert.equal(result.body.error,'admin_pin_not_set');
 
-  console.log('upload-security: 12/12 assertions passed');
+  console.log('upload-security: assertions passed');
 })().catch(error=>{
   console.error(error);
   process.exitCode=1;

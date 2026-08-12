@@ -16,25 +16,53 @@ const mime = {
   '.svg': 'image/svg+xml; charset=utf-8',
   '.woff2': 'font/woff2',
 };
+
+/* In-memory stand-in for Vercel KV so admin POST /api/admin-menu is visible to
+   guest GET /api/menu in Playwright — same contract as production. */
+let liveMenuDoc = null;
+let livePublicConfig = null;
+
+const noStoreHeaders = {
+  'Content-Type': 'application/json; charset=utf-8',
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+  'CDN-Cache-Control': 'no-store',
+  'Pragma': 'no-cache',
+  'Expires': '0',
+};
+
 const sendJson = (res, status, body) => {
-  res.writeHead(status, {
-    'Content-Type': 'application/json; charset=utf-8',
-    'Cache-Control': 'no-store',
-  });
+  res.writeHead(status, noStoreHeaders);
   res.end(JSON.stringify(body));
 };
 
-http.createServer((req, res) => {
-  const url = new URL(req.url, `http://${req.headers.host}`);
-  if (url.pathname === '/api/admin-login') {
+function readBody(req) {
+  return new Promise(resolve => {
     let raw = '';
     req.on('data', chunk => { raw += chunk; });
     req.on('end', () => {
-      let pin = '';
-      try { pin = JSON.parse(raw || '{}').pin || ''; } catch {}
-      sendJson(res, pin === 'ui-test-owner' ? 200 : 401, { ok: pin === 'ui-test-owner' });
+      try { resolve(raw ? JSON.parse(raw) : {}); }
+      catch { resolve({}); }
     });
-    return;
+  });
+}
+
+function sanitizePublic(state) {
+  const copy = JSON.parse(JSON.stringify(state || {}));
+  copy.orders = [];
+  if (Array.isArray(copy.tables)) {
+    copy.tables = copy.tables.map(table => Object.assign({}, table, { status: 'open', note: '' }));
+  } else {
+    copy.tables = [];
+  }
+  return copy;
+}
+
+http.createServer(async (req, res) => {
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  if (url.pathname === '/api/admin-login') {
+    const body = await readBody(req);
+    const pin = String(body.pin || '');
+    return sendJson(res, pin === 'ui-test-owner' ? 200 : 401, { ok: pin === 'ui-test-owner' });
   }
   if (url.pathname === '/api/status') {
     return sendJson(res, 200, {
@@ -45,7 +73,25 @@ http.createServer((req, res) => {
     });
   }
   if (url.pathname === '/api/public-config') {
-    return sendJson(res, 200, {
+    if (req.method === 'POST') {
+      const pin = String(req.headers['x-admin-pin'] || '');
+      if (pin !== 'ui-test-owner') {
+        return sendJson(res, 401, { ok: false, error: 'wrong_pin' });
+      }
+      const body = await readBody(req);
+      const cfg = body.config || body;
+      livePublicConfig = {
+        ok: true,
+        persisted: true,
+        venue: cfg.venue || {},
+        contact: cfg.contact || {},
+        wifi: cfg.wifi || {},
+        legal: cfg.legal || {},
+        settings: { serviceOpen: true, acceptOrders: true, traditionalMenuOnly: true },
+      };
+      return sendJson(res, 200, livePublicConfig);
+    }
+    return sendJson(res, 200, livePublicConfig || {
       ok: true,
       wifi: { ssid: 'TSIGOURA 5G', pass: 'Tsigoura2023', enc: 'WPA' },
       social: {},
@@ -54,19 +100,63 @@ http.createServer((req, res) => {
     });
   }
   if (url.pathname === '/api/menu') {
-    return sendJson(res, 503, { ok: false, error: 'fixture_uses_static_menu' });
+    if (!liveMenuDoc || !liveMenuDoc.state) {
+      return sendJson(res, 200, { ok: false, configured: true, empty: true });
+    }
+    const knownRevision = Number(url.searchParams.get('revision')) || 0;
+    const revision = Number(liveMenuDoc.revision) || 0;
+    if (knownRevision && revision && knownRevision >= revision) {
+      return sendJson(res, 200, {
+        ok: true,
+        configured: true,
+        unchanged: true,
+        revision,
+        updatedAt: liveMenuDoc.updatedAt,
+      });
+    }
+    return sendJson(res, 200, {
+      ok: true,
+      configured: true,
+      state: sanitizePublic(liveMenuDoc.state),
+      revision,
+      updatedAt: liveMenuDoc.updatedAt,
+    });
   }
   if (url.pathname === '/api/admin-menu') {
-    if (req.method === 'POST') {
-      req.resume();
-      return req.on('end', () => sendJson(res, 200, { ok: true, revision: Date.now() }));
+    const pin = String(req.headers['x-admin-pin'] || '');
+    if (pin !== 'ui-test-owner') {
+      return sendJson(res, 401, { ok: false, error: 'wrong_pin' });
     }
-    return sendJson(res, 503, { ok: false, error: 'fixture_uses_local_admin_state' });
+    if (req.method === 'POST') {
+      const body = await readBody(req);
+      if (!body.state || !Array.isArray(body.state.menu) || !Array.isArray(body.state.categories)) {
+        return sendJson(res, 400, { ok: false, error: 'invalid_state' });
+      }
+      const revision = Number(body.revision) || Date.now();
+      /* Keep ops on admin writes (match production sanitizeMenuState). */
+      liveMenuDoc = {
+        state: body.state,
+        revision,
+        updatedAt: new Date().toISOString(),
+      };
+      return sendJson(res, 200, { ok: true, configured: true, revision, updatedAt: liveMenuDoc.updatedAt });
+    }
+    if (!liveMenuDoc) {
+      return sendJson(res, 200, { ok: true, configured: true, state: null, revision: 0, updatedAt: null });
+    }
+    return sendJson(res, 200, {
+      ok: true,
+      configured: true,
+      state: liveMenuDoc.state,
+      revision: liveMenuDoc.revision,
+      updatedAt: liveMenuDoc.updatedAt,
+    });
   }
   if (url.pathname === '/api/admin-history') {
     return sendJson(res, 200, { ok: true, backups: [], history: [] });
   }
   if (url.pathname === '/api/admin-upload') {
+    await readBody(req);
     return sendJson(res, 400, { ok: false, error: 'no_file' });
   }
 
@@ -81,10 +171,17 @@ http.createServer((req, res) => {
       res.writeHead(404);
       return res.end('Not found');
     }
-    res.writeHead(200, {
-      'Content-Type': mime[path.extname(file).toLowerCase()] || 'application/octet-stream',
+    const ext = path.extname(file).toLowerCase();
+    const headers = {
+      'Content-Type': mime[ext] || 'application/octet-stream',
       'Cache-Control': 'no-store',
-    });
+    };
+    if (ext === '.js' || ext === '.html') {
+      headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0';
+      headers.Pragma = 'no-cache';
+      headers.Expires = '0';
+    }
+    res.writeHead(200, headers);
     fs.createReadStream(file).pipe(res);
   });
 }).listen(port, '127.0.0.1', () => {

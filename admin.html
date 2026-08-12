@@ -598,7 +598,7 @@ nav.tabs button .ico{width:15px;height:15px;stroke-width:1.9;}
   .cat-manager .cat-top .btn{width:100%;justify-content:center;}
   .cat-edit{grid-template-columns:28px 40px minmax(0,1fr);}
   .cat-edit select,.cat-edit input[type="color"],.cat-actions{grid-column:1 / -1;width:100%;}
-  .cat-actions{display:grid;grid-template-columns:repeat(2,1fr);}
+  .cat-actions{display:grid;grid-template-columns:repeat(3,1fr);}
   .cat-actions button{width:100%;}
   .phone-frame{height:640px;max-width:360px;border-width:8px;}
   .io-scrim{align-items:flex-start!important;justify-content:center!important;padding:8px!important;padding-top:max(8px,env(safe-area-inset-top))!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch;}
@@ -700,7 +700,7 @@ body.is-saving button[data-save],body.is-saving .upload-pick{pointer-events:none
   .modeswitch{grid-template-columns:1fr;}
   .media-upload{display:grid;grid-template-columns:1fr;}
   .media-upload .upload-status{min-height:32px;}
-  .cat-actions{grid-template-columns:repeat(2,1fr)!important;}
+  .cat-actions{grid-template-columns:repeat(3,1fr)!important;}
   .cat-actions button{min-height:44px!important;}
   .io-x{width:44px;height:44px;}
 }
@@ -909,9 +909,15 @@ const OWNER_BACKUPS_KEY = STORAGE_KEY+'_owner_backups_v1';
 const OWNER_HISTORY_KEY = STORAGE_KEY+'_owner_history_v1';
 let ownerHistoryRemote={tried:false,loading:false,ok:false,backups:[],history:[],error:''};
 let ownerHistoryWriteError='';
+let publicConfigDraft=null;
+let publicConfigLoading=false;
+let publicConfigTried=false;
+let publicConfigSaving=false;
+let publicConfigError='';
 const menuBroadcast=('BroadcastChannel' in window)?new BroadcastChannel('tsigoura-menu-live'):null;
 const MENU_ICON_KEYS = ['dip','cheese','pot','fries','zucchini','fish','salad','meat','chop','burger','shank','chicken','drumstick','skewer','spit','pizza','wine','beer','mug','soda','juice','bottle','carafe','ouzo','pepper','star','leaf'];
 const HEADER_ACTIONS = [
+  ['booking','Κράτηση','Κουμπί αίτησης κράτησης (sheet + /api/book ή mailto).'],
   ['social','Social','Κουμπί για Instagram/Facebook.'],
   ['wifi','Wi‑Fi','Κουμπί QR/αντιγραφής Wi‑Fi.'],
   ['language','Γλώσσα','Επιλογή γλώσσας στο πάνω μέρος.'],
@@ -941,10 +947,22 @@ function imageOptionList(){
   try{ Object.values(CAT_ART||{}).forEach(f=>files.add('media/dishes/'+f+'.png')); }catch(e){}
   return [...files].sort();
 }
+function guessImageMime(file){
+  const typed=String((file&&file.type)||'').toLowerCase().split(';')[0].trim();
+  if(typed==='image/jpg'||typed==='image/pjpeg') return 'image/jpeg';
+  if(typed==='image/x-png') return 'image/png';
+  if(['image/jpeg','image/png','image/webp','image/avif'].includes(typed)) return typed;
+  const name=String((file&&file.name)||'').toLowerCase();
+  if(/\.(jpe?g)$/.test(name)) return 'image/jpeg';
+  if(/\.png$/.test(name)) return 'image/png';
+  if(/\.webp$/.test(name)) return 'image/webp';
+  if(/\.avif$/.test(name)) return 'image/avif';
+  return '';
+}
 async function uploadAdminImage(file,kind,id,status){
   if(!file) return '';
-  const allowed=['image/jpeg','image/png','image/webp','image/avif'];
-  if(!allowed.includes(file.type)){ toast('Μόνο JPG, PNG, WebP ή AVIF'); return ''; }
+  const mime=guessImageMime(file);
+  if(!mime){ toast('Μόνο JPG, PNG, WebP ή AVIF'); return ''; }
   if(file.size>4*1024*1024){ toast('Η εικόνα πρέπει να είναι έως 4 MB'); return ''; }
   const pin=adminPin();
   if(!pin){ toast('Ξανακάντε είσοδο'); return ''; }
@@ -952,8 +970,9 @@ async function uploadAdminImage(file,kind,id,status){
   try{
     const r=await fetch('/api/admin-upload',{
       method:'POST',
+      credentials:'same-origin',
       headers:{
-        'Content-Type':file.type,
+        'Content-Type':mime,
         'X-Admin-Pin':pin,
         'X-Upload-Kind':kind,
         'X-Upload-Id':String(id),
@@ -1030,6 +1049,33 @@ function renderDash(){
     </div>`).join('');
 
   $('dashGrid').innerHTML = `
+    ${(()=>{
+      /* Πιάτο ημέρας reuses menu[].chefPick + design.showFeaturedHero (guest hero). */
+      const pick=menu.find(i=>i.chefPick)||null;
+      const heroOn=((S.settings.design||{}).showFeaturedHero)!==false;
+      const opts=menu.slice().sort((a,b)=>rawItemName(a,'el').localeCompare(rawItemName(b,'el'),'el'))
+        .map(i=>`<option value="${ioEsc(String(i.id))}" ${pick&&String(pick.id)===String(i.id)?'selected':''}>${ioEsc(rawItemName(i,'el'))} · ${S.settings.currency}${Number(i.price||0).toFixed(2)}</option>`).join('');
+      return `<div class="dcard reveal" id="dishOfDayCard" style="--rd:20ms">
+        <h4>${ICO.get('sparkle')}Πιάτο ημέρας</h4>
+        <p class="hint" style="margin:0 0 10px;">Ορίζει ποιο πιάτο έχει chefPick · φαίνεται ως πρόταση στο menu του πελάτη.</p>
+        <div class="field"><label>Πιάτο</label>
+          <select id="dotdDish"><option value="">— κανένα —</option>${opts}</select>
+        </div>
+        <div class="fieldrow" style="margin-top:8px;">
+          <div><label>Όνομα</label><input type="text" value="${pick?itemName(pick,'el'):''}" disabled></div>
+          <div><label>Τιμή €</label><input type="number" step="0.10" min="0" id="dotdPrice" value="${pick?Number(pick.price||0).toFixed(2):''}" ${pick?'':'disabled'}></div>
+        </div>
+        <div class="setting-row" style="margin-top:12px;padding:10px 0;box-shadow:none;background:transparent;">
+          <div class="txt"><div class="t">Ενεργό chefPick</div><div class="d">Ένα πιάτο τη φορά.</div></div>
+          <div class="toggle ${pick?'on':''}" id="dotdToggle"></div>
+        </div>
+        <div class="setting-row" style="padding:10px 0;box-shadow:none;background:transparent;">
+          <div class="txt"><div class="t">Εμφάνιση στο hero</div><div class="d">design.showFeaturedHero</div></div>
+          <div class="toggle ${heroOn?'on':''}" id="dotdHero"></div>
+        </div>
+      </div>`;
+    })()}
+
     ${advancedService?`<div class="dcard center reveal">
       <h4 style="align-self:flex-start;">${ICO.get('table')}Κατάσταση αίθουσας</h4>
       ${VIZ.donut([
@@ -1083,10 +1129,55 @@ function renderDash(){
     </div>`:''}`;
 
   document.querySelectorAll('.kcount').forEach(el=>MOT.count(el, parseFloat(el.dataset.to)));
+  wireDishOfDayCard();
   renderOpsCommand();
   refreshOperationalReadiness(false);
   hydrateIcons($('panel-dash'));
   MOT.reveal($('panel-dash'));
+}
+
+function wireDishOfDayCard(){
+  const card=$('dishOfDayCard');
+  if(!card) return;
+  const sel=$('dotdDish');
+  const priceInp=$('dotdPrice');
+  const tog=$('dotdToggle');
+  const heroTog=$('dotdHero');
+  if(sel) sel.onchange=()=>{
+    const id=sel.value;
+    S.menu.forEach(i=>{ i.chefPick=String(i.id)===String(id); });
+    if(id){
+      if(!S.settings.design) S.settings.design={};
+      S.settings.design.showFeaturedHero=true;
+    }
+    persist(); renderDash(); toast(id?'Πιάτο ημέρας ενημερώθηκε':'Αφαιρέθηκε το πιάτο ημέρας');
+  };
+  if(priceInp) priceInp.onchange=()=>{
+    const id=sel&&sel.value;
+    const i=S.menu.find(x=>String(x.id)===String(id));
+    if(!i) return;
+    const v=parseFloat(priceInp.value);
+    if(!isNaN(v)&&v>=0){ i.price=v; persist(); renderDash(); toast('Τιμή ενημερώθηκε'); }
+  };
+  if(tog) tog.onclick=()=>{
+    const current=S.menu.find(i=>i.chefPick);
+    if(current){
+      S.menu.forEach(i=>{ i.chefPick=false; });
+      persist(); renderDash(); toast('Πιάτο ημέρας off');
+      return;
+    }
+    const first=S.menu.find(i=>dishGuestVisible(i)&&i.available&&Number(i.price)>0) || S.menu[0];
+    if(!first){ toast('Δεν υπάρχει πιάτο'); return; }
+    S.menu.forEach(i=>{ i.chefPick=i===first; });
+    if(!S.settings.design) S.settings.design={};
+    S.settings.design.showFeaturedHero=true;
+    persist(); renderDash(); toast('Πιάτο ημέρας: '+rawItemName(first,'el'));
+  };
+  if(heroTog) heroTog.onclick=()=>{
+    if(!S.settings.design) S.settings.design={};
+    S.settings.design.showFeaturedHero=S.settings.design.showFeaturedHero===false;
+    persist(); renderDash(); toast(S.settings.design.showFeaturedHero!==false?'Εμφανίζεται στο menu':'Κρύφτηκε από το hero');
+  };
 }
 
 let opsSnapshot={loading:true,status:null,config:null,failed:false,checkedAt:0};
@@ -1279,6 +1370,25 @@ function recordOwnerChange(previousSnapshot,nextSnapshot,reason){
     return false;
   }
 }
+let dirtySincePublish=false;
+let lastRemoteSaveOk=null;
+let lastRemoteSaveWhy='';
+function saveErrorMessage(why){
+  if(why==='wrong_pin'||why==='admin_pin_not_set') return 'Ξανακάντε είσοδο — ο κωδικός δεν ισχύει για δημοσίευση';
+  if(why==='store_not_configured') return 'Χωρίς βάση — από Ρυθμίσεις κατεβάστε menu-live.js και κάντε redeploy';
+  if(why==='invalid_state'||why==='invalid_menu'||why==='invalid_categories') return 'Τα δεδομένα δεν πέρασαν έλεγχο. Ελέγξτε κατηγορίες και πιάτα';
+  if(why==='state_limits_exceeded') return 'Πάρα πολλά πιάτα ή κατηγορίες';
+  if(why==='state_too_large'||why==='body_too_large') return 'Το μενού είναι πολύ μεγάλο για αποθήκευση';
+  if(why==='too_many_attempts') return 'Πολλές προσπάθειες — περιμένετε λίγο';
+  if(why==='network') return 'Δεν υπάρχει σύνδεση';
+  return 'Δεν δημοσιεύτηκε. Δοκιμάστε ξανά';
+}
+function flushRemoteSave(options={}){
+  clearTimeout(remoteSaveTimer);
+  flushOpenProForms();
+  saveState(S);
+  return saveLiveMenu(options);
+}
 function persist(reason){
   S=normalizeState(S||defaultState());
   const nextSnapshot=JSON.stringify(S);
@@ -1288,6 +1398,7 @@ function persist(reason){
     if(undoStack.length>UNDO_LIMIT) undoStack.shift();
     lastSavedSnapshot=nextSnapshot;
   }
+  dirtySincePublish=true;
   saveState(S);
   notifyFreshMenu();
   scheduleRemoteSave(reason||'edit');
@@ -1335,9 +1446,23 @@ let pendingRemoteReason='edit';
 let liveSaveChain=Promise.resolve(false);
 function scheduleRemoteSave(reason){
   pendingRemoteReason=reason||pendingRemoteReason||'edit';
+  dirtySincePublish=true;
   clearTimeout(remoteSaveTimer);
   setSyncState('pending');
-  remoteSaveTimer=setTimeout(()=>saveLiveMenu({silent:true}),700);
+  remoteSaveTimer=setTimeout(()=>{
+    flushOpenProForms();
+    saveState(S);
+    saveLiveMenu({silent:true});
+  },700);
+}
+function flushOpenProForms(){
+  try{
+    document.querySelectorAll('.pro-item.open').forEach(box=>{
+      const id=box.dataset.id;
+      const i=(S.menu||[]).find(x=>String(x.id)===String(id));
+      if(i) applyDishForm(i,box,{persist:false,flush:false,rerender:false,validate:false});
+    });
+  }catch(e){}
 }
 /* ── publishing (no database) ────────────────────────────────────────────────
    The live menu is the file menu-live.js. The owner downloads a fresh copy from
@@ -1392,28 +1517,64 @@ function markPublishedNow(){
    When a KV store is attached in Vercel, every admin edit is pushed here and
    customers see it on their next page load — no redeploy, no file to upload. */
 let liveState='unknown';           /* live | pending | offline | nopin */
+function mergeRemoteCatalogue(remoteState){
+  const local=S||defaultState();
+  const remote=normalizeState(JSON.parse(JSON.stringify(remoteState||{})));
+  const localRev=Number((local.settings&&local.settings.cacheRevision)||local.updatedAt)||0;
+  const remoteRev=Number((remote.settings&&remote.settings.cacheRevision)||remote.updatedAt)||0;
+  /* Prefer newer catalogue; always keep this device's kitchen queue / table occupancy.
+     If local edits are pending, never clobber them with a concurrent remote load. */
+  const useLocal=!!(dirtySincePublish || (localRev && remoteRev && localRev>remoteRev));
+  const catalogue=useLocal?local:remote;
+  const merged=normalizeState(Object.assign({}, catalogue, {
+    menu:JSON.parse(JSON.stringify(catalogue.menu||[])),
+    categories:JSON.parse(JSON.stringify(catalogue.categories||[])),
+    settings:Object.assign({}, catalogue.settings||{}),
+    orders:Array.isArray(local.orders)?local.orders:[],
+    tables:(Array.isArray(local.tables)?local.tables:catalogue.tables||[]).map(t=>{
+      const base=(catalogue.tables||[]).find(x=>String(x.id)===String(t.id))||t;
+      return Object.assign({}, base, { status:t.status||'open', note:t.note||'' });
+    })
+  }));
+  return { merged, usedLocal:useLocal };
+}
 async function loadRemoteMenu({silent=false}={}){
   const pin=adminPin();
   if(!pin){ setSyncState('nopin'); return false; }
   try{
-    const r=await fetch('/api/admin-menu',{cache:'no-store',headers:{'X-Admin-Pin':pin}});
+    const r=await fetch('/api/admin-menu',{cache:'no-store',credentials:'same-origin',headers:{'X-Admin-Pin':pin}});
     const data=await r.json().catch(()=>null);
     if(!r.ok || !data || !data.ok){
       const why=(data&&data.error)||'load_failed';
-      setSyncState(why==='admin_pin_not_set'?'nopin':'offline',why);
+      if(why==='wrong_pin'){ try{sessionStorage.removeItem('tv_admin_ok');sessionStorage.removeItem('tv_admin_pin');}catch(e){} }
+      setSyncState(why==='admin_pin_not_set'||why==='wrong_pin'?'nopin':'offline',why);
       return false;
     }
     if(data.state && Array.isArray(data.state.menu) && Array.isArray(data.state.categories)){
-      S=normalizeState(data.state);
+      flushOpenProForms();
+      const { merged, usedLocal }=mergeRemoteCatalogue(data.state);
+      if(data.revision && merged.settings && !usedLocal){
+        merged.settings.cacheRevision=Number(data.revision)||merged.settings.cacheRevision;
+        merged.settings.cacheSavedAt=merged.settings.cacheRevision;
+      }
+      S=merged;
       saveState(S);
-      undoStack=[];
-      lastSavedSnapshot=JSON.stringify(S);
+      if(!usedLocal){
+        undoStack=[];
+        lastSavedSnapshot=JSON.stringify(S);
+        dirtySincePublish=false;
+        lastRemoteSaveOk=true;
+        lastRemoteSaveWhy='';
+      }
       renderAll();
       refreshUndoBtn();
+      if(usedLocal && !silent) toast('Κρατήθηκαν νεότερες τοπικές αλλαγές');
+      else if(!silent) toast('Φορτώθηκε το ζωντανό μενού ✓');
     }
-    setSyncState('live');
+    if(dirtySincePublish) setSyncState('pending');
+    else if(lastRemoteSaveOk===false) setSyncState('offline', lastRemoteSaveWhy||'last_save_failed');
+    else setSyncState('live');
     if(menuBroadcast) menuBroadcast.postMessage({type:'menu-revision',revision:Number(data.revision)||Date.now()});
-    if(!silent) toast('Φορτώθηκε το ζωντανό μενού ✓');
     return true;
   }catch(e){
     setSyncState('offline','network');
@@ -1424,31 +1585,60 @@ function saveLiveMenu(options={}){
   liveSaveChain=liveSaveChain.catch(()=>false).then(()=>performLiveMenuSave(options));
   return liveSaveChain;
 }
-async function performLiveMenuSave({silent=false}={}){
+async function performLiveMenuSave({silent=false,resetOps=false}={}){
   const pin=adminPin();
-  if(!pin){ setSyncState('nopin'); if(!silent) toast('Ξανακάντε είσοδο'); return false; }
+  if(!pin){
+    lastRemoteSaveOk=false; lastRemoteSaveWhy='wrong_pin'; dirtySincePublish=true;
+    setSyncState('nopin');
+    toast(saveErrorMessage('wrong_pin'));
+    return false;
+  }
   document.body.classList.add('is-saving');
   try{
+    flushOpenProForms();
+    /* Catalogue / settings edits keep kitchen orders and table occupancy.
+       Only an explicit resetOps:true wipe clears operational state. */
     const state=normalizeState(S);
-    state.orders=[];
-    if(Array.isArray(state.tables)) state.tables=state.tables.map(t=>Object.assign({},t,{status:'open'}));
+    if(resetOps){
+      state.orders=[];
+      if(Array.isArray(state.tables)) state.tables=state.tables.map(t=>Object.assign({},t,{status:'open'}));
+    }
     const r=await fetch('/api/admin-menu',{
       method:'POST',
+      credentials:'same-origin',
       headers:{'Content-Type':'application/json','X-Admin-Pin':pin},
-      body:JSON.stringify({state,revision:(S&&S.updatedAt)||Date.now(),reason:pendingRemoteReason})
+      body:JSON.stringify({state,revision:(S&&S.updatedAt)||Date.now(),reason:pendingRemoteReason,resetOps:!!resetOps})
     });
     const data=await r.json().catch(()=>null);
     if(!r.ok || !data || !data.ok){
       const why=(data&&data.error)||'save_failed';
-      setSyncState(why==='store_not_configured'?'offline':why==='admin_pin_not_set'?'nopin':'offline', why);
-      if(!silent) toast('Δεν δημοσιεύτηκε. Δοκιμάστε ξανά.');
+      lastRemoteSaveOk=false; lastRemoteSaveWhy=why; dirtySincePublish=true;
+      if(why==='wrong_pin'){ try{sessionStorage.removeItem('tv_admin_ok');sessionStorage.removeItem('tv_admin_pin');}catch(e){} }
+      const next=why==='wrong_pin'||why==='admin_pin_not_set'?'nopin':'offline';
+      setSyncState(next, why);
+      toast(saveErrorMessage(why));
       return false;
     }
+    const revision=Number(data.revision)||Date.now();
+    if(S.settings){
+      S.settings.cacheRevision=revision;
+      S.settings.cacheSavedAt=revision;
+    }
+    try{
+      localStorage.setItem(STORAGE_KEY+'_admin_revision', String(revision));
+      if(menuBroadcast) menuBroadcast.postMessage({type:'menu-revision',revision});
+    }catch(e){}
+    lastRemoteSaveOk=true; lastRemoteSaveWhy=''; dirtySincePublish=false;
     setSyncState('live');
     pendingRemoteReason='edit';
     if(!silent) toast('Ενημερώθηκε ζωντανά ✓');
     return true;
-  }catch(e){ setSyncState('offline','network'); if(!silent) toast('Δεν υπάρχει σύνδεση'); return false; }
+  }catch(e){
+    lastRemoteSaveOk=false; lastRemoteSaveWhy='network'; dirtySincePublish=true;
+    setSyncState('offline','network');
+    toast(saveErrorMessage('network'));
+    return false;
+  }
   finally{ document.body.classList.remove('is-saving'); }
 }
 
@@ -1483,13 +1673,28 @@ function setSyncState(state, why){
 async function probeSync(){
   try{
     const r=await fetch('/api/status',{cache:'no-store'});
-    if(!r.ok) return setSyncState('offline');
+    if(!r.ok) return setSyncState('offline','status_failed');
     const st=await r.json();
-    if(!st || !st.liveStore || !st.liveStore.configured) return setSyncState('offline');
+    if(!st || !st.liveStore || !st.liveStore.configured) return setSyncState('offline','store_not_configured');
     if(!st.adminPinSet) return setSyncState('nopin');
+    if(liveState==='pending' || dirtySincePublish) return;
+    if(lastRemoteSaveOk===false) return setSyncState('offline', lastRemoteSaveWhy||'last_save_failed');
     setSyncState('live');
-  }catch(e){ setSyncState('offline'); }
+  }catch(e){ setSyncState('offline','network'); }
 }
+function wireSyncPillRetry(){
+  const pill=document.getElementById('syncPill');
+  if(!pill || pill.dataset.retryBound) return;
+  pill.dataset.retryBound='1';
+  pill.style.cursor='pointer';
+  pill.onclick=()=>{
+    if(liveState==='pending') return;
+    if(liveState==='live' && !dirtySincePublish){ toast('Ήδη δημοσιευμένο'); return; }
+    toast('Επανάληψη δημοσίευσης…');
+    flushRemoteSave({silent:false});
+  };
+}
+wireSyncPillRetry();
 function clampPct(n,min,max){ n=Number(n); if(!isFinite(n)) return min; return Math.max(min,Math.min(max,n)); }
 function sketchTables(){
   return [
@@ -1576,14 +1781,20 @@ function unlock(){
   loadRemoteMenu({silent:true});
 }
 async function checkAdminPin(pin){
-  const local=location.protocol==='file:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
-  if(local && pin === '1234') return true;
   try{
-    const r=await fetch('/api/admin-login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin})});
+    const r=await fetch('/api/admin-login',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin})});
     if(r.ok) return true;
+    if(r.status===401) return false;
     if(r.status!==404 && r.status!==503) return false;
   }catch(e){}
-  return false;
+  /* Local preview PIN only when server has no ADMIN_PIN (otherwise saves silently fail). */
+  const local=location.protocol==='file:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+  if(!(local && pin === '1234')) return false;
+  try{
+    const st=await fetch('/api/status',{cache:'no-store'}).then(r=>r.json()).catch(()=>null);
+    if(st && st.adminPinSet) return false;
+  }catch(e){}
+  return true;
 }
 $('loginBtn').onclick = async () => {
   const btn=$('loginBtn'), input=$('pinInput'), status=$('loginStatus'), pin=input.value.trim();
@@ -2046,12 +2257,28 @@ function renderMenuArea(){
 
 function renderEasy(){
   const area = $('menuArea'); area.innerHTML='';
+  const tools=document.createElement('div');
+  tools.className='easy-tools';
+  tools.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px;';
+  tools.innerHTML=`
+    <button type="button" class="btn gold pressable" id="easyAddDish" data-testid="easy-add-dish">${ICO.get('plus')}Προσθήκη πιάτου</button>
+    <button type="button" class="btn ghost sm pressable" id="easyAddCat" data-testid="easy-add-category">${ICO.get('plus')}Νέα κατηγορία</button>
+    <span class="hint" style="flex:1 1 100%;margin:0;">Τιμή / διαθεσιμότητα εδώ · πλήρες edit (όνομα, αλλεργιογόνα) ανοίγει στο Pro.</span>`;
+  area.appendChild(tools);
+  tools.querySelector('#easyAddDish').onclick=()=>{
+    const id=addNewDish();
+    if(id==null) return;
+    openProDish(id);
+    toast('Νέο πιάτο — συμπληρώστε όνομα στο Pro');
+  };
+  tools.querySelector('#easyAddCat').onclick=()=>addCategory();
+
   const cats = S.categories.slice().sort((a,b)=>a.order-b.order);
   cats.forEach(c=>{
     const items = S.menu.filter(i=>i.cat===c.id); if(!items.length) return;
     const h=document.createElement('h3');
     h.style.cssText='font-size:15px;color:var(--forest-3);margin:18px 0 8px;display:flex;align-items:center;gap:8px;';
-    h.innerHTML = ICO.draw(c.icon) + '<span>'+c.t.el+'</span>';
+    h.innerHTML = ICO.draw(c.icon) + '<span>'+catLabel(c,'el')+'</span>';
     h.querySelector('.ico').style.cssText='width:16px;height:16px;stroke-width:1.9;';
     area.appendChild(h);
 
@@ -2076,12 +2303,18 @@ function renderEasy(){
         <span class="soldlabel" style="color:${(i.hidden||!ss.active)?'var(--bad)':(i.available?'var(--ok)':'var(--bad)')}">${i.hidden?'Κρυφό':(!ss.active?'Εκτός ημερομηνίας':(i.available?'Διαθέσιμο':'Τελείωσε'))}</span>
         <button class="hidebtn ${i.hidden?'on':''}" data-hide data-testid="dish-visibility-${i.id}">${i.hidden?'Εμφάνιση':'Απόκρυψη'}</button>
         <div class="toggle ${i.available?'on':''}" data-toggle title="Διαθέσιμο / τελείωσε"></div>`;
-      row.querySelector('[data-toggle]').onclick=()=>{ i.available=!i.available; persist(); renderEasy(); };
+      row.querySelector('[data-toggle]').onclick=()=>{ i.available=!i.available; persist(); renderEasy(); toast(i.available?'Διαθέσιμο':'Τελείωσε'); };
       row.querySelector('[data-hide]').onclick=()=>{ i.hidden=!i.hidden; persist(); renderEasy(); toast(i.hidden?'Κρύφτηκε από το menu':'Εμφανίζεται στο menu'); };
       const inp=row.querySelector('[data-price]');
-      inp.onchange=()=>{ const v=parseFloat(inp.value); if(!isNaN(v)&&v>=0){ i.price=v; persist(); toast('Τιμή ενημερώθηκε'); } };
-      row.querySelector('[data-minus]').onclick=()=>{ i.price=Math.max(0,+(i.price-0.5).toFixed(2)); persist(); renderEasy(); };
-      row.querySelector('[data-plus]').onclick=()=>{ i.price=+(i.price+0.5).toFixed(2); persist(); renderEasy(); };
+      const commitPrice=()=>{
+        const v=parseFloat(inp.value);
+        if(isNaN(v)||v<0){ toast('Μη έγκυρη τιμή'); inp.value=Number(i.price||0).toFixed(2); return; }
+        i.price=+v.toFixed(2); persist(); toast('Τιμή ενημερώθηκε');
+      };
+      inp.onchange=commitPrice;
+      inp.onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); commitPrice(); inp.blur(); } };
+      row.querySelector('[data-minus]').onclick=()=>{ i.price=Math.max(0,+(Number(i.price||0)-0.5).toFixed(2)); persist(); renderEasy(); };
+      row.querySelector('[data-plus]').onclick=()=>{ i.price=+(Number(i.price||0)+0.5).toFixed(2); persist(); renderEasy(); };
       area.appendChild(row);
     });
   });
@@ -2101,14 +2334,14 @@ function renderPro(){
   const addBtn=document.createElement('button');
   addBtn.id='addDishBtn';
   addBtn.type='button';
+  addBtn.setAttribute('data-testid','admin-add-dish');
   addBtn.className='btn gold pressable'; addBtn.innerHTML=ICO.get('plus')+'Προσθήκη νέου πιάτου';
   addBtn.style.marginBottom='14px';
   addBtn.onclick=()=>{
-    const id = Math.max(0,...S.menu.map(m=>m.id))+1;
-    const blank = { el:{n:'Νέο πιάτο',d:''}, en:{n:'New dish',d:''}, de:{n:'',d:''}, ro:{n:'',d:''}, sr:{n:'',d:''}, bg:{n:'',d:''} };
-    S.menu.push({ id, cat:S.categories[0].id, price:0, unit:'portion', icon:'salad', image:'', available:true, popular:false, chefPick:false,
-      veg:false, spicy:false, prepMin:15, schedule:{enabled:false,from:'',to:''}, allergens:[], removable:[], t:blank });
-    persist(); renderPro();
+    const id=addNewDish();
+    if(id==null) return;
+    openProDish(id);
+    toast('Νέο πιάτο έτοιμο για επεξεργασία');
   };
   area.appendChild(addBtn);
 
@@ -2179,12 +2412,15 @@ function renderPro(){
             `<label><input type="checkbox" data-alg="${k}" ${(i.allergens||[]).includes(k)?'checked':''}>${ICO.allergen(k)}${a.el}</label>`).join('')}</div>
         </div>
         <div style="display:flex;gap:8px;margin-top:16px;">
-          <button class="btn sm pressable" data-save>${ICO.get('check')}Αποθήκευση</button>
-          <button class="btn danger sm pressable" data-del>${ICO.get('trash')}Διαγραφή πιάτου</button>
+          <button type="button" class="btn sm pressable" data-save data-testid="dish-save-${i.id}">${ICO.get('check')}Αποθήκευση</button>
+          <button type="button" class="btn danger sm pressable" data-del data-testid="dish-delete-${i.id}">${ICO.get('trash')}Διαγραφή πιάτου</button>
         </div>
       </div>`;
-    box.querySelector('.pro-head').onclick=()=>box.classList.toggle('open');
-    box.addEventListener('dragstart',e=>{ box.classList.add('dragging'); e.dataTransfer.setData('text/plain',String(i.id)); });
+    box.querySelector('.pro-head').onclick=e=>{ if(e.target.closest('.drag-handle')) return; box.classList.toggle('open'); };
+    box.addEventListener('dragstart',e=>{
+      if(!e.target.closest('.drag-handle')){ e.preventDefault(); return; }
+      box.classList.add('dragging'); e.dataTransfer.setData('text/plain',String(i.id));
+    });
     box.addEventListener('dragend',()=>box.classList.remove('dragging'));
     box.addEventListener('dragover',e=>e.preventDefault());
     box.addEventListener('drop',e=>{
@@ -2197,50 +2433,141 @@ function renderPro(){
       S.menu.forEach((x,idx)=>x.order=idx+1);
       persist(); renderPro(); toast('Η σειρά ενημερώθηκε');
     });
-    box.querySelectorAll('[data-lang]').forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); proLang=b.dataset.lang; renderPro();
-      document.querySelectorAll('.pro-item')[S.menu.indexOf(i)].classList.add('open'); });
+    box.querySelectorAll('[data-lang]').forEach(b=>b.onclick=(e)=>{
+      e.stopPropagation();
+      applyDishForm(i,box,{persist:true,rerender:false,validate:false,flush:true,silent:true});
+      proLang=b.dataset.lang;
+      renderPro();
+      const reopen=document.querySelector(`.pro-item[data-id="${cssId(i.id)}"]`);
+      if(reopen) reopen.classList.add('open');
+    });
     const dishFile=box.querySelector('[data-image-file]');
     const dishPick=box.querySelector('.upload-pick');
     dishPick.onclick=()=>dishFile.click();
     dishFile.onchange=async()=>{
+      applyDishForm(i,box,{persist:false,rerender:false,validate:false});
       const url=await uploadAdminImage(dishFile.files&&dishFile.files[0],'dish',i.id,box.querySelector('.upload-status'));
-      if(!url)return;
+      if(!url){ openProDish(i.id); return; }
       i.image=url;
       persist('dish-image-upload');
+      const ok=await flushRemoteSave({silent:true});
       renderPro();
-      toast('Η νέα εικόνα δημοσιεύτηκε ✓');
+      openProDish(i.id);
+      if(ok) toast('Η νέα εικόνα δημοσιεύτηκε ✓');
     };
-    box.querySelector('[data-save]').onclick=()=>{
-      if(!i.t[proLang]) i.t[proLang]={n:'',d:''};
-      i.t[proLang].n = box.querySelector('[data-n]').value;
-      i.t[proLang].d = box.querySelector('[data-d]').value;
-      i.price = parseFloat(box.querySelector('[data-price]').value)||0;
-      i.priceText = box.querySelector('[data-price-text]').value.trim().slice(0,40);
-      i.cat = box.querySelector('[data-cat]').value;
-      i.unit = box.querySelector('[data-unit]').value || 'portion';
-      i.prepMin = Math.max(0,Math.min(240,parseInt(box.querySelector('[data-prep-min]').value,10)||0));
-      i.ing = i.ing&&typeof i.ing==='object'?i.ing:{};
-      i.ing[proLang] = box.querySelector('[data-ingredients]').value.trim().slice(0,300);
-      const oldRemovable=Array.isArray(i.removable)?i.removable:[];
-      i.removable=box.querySelector('[data-removable]').value.split(',').map(v=>v.trim()).filter(Boolean).slice(0,20)
-        .map((value,idx)=>Object.assign({},oldRemovable[idx]||{},{[proLang]:value}));
-      i.icon = box.querySelector('[data-icon]').value || 'bowl';
-      i.iconOverride = true;
-      i.image = cleanAdminPath(box.querySelector('[data-image]').value);
-      box.querySelectorAll('[data-flag]').forEach(cb=> i[cb.dataset.flag] = cb.checked );
-      i.schedule=normalizeDishSchedule({
-        enabled:box.querySelector('[data-schedule-enabled]').checked,
-        from:box.querySelector('[data-schedule-from]').value,
-        to:box.querySelector('[data-schedule-to]').value
-      });
-      i.allergens = [...box.querySelectorAll('[data-alg]')].filter(cb=>cb.checked).map(cb=>cb.dataset.alg);
-      persist(); renderPro(); toast('Αποθηκεύτηκε');
+    box.querySelector('[data-save]').onclick=async()=>{
+      if(!applyDishForm(i,box,{persist:false,rerender:false,validate:true})) return;
+      persist('dish-save');
+      const ok=await flushRemoteSave({silent:false});
+      renderPro();
+      openProDish(i.id);
+      if(ok) toast('Αποθηκεύτηκε');
     };
-    box.querySelector('[data-del]').onclick=()=>{ if(confirm('Διαγραφή «'+itemName(i,'el')+'»;')){ S.menu=S.menu.filter(x=>x!==i); persist(); renderPro(); } };
+    box.querySelector('[data-del]').onclick=()=>{ if(confirm('Διαγραφή «'+rawItemName(i,'el')+'»;')){ S.menu=S.menu.filter(x=>x!==i); persist(); renderPro(); } };
     area.appendChild(box);
   });
 }
 
+function addDish(preferredCatId){
+  const id=addNewDish(preferredCatId);
+  if(id==null) return null;
+  openProDish(id);
+  toast('Νέο πιάτο έτοιμο για επεξεργασία');
+  return id;
+}
+function nextDishId(){
+  let max=9000;
+  (S.menu||[]).forEach(m=>{
+    const n=Number(m&&m.id);
+    if(Number.isFinite(n) && n>max) max=n;
+  });
+  return max+1;
+}
+function nextCategoryId(){
+  const used=new Set((S.categories||[]).map(c=>String(c&&c.id||'')));
+  let n=1;
+  while(used.has('custom-'+n)) n++;
+  return 'custom-'+n;
+}
+/** Shared by Easy + Pro add-dish buttons. Returns new id or null. */
+function addNewDish(preferredCatId){
+  if(!S.categories.length){ toast('Προσθέστε πρώτα μία κατηγορία'); return null; }
+  const id=nextDishId();
+  const blank={ el:{n:'Νέο πιάτο',d:''}, en:{n:'New dish',d:''}, de:{n:'',d:''}, ro:{n:'',d:''}, sr:{n:'',d:''}, bg:{n:'',d:''} };
+  const sorted=S.categories.slice().sort((a,b)=>(a.order||0)-(b.order||0));
+  const catId=preferredCatId && S.categories.some(c=>c.id===preferredCatId)
+    ? preferredCatId
+    : (sorted[0]||S.categories[0]).id;
+  S.menu.push({
+    id, cat:catId, price:0, unit:'portion', icon:'salad', image:'',
+    available:true, hidden:false, popular:false, chefPick:false,
+    veg:false, spicy:false, prepMin:15, allergensReviewed:false,
+    schedule:{enabled:false,from:'',to:''}, allergens:[], removable:[],
+    t:blank, order:S.menu.length+1
+  });
+  persist();
+  return id;
+}
+function addCategory(){
+  const id=nextCategoryId();
+  const order=Math.max(0,...(S.categories||[]).map(c=>Number(c.order)||0))+1;
+  const blank={};
+  LANGUAGES.forEach(l=>{ blank[l.code]=l.code==='el'?'Νέα κατηγορία':(l.code==='en'?'New category':'Νέα κατηγορία'); });
+  S.categories.push({
+    id, order, icon:'bowl', hidden:false, accent:'#38564F', tint:'#E7EEEA', image:'', t:blank
+  });
+  persist(); renderPro(); renderDash();
+  openProCategory(id);
+  toast('Η κατηγορία προστέθηκε');
+}
+function applyDishForm(i,box,opts={}){
+  if(!i||!box) return false;
+  const nameEl=box.querySelector('[data-n]');
+  const priceEl=box.querySelector('[data-price]');
+  const scheduleEnabled=!!(box.querySelector('[data-schedule-enabled]')&&box.querySelector('[data-schedule-enabled]').checked);
+  const scheduleFrom=box.querySelector('[data-schedule-from]')?box.querySelector('[data-schedule-from]').value:'';
+  const scheduleTo=box.querySelector('[data-schedule-to]')?box.querySelector('[data-schedule-to]').value:'';
+  if(opts.validate!==false){
+    const name=(nameEl&&nameEl.value||'').trim();
+    if(!name){ toast('Γράψτε όνομα πιάτου'); if(nameEl) nameEl.focus(); return false; }
+    const priceRaw=priceEl?priceEl.value:'';
+    const price=parseFloat(priceRaw);
+    if(priceRaw===''||isNaN(price)||price<0){ toast('Μη έγκυρη τιμή'); if(priceEl) priceEl.focus(); return false; }
+    if(scheduleEnabled && !scheduleFrom && !scheduleTo){
+      toast('Βάλτε ημερομηνία από/έως για τον προγραμματισμό'); return false;
+    }
+  }
+  if(!i.t||typeof i.t!=='object') i.t={};
+  if(!i.t[proLang]) i.t[proLang]={n:'',d:''};
+  i.t[proLang].n = nameEl?nameEl.value:'';
+  i.t[proLang].d = box.querySelector('[data-d]')?box.querySelector('[data-d]').value:'';
+  i.price = parseFloat(priceEl&&priceEl.value)||0;
+  i.priceText = (box.querySelector('[data-price-text]')?box.querySelector('[data-price-text]').value:'').trim().slice(0,40);
+  i.cat = box.querySelector('[data-cat]')?box.querySelector('[data-cat]').value:i.cat;
+  i.unit = (box.querySelector('[data-unit]')&&box.querySelector('[data-unit]').value) || 'portion';
+  i.prepMin = Math.max(0,Math.min(240,parseInt(box.querySelector('[data-prep-min]')&&box.querySelector('[data-prep-min]').value,10)||0));
+  i.ing = i.ing&&typeof i.ing==='object'?i.ing:{};
+  i.ing[proLang] = (box.querySelector('[data-ingredients]')?box.querySelector('[data-ingredients]').value:'').trim().slice(0,300);
+  const oldRemovable=Array.isArray(i.removable)?i.removable:[];
+  i.removable=(box.querySelector('[data-removable]')?box.querySelector('[data-removable]').value:'').split(',').map(v=>v.trim()).filter(Boolean).slice(0,20)
+    .map((value,idx)=>Object.assign({},oldRemovable[idx]||{},{[proLang]:value}));
+  i.icon = (box.querySelector('[data-icon]')&&box.querySelector('[data-icon]').value) || 'bowl';
+  i.iconOverride = true;
+  i.image = cleanAdminPath(box.querySelector('[data-image]')?box.querySelector('[data-image]').value:'');
+  box.querySelectorAll('[data-flag]').forEach(cb=> i[cb.dataset.flag] = cb.checked );
+  i.schedule=normalizeDishSchedule({
+    enabled:scheduleEnabled,
+    from:scheduleFrom,
+    to:scheduleTo
+  });
+  i.allergens = [...box.querySelectorAll('[data-alg]')].filter(cb=>cb.checked).map(cb=>cb.dataset.alg);
+  if(opts.persist!==false){
+    persist(opts.reason||'edit');
+    if(opts.flush!==false) flushRemoteSave({silent:opts.silent!==false});
+  }
+  if(opts.rerender!==false) renderPro();
+  return true;
+}
 function renderCategoryManager(area){
   const icons=MENU_ICON_KEYS;
   const accents=['#38564F','#A07E3C','#B4623A','#2C4A4E','#6E5A2E','#8A4B3A'];
@@ -2248,10 +2575,12 @@ function renderCategoryManager(area){
   wrap.className='cat-manager reveal';
   wrap.innerHTML=`<div class="cat-top">
     <h3>${ICO.get('layers')}Κατηγορίες</h3>
+    <button type="button" class="btn gold sm pressable" id="addCategoryBtn" data-testid="add-category">${ICO.get('plus')}Νέα κατηγορία</button>
   </div>
-  <div class="cat-mini" style="margin-bottom:10px;">Χρησιμοποιούνται μόνο οι αρχικές κατηγορίες. Μπορείτε να τις μετονομάσετε, να τις ταξινομήσετε, να τις κρύψετε και να τις εμφανίσετε ξανά.</div>
+  <div class="cat-mini" style="margin-bottom:10px;">Προσθέστε, μετονομάστε, ταξινομήστε, κρύψτε ή διαγράψτε κατηγορίες. Οι αλλαγές ισχύουν αμέσως στο μενού.</div>
   <div class="cat-list"></div>`;
   const list=wrap.querySelector('.cat-list');
+  wrap.querySelector('#addCategoryBtn').onclick=()=>addCategory();
   S.categories.slice().sort((a,b)=>a.order-b.order).forEach((c,ix)=>{
     const used=S.menu.filter(i=>i.cat===c.id).length;
     const visible=S.menu.filter(i=>i.cat===c.id&&dishGuestVisible(i)).length;
@@ -2276,8 +2605,9 @@ function renderCategoryManager(area){
       <select data-cat-icon>${icons.map(ic=>`<option value="${ic}" ${ic===(c.icon||'bowl')?'selected':''}>${ic}</option>`).join('')}</select>
       <input type="color" data-cat-accent value="${ioEsc(acc)}" title="Χρώμα">
       <div class="cat-actions">
-        <button data-cat-hide data-testid="category-visibility-${ioEsc(c.id)}" title="${c.hidden?'Εμφάνιση':'Απόκρυψη'}">${ICO.get(c.hidden?'eye':'eye')}</button>
-        <button data-cat-save data-testid="category-save-${ioEsc(c.id)}" title="Αποθήκευση">${ICO.get('check')}</button>
+        <button type="button" class="${c.hidden?'on':''}" data-cat-hide data-testid="category-visibility-${ioEsc(c.id)}" title="${c.hidden?'Εμφάνιση':'Απόκρυψη'}">${ICO.get(c.hidden?'close':'eye')}</button>
+        <button type="button" data-cat-save data-testid="category-save-${ioEsc(c.id)}" title="Αποθήκευση">${ICO.get('check')}</button>
+        <button type="button" class="danger" data-cat-del data-testid="category-delete-${ioEsc(c.id)}" title="Διαγραφή">${ICO.get('trash')}</button>
       </div>
       <div class="cat-media"><label>Εικόνα κατηγορίας · path ή URL</label><input data-cat-image list="mediaPathList" value="${ioEsc(knownCategoryImagePath(c))}" placeholder="media/dishes/05-bougiourdi.png ή https://...">
         <div class="media-upload"><input type="file" data-cat-image-file accept="image/jpeg,image/png,image/webp,image/avif"><label class="upload-pick">${ICO.get('plus')}Από συσκευή</label><span class="upload-status">Κινητό ή υπολογιστής · έως 4 MB</span></div>
@@ -2285,10 +2615,13 @@ function renderCategoryManager(area){
       <div class="cat-media"><label>Χρώμα φόντου</label><input type="color" data-cat-tint value="${ioEsc(c.tint||'#E7EEEA')}" style="width:70px"></div>
       <div class="cat-translations">
         <div class="cat-mini">Ονομασία σε όλες τις γλώσσες</div>
-        <div class="cat-translation-grid">${LANGUAGES.map(l=>`<label>${l.flag} ${l.code.toUpperCase()}<input data-cat-lang="${l.code}" value="${ioEsc(catLabel(c,l.code))}" maxlength="40"></label>`).join('')}</div>
+        <div class="cat-translation-grid">${LANGUAGES.map(l=>`<label>${l.flag} ${l.code.toUpperCase()}<input data-cat-lang="${l.code}" value="${catLabel(c,l.code)}" maxlength="40"></label>`).join('')}</div>
       </div>`;
     if(c.hidden) row.classList.add('hidden');
-    row.addEventListener('dragstart',e=>{ row.classList.add('dragging'); e.dataTransfer.setData('text/plain',String(c.id)); });
+    row.addEventListener('dragstart',e=>{
+      if(!e.target.closest('.drag-handle')){ e.preventDefault(); return; }
+      row.classList.add('dragging'); e.dataTransfer.setData('text/plain',String(c.id));
+    });
     row.addEventListener('dragend',()=>row.classList.remove('dragging'));
     row.addEventListener('dragover',e=>e.preventDefault());
     row.addEventListener('drop',e=>{
@@ -2307,13 +2640,15 @@ function renderCategoryManager(area){
       if(!url)return;
       c.image=url;
       persist('category-image-upload');
+      const ok=await flushRemoteSave({silent:true});
       renderPro();
-      toast('Η εικόνα κατηγορίας δημοσιεύτηκε ✓');
+      if(ok) toast('Η εικόνα κατηγορίας δημοσιεύτηκε ✓');
     };
     row.querySelector('[data-cat-accent]').onchange=()=>saveCategoryRow(c,row);
     row.querySelector('[data-cat-tint]').onchange=()=>saveCategoryRow(c,row);
     row.querySelectorAll('[data-cat-lang]').forEach(input=>input.onchange=()=>saveCategoryRow(c,row));
     row.querySelector('[data-cat-hide]').onclick=()=>{ c.hidden=!c.hidden; persist(); renderPro(); toast(c.hidden?'Η κατηγορία κρύφτηκε':'Η κατηγορία εμφανίζεται'); };
+    row.querySelector('[data-cat-del]').onclick=()=>deleteCategory(c);
     list.appendChild(row);
   });
   area.appendChild(wrap);
@@ -2328,16 +2663,20 @@ function saveCategoryRow(c,row){
   if(!c.t || typeof c.t!=='object') c.t={};
   LANGUAGES.forEach(l=>{
     const input=row.querySelector(`[data-cat-lang="${l.code}"]`);
-    c.t[l.code]=(input&&input.value.trim().slice(0,40)) || (l.code==='el'?name:catLabel(c,l.code)) || name;
+    c.t[l.code]=(input&&input.value.trim().slice(0,40)) || (l.code==='el'?name:rawCatName(c,l.code)) || name;
   });
   c.t.el=name;
   c.icon=icon; c.accent=accent; c.tint=tint; c.image=image;
-  persist(); renderPro(); toast('Η κατηγορία αποθηκεύτηκε');
+  persist('category-save');
+  flushRemoteSave({silent:false}).then(ok=>{
+    if(ok) toast('Η κατηγορία αποθηκεύτηκε');
+  });
+  renderPro();
 }
 function deleteCategory(c){
   const used=S.menu.filter(i=>i.cat===c.id).length;
   if(S.categories.length<=1){ toast('Χρειάζεται τουλάχιστον μία κατηγορία'); return; }
-  const label=catLabel(c,'el');
+  const label=rawCatName(c,'el');
   const question=used
     ? `Διαγραφή κατηγορίας «${label}» και των ${used} πιάτων της;\n\nΜπορείτε να το αναιρέσετε αμέσως με το κουμπί «Αναίρεση».`
     : `Διαγραφή κενής κατηγορίας «${label}»;`;
@@ -2359,8 +2698,15 @@ function moveCategory(from,to){
   persist(); renderPro(); toast('Η σειρά κατηγοριών ενημερώθηκε');
 }
 
-function itemName(i,code){ return ioEsc(((i.t&&i.t[code]&&i.t[code].n)||(i.t&&i.t.el&&i.t.el.n)||(i.t&&i.t.en&&i.t.en.n)||'Νέο πιάτο')); }
-function catLabel(c,code){ const v=(c.t&&(c.t[code]||c.t.el||c.t.en))||c.id||'Κατηγορία'; return ioEsc(typeof v==='string'?v:(v.n||c.id||'Κατηγορία')); }
+function rawItemName(i,code){
+  return String(((i&&i.t&&i.t[code]&&i.t[code].n)||(i&&i.t&&i.t.el&&i.t.el.n)||(i&&i.t&&i.t.en&&i.t.en.n)||'Νέο πιάτο'));
+}
+function rawCatName(c,code){
+  const v=(c&&c.t&&(c.t[code]||c.t.el||c.t.en))||(c&&c.id)||'Κατηγορία';
+  return String(typeof v==='string'?v:(v&&v.n)||(c&&c.id)||'Κατηγορία');
+}
+function itemName(i,code){ return ioEsc(rawItemName(i,code)); }
+function catLabel(c,code){ return ioEsc(rawCatName(c,code)); }
 function withMenuMode(url){
   const fallback=new URL('index.html', location.href).href;
   const u=new URL(String(url||fallback), location.href);
@@ -2569,7 +2915,7 @@ function renderPreviewDock(){
     dock.querySelector('[data-prev-available]').onclick=()=>{ i.available=!i.available; persist(); toast(i.available?'Διαθέσιμο':'Τελείωσε'); previewRefreshSoon(); };
     dock.querySelector('[data-prev-hide]').onclick=()=>{ i.hidden=!i.hidden; persist(); toast(i.hidden?'Κρύφτηκε από το menu':'Εμφανίζεται στο menu'); previewRefreshSoon(); };
     dock.querySelector('[data-prev-pro]').onclick=()=>openProDish(i.id);
-    dock.querySelector('[data-prev-delete]').onclick=()=>{ if(confirm('Διαγραφή «'+itemName(i,'el')+'»;')){ S.menu=S.menu.filter(x=>x!==i); previewSelection=null; persist(); previewRefreshSoon(); } };
+    dock.querySelector('[data-prev-delete]').onclick=()=>{ if(confirm('Διαγραφή «'+rawItemName(i,'el')+'»;')){ S.menu=S.menu.filter(x=>x!==i); previewSelection=null; persist(); previewRefreshSoon(); } };
     return;
   }
   if(sel.type==='category'){
@@ -2751,7 +3097,7 @@ async function refreshOwnerHistory(force){
   try{
     const pin=adminPin();
     if(!pin)throw new Error('no_pin');
-    const r=await fetch('/api/admin-history',{cache:'no-store',headers:{'X-Admin-Pin':pin}});
+    const r=await fetch('/api/admin-history',{cache:'no-store',credentials:'same-origin',headers:{'X-Admin-Pin':pin}});
     const data=await r.json().catch(()=>null);
     if(!r.ok||!data||!data.ok)throw new Error((data&&data.error)||'history_unavailable');
     ownerHistoryRemote={tried:true,loading:false,ok:true,backups:data.backups||[],history:data.history||[],error:''};
@@ -2780,7 +3126,7 @@ async function restoreOwnerBackup(source,id){
     return;
   }
   try{
-    const r=await fetch('/api/admin-history',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Pin':adminPin()},body:JSON.stringify({restoreId:id})});
+    const r=await fetch('/api/admin-history',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-Admin-Pin':adminPin()},body:JSON.stringify({restoreId:id})});
     const data=await r.json().catch(()=>null);
     if(!r.ok||!data||!data.ok||!data.state)throw new Error((data&&data.error)||'restore_failed');
     restoreOwnerState(data.state,'restore',true);
@@ -2862,6 +3208,185 @@ function wirePresetEditor(){
     persist(); renderSettings(); toast('Το preset διαγράφηκε');
   });
 }
+function publicConfigValue(section,key){
+  const cfg=publicConfigDraft||(opsSnapshot&&opsSnapshot.config)||{};
+  const block=cfg[section]||{};
+  return block[key]==null?'':String(block[key]);
+}
+function publicConfigEditorHTML(){
+  const status=publicConfigSaving?'Αποθήκευση…'
+    :publicConfigLoading?'Φόρτωση στοιχείων…'
+    :publicConfigError?'Δεν φορτώθηκαν τα δημόσια στοιχεία — δοκιμάστε ξανά.'
+    :(publicConfigDraft&&publicConfigDraft.persisted?'Αποθηκευμένα στο live store (υπερβαίνουν τα env defaults).'
+      :'Τιμές από env / προεπιλογές. Αποθηκεύστε για να ισχύουν για όλους τους πελάτες.');
+  const enc=publicConfigValue('wifi','enc')||'WPA';
+  return `<div class="announce-editor" id="publicConfigEditor">
+    <h3>${ICO.get('gear')}Δημόσια στοιχεία χώρου</h3>
+    <p class="hint">Όνομα, επικοινωνία, social, Wi‑Fi και νομικά στοιχεία που βλέπουν οι πελάτες στο menu. Αποθηκεύονται στο live store και υπερβαίνουν τα Vercel env.</p>
+    <div class="cat-mini" id="publicConfigStatus">${ioEsc(status)}</div>
+    <h4 style="margin:14px 0 4px;color:var(--forest);">Χώρος</h4>
+    <div class="fieldrow">
+      <div><label>Όνομα χώρου</label><input id="pcVenueName" maxlength="80" value="${ioEsc(publicConfigValue('venue','name'))}" placeholder="Tsigoura Verde Resort"></div>
+      <div><label>Υπότιτλος</label><input id="pcVenueSubtitle" maxlength="120" value="${ioEsc(publicConfigValue('venue','subtitle'))}" placeholder="προαιρετικό"></div>
+    </div>
+    <h4 style="margin:14px 0 4px;color:var(--forest);">Επικοινωνία</h4>
+    <div class="fieldrow">
+      <div><label>Τηλέφωνο</label><input id="pcPhone" maxlength="40" value="${ioEsc(publicConfigValue('contact','phone'))}" placeholder="+30 …"></div>
+      <div><label>Email</label><input id="pcEmail" maxlength="120" value="${ioEsc(publicConfigValue('contact','email'))}" placeholder="reservations@…"></div>
+      <div><label>Google Maps</label><input id="pcMaps" maxlength="300" value="${ioEsc(publicConfigValue('contact','maps'))}" placeholder="https://…"></div>
+      <div><label>Ιστότοπος</label><input id="pcWebsite" maxlength="300" value="${ioEsc(publicConfigValue('contact','website'))}" placeholder="https://…"></div>
+    </div>
+    <h4 style="margin:14px 0 4px;color:var(--forest);">Social</h4>
+    <div class="fieldrow">
+      <div><label>Instagram</label><input id="pcInstagram" maxlength="300" value="${ioEsc(publicConfigValue('contact','instagram'))}" placeholder="https://instagram.com/…"></div>
+      <div><label>Facebook</label><input id="pcFacebook" maxlength="300" value="${ioEsc(publicConfigValue('contact','facebook'))}" placeholder="https://facebook.com/…"></div>
+    </div>
+    <h4 style="margin:14px 0 4px;color:var(--forest);">Wi‑Fi επισκεπτών</h4>
+    <div class="fieldrow">
+      <div><label>SSID</label><input id="pcWifiSsid" maxlength="64" value="${ioEsc(publicConfigValue('wifi','ssid'))}" placeholder="TSIGOURA 5G"></div>
+      <div><label>Κωδικός</label><input id="pcWifiPass" maxlength="64" value="${ioEsc(publicConfigValue('wifi','pass'))}" placeholder="••••••••"></div>
+      <div><label>Κρυπτογράφηση</label><select id="pcWifiEnc">
+        <option value="WPA" ${enc==='WPA'?'selected':''}>WPA/WPA2</option>
+        <option value="WEP" ${enc==='WEP'?'selected':''}>WEP</option>
+        <option value="nopass" ${enc==='nopass'?'selected':''}>Χωρίς κωδικό</option>
+      </select></div>
+    </div>
+    <h4 style="margin:14px 0 4px;color:var(--forest);">Νομικά στοιχεία</h4>
+    <div class="fieldrow">
+      <div><label>Επωνυμία</label><input id="pcCompany" maxlength="120" value="${ioEsc(publicConfigValue('legal','companyName'))}"></div>
+      <div><label>ΑΦΜ</label><input id="pcAfm" maxlength="40" value="${ioEsc(publicConfigValue('legal','afm'))}"></div>
+      <div><label>ΔΟΥ</label><input id="pcDoy" maxlength="80" value="${ioEsc(publicConfigValue('legal','doy'))}"></div>
+      <div><label>ΓΕΜΗ</label><input id="pcGemi" maxlength="80" value="${ioEsc(publicConfigValue('legal','gemi'))}"></div>
+      <div><label>Διεύθυνση</label><input id="pcAddress" maxlength="200" value="${ioEsc(publicConfigValue('legal','address'))}"></div>
+      <div><label>Μ.Η.Τ.Ε.</label><input id="pcMhte" maxlength="80" value="${ioEsc(publicConfigValue('legal','mhte'))}"></div>
+      <div><label>Αγορανομικός υπεύθυνος</label><input id="pcAgoranomikos" maxlength="120" value="${ioEsc(publicConfigValue('legal','agoranomikos'))}"></div>
+    </div>
+    <div class="announce-actions">
+      <button class="btn sm pressable" id="pcSave" ${publicConfigSaving?'disabled':''}>${ICO.get('save')}Αποθήκευση δημόσιων στοιχείων</button>
+      <button class="btn ghost sm pressable" id="pcReload">${ICO.get('sparkle')}Ανανέωση</button>
+    </div>
+  </div>`;
+}
+function readPublicConfigForm(){
+  return {
+    venue:{
+      name:($('pcVenueName')&&$('pcVenueName').value||'').trim(),
+      subtitle:($('pcVenueSubtitle')&&$('pcVenueSubtitle').value||'').trim(),
+    },
+    contact:{
+      email:($('pcEmail')&&$('pcEmail').value||'').trim(),
+      phone:($('pcPhone')&&$('pcPhone').value||'').trim(),
+      instagram:($('pcInstagram')&&$('pcInstagram').value||'').trim(),
+      facebook:($('pcFacebook')&&$('pcFacebook').value||'').trim(),
+      maps:($('pcMaps')&&$('pcMaps').value||'').trim(),
+      website:($('pcWebsite')&&$('pcWebsite').value||'').trim(),
+    },
+    wifi:{
+      ssid:($('pcWifiSsid')&&$('pcWifiSsid').value||'').trim(),
+      pass:($('pcWifiPass')&&$('pcWifiPass').value||'').trim(),
+      enc:($('pcWifiEnc')&&$('pcWifiEnc').value||'WPA').trim()||'WPA',
+    },
+    legal:{
+      companyName:($('pcCompany')&&$('pcCompany').value||'').trim(),
+      afm:($('pcAfm')&&$('pcAfm').value||'').trim(),
+      doy:($('pcDoy')&&$('pcDoy').value||'').trim(),
+      gemi:($('pcGemi')&&$('pcGemi').value||'').trim(),
+      address:($('pcAddress')&&$('pcAddress').value||'').trim(),
+      mhte:($('pcMhte')&&$('pcMhte').value||'').trim(),
+      agoranomikos:($('pcAgoranomikos')&&$('pcAgoranomikos').value||'').trim(),
+    },
+  };
+}
+async function loadPublicConfigForm(force){
+  if(publicConfigLoading) return;
+  if(!force&&(publicConfigDraft||publicConfigTried)) return;
+  publicConfigLoading=true; publicConfigTried=true; publicConfigError='';
+  if($('publicConfigEditor')) renderSettings();
+  try{
+    const r=await fetch('/api/public-config',{cache:'no-store',credentials:'same-origin'});
+    const data=await r.json().catch(()=>null);
+    if(!r.ok||!data||!data.ok) throw new Error((data&&data.error)||'public_config_unavailable');
+    publicConfigDraft=data;
+    publicConfigError='';
+  }catch(e){
+    publicConfigError=e.message||'public_config_unavailable';
+  }finally{
+    publicConfigLoading=false;
+    if($('publicConfigEditor')||$('settingsArea')) renderSettings();
+  }
+}
+async function savePublicConfigForm(){
+  if(publicConfigSaving) return;
+  const pin=adminPin();
+  if(!pin){ toast('Απαιτείται είσοδος διαχειριστή'); return; }
+  const config=readPublicConfigForm();
+  publicConfigSaving=true; publicConfigError='';
+  if($('pcSave')) $('pcSave').disabled=true;
+  const status=$('publicConfigStatus'); if(status) status.textContent='Αποθήκευση…';
+  try{
+    const r=await fetch('/api/public-config',{
+      method:'POST',
+      credentials:'same-origin',
+      headers:{'Content-Type':'application/json','X-Admin-Pin':pin},
+      body:JSON.stringify({config}),
+    });
+    const data=await r.json().catch(()=>null);
+    if(!r.ok||!data||!data.ok){
+      const err=(data&&data.error)||'save_failed';
+      if(err==='store_not_configured') throw new Error('Το live store δεν είναι ρυθμισμένο');
+      if(err==='admin_pin_not_set') throw new Error('Δεν έχει οριστεί ADMIN_PIN');
+      if(err==='wrong_pin') throw new Error('Λάθος κωδικός');
+      throw new Error(err);
+    }
+    publicConfigDraft=data;
+    publicConfigTried=true;
+    opsSnapshot.config=data;
+    opsSnapshot.checkedAt=0;
+    await refreshOperationalReadiness(true);
+    toast('Τα δημόσια στοιχεία αποθηκεύτηκαν');
+  }catch(e){
+    publicConfigError=e.message||'save_failed';
+    toast(publicConfigError);
+  }finally{
+    publicConfigSaving=false;
+    if($('publicConfigEditor')) renderSettings();
+  }
+}
+function wirePublicConfigEditor(){
+  const root=$('publicConfigEditor'); if(!root) return;
+  $('pcSave').onclick=()=>savePublicConfigForm();
+  $('pcReload').onclick=()=>{ publicConfigTried=false; loadPublicConfigForm(true); };
+  if(!publicConfigDraft&&!publicConfigLoading&&!publicConfigTried) loadPublicConfigForm(false);
+}
+function dishOfDayEditorHTML(){
+  const dishes=(S.menu||[]).slice().sort((a,b)=>String(itemName(a,'el')).localeCompare(String(itemName(b,'el')),'el'));
+  const current=dishes.find(d=>d.chefPick)||null;
+  const options=['<option value="">— Κανένα —</option>'].concat(
+    dishes.map(d=>`<option value="${ioEsc(d.id)}" ${current&&String(current.id)===String(d.id)?'selected':''}>${ioEsc(itemName(d,'el'))} · €${Number(d.price||0).toFixed(2)}</option>`)
+  ).join('');
+  return `<div class="announce-editor" id="dishOfDayEditor" data-testid="dish-of-day-editor">
+    <h3>${ICO.get('star')}Πιάτο ημέρας</h3>
+    <p class="hint">Ορίζει ποιο πιάτο έχει «Πρόταση κουζίνας» (chefPick) και εμφανίζεται ως πρόταση στους πελάτες. Ίδιο flag με το checkbox στο Pro.</p>
+    <div class="fieldrow">
+      <div><label for="dishOfDaySelect">Πιάτο</label><select id="dishOfDaySelect">${options}</select></div>
+    </div>
+    <div class="announce-actions">
+      <button type="button" class="btn sm pressable" id="dishOfDaySave">${ICO.get('check')}Ορισμός πιάτου ημέρας</button>
+      <button type="button" class="btn ghost sm pressable" id="dishOfDayClear">${ICO.get('eye')}Καθαρισμός</button>
+    </div>
+  </div>`;
+}
+function wireDishOfDayEditor(){
+  const apply=async(id)=>{
+    (S.menu||[]).forEach(d=>{ d.chefPick=id!=='' && String(d.id)===String(id); });
+    persist('dish-of-day');
+    const ok=await flushRemoteSave({silent:true});
+    renderSettings(); renderMenuArea(); renderDash();
+    if(ok) toast(id?'Το πιάτο ημέρας ορίστηκε':'Καθαρίστηκε η πρόταση κουζίνας');
+  };
+  const save=$('dishOfDaySave'); if(save) save.onclick=()=>apply(($('dishOfDaySelect')&&$('dishOfDaySelect').value)||'');
+  const clear=$('dishOfDayClear'); if(clear) clear.onclick=()=>apply('');
+}
 function announcementEditorHTML(){
   if(!S.settings.announcement) S.settings.announcement=normalizeAnnouncement((typeof DEFAULT_ANNOUNCEMENT!=='undefined')?DEFAULT_ANNOUNCEMENT:null);
   const A=normalizeAnnouncement(S.settings.announcement);
@@ -2894,7 +3419,7 @@ function announcementEditorHTML(){
       <div><label>Κατηγορίες ειδικού μενού</label><div class="checks">${cats.map(c=>`<label><input type="checkbox" data-ann-cat value="${ioEsc(c.id)}" ${chosen.has(String(c.id))?'checked':''}>${catLabel(c,'el')}</label>`).join('')}</div></div>
     </div>
     <div class="announce-actions">
-      <button class="btn sm pressable" id="annSave">${ICO.get('check')}Αποθήκευση banner</button>
+      <button class="btn sm pressable" id="annSave" data-testid="announcement-save">${ICO.get('check')}Αποθήκευση banner</button>
       <button class="btn ghost sm pressable" id="annHide">${ICO.get('eye')}Κρύψιμο</button>
       <button class="btn danger sm pressable" id="annRemove">${ICO.get('trash')}Αφαίρεση κειμένου</button>
       <button class="btn ghost sm pressable" id="annReset">${ICO.get('arrow')}Επαναφορά 26/7</button>
@@ -2920,34 +3445,55 @@ function wireAnnouncementEditor(){
     cur.t.en.body=$('annBodyEn').value.trim().slice(0,220);
     return normalizeAnnouncement(cur);
   };
-  const saveAnn=(msg)=>{
+  const saveAnn=async(msg)=>{
     S.settings.announcement=readAnn();
-    persist(); renderSettings(); toast(msg||'Το banner αποθηκεύτηκε');
+    persist('announcement');
+    const ok=await flushRemoteSave({silent:false});
+    renderSettings();
+    if(ok) toast(msg||'Το banner αποθηκεύτηκε');
   };
-  $('annOn').onclick=()=>{ const A=readAnn(); A.on=!A.on; S.settings.announcement=A; persist(); renderSettings(); toast(A.on?'Το banner εμφανίζεται':'Το banner κρύφτηκε'); };
+  $('annOn').onclick=async()=>{
+    const A=readAnn(); A.on=!A.on; S.settings.announcement=A; persist('announcement');
+    await flushRemoteSave({silent:true});
+    renderSettings(); toast(A.on?'Το banner εμφανίζεται':'Το banner κρύφτηκε');
+  };
   $('annSave').onclick=()=>saveAnn('Το banner αποθηκεύτηκε');
-  $('annHide').onclick=()=>{ const A=readAnn(); A.on=false; S.settings.announcement=A; persist(); renderSettings(); toast('Το banner κρύφτηκε'); };
-  $('annRemove').onclick=()=>{
+  $('annHide').onclick=async()=>{
+    const A=readAnn(); A.on=false; S.settings.announcement=A; persist('announcement');
+    await flushRemoteSave({silent:true});
+    renderSettings(); toast('Το banner κρύφτηκε');
+  };
+  $('annRemove').onclick=async()=>{
     const A=readAnn(); A.on=false;
     LANGUAGES.forEach(l=>{ A.t[l.code]={title:'',body:''}; });
-    S.settings.announcement=normalizeAnnouncement(A); persist(); renderSettings(); toast('Το κείμενο αφαιρέθηκε');
+    S.settings.announcement=normalizeAnnouncement(A); persist('announcement');
+    await flushRemoteSave({silent:true});
+    renderSettings(); toast('Το κείμενο αφαιρέθηκε');
   };
-  $('annReset').onclick=()=>{
+  $('annReset').onclick=async()=>{
     S.settings.announcement=normalizeAnnouncement(JSON.parse(JSON.stringify(DEFAULT_ANNOUNCEMENT)));
-    persist(); renderSettings(); toast('Επανήλθε το banner 26/7');
+    persist('announcement');
+    await flushRemoteSave({silent:true});
+    renderSettings(); toast('Επανήλθε το banner 26/7');
   };
 }
 function renderSettings(){
-  if(!S.settings.headerActions) S.settings.headerActions={social:true,wifi:true,language:true};
+  if(!S.settings.headerActions) S.settings.headerActions={booking:false,social:true,wifi:true,language:true};
   const rows=[
     { ic:'sun', key:'serviceOpen', t:'Το κατάστημα είναι ανοιχτό', d:'Όταν είναι κλειστό, οι πελάτες βλέπουν το μενού αλλά δεν μπορούν να παραγγείλουν.' },
     { ic:'qr', key:'acceptOrders', t:'Δέχεται παραγγελίες από QR', d:'Κλείστε το σε ώρες αιχμής ή αν θέλετε το μενού μόνο για ανάγνωση.' },
     { ic:'note', key:'traditionalMenuOnly', t:'Παραδοσιακό e-menu μόνο', d:'Κρύβει καλάθι, online παραγγελία, handoff QR και help system. Μένει ένας καθαρός ψηφιακός κατάλογος που συνεχίζει να αλλάζει από εδώ.' },
   ];
+  const actionIcon=key=>key==='booking'?'table':key==='social'?'share':key==='wifi'?'wifi':'language';
+  const actionOn=key=>{
+    const v=S.settings.headerActions[key];
+    // booking defaults off (guest Object.assign); others default on
+    return key==='booking' ? v===true : v!==false;
+  };
   const actionRows=HEADER_ACTIONS.map(([key,title,desc])=>`
     <div class="setting-row">
-      <div class="txt"><div class="t" style="display:flex;align-items:center;gap:7px;">${ICO.get(key==='social'?'share':key==='wifi'?'wifi':'language')}${title}</div><div class="d">${desc}</div></div>
-      <div class="toggle ${S.settings.headerActions[key]!==false?'on':''}" data-action-set="${key}"></div>
+      <div class="txt"><div class="t" style="display:flex;align-items:center;gap:7px;">${ICO.get(actionIcon(key))}${title}</div><div class="d">${desc}</div></div>
+      <div class="toggle ${actionOn(key)?'on':''}" data-action-set="${key}"></div>
     </div>`).join('');
   $('settingsArea').innerHTML = rows.map(r=>`
     <div class="setting-row">
@@ -2960,6 +3506,8 @@ function renderSettings(){
       <p class="hint">Αλλάζει τι φαίνεται στο πάνω μέρος του πελάτη. Η κράτηση μένει κρυφή μέχρι να την ανοίξετε.</p>
       ${actionRows}
     </div>
+
+    ` + publicConfigEditorHTML() + dishOfDayEditorHTML() + `
 
     <div class="announce-editor">
       <h3>${ICO.get('save')}Αντίγραφο καταλόγου</h3>
@@ -2985,7 +3533,8 @@ function renderSettings(){
   $('settingsArea').querySelectorAll('[data-action-set]').forEach(el=>el.onclick=()=>{
     if(!S.settings.headerActions) S.settings.headerActions={};
     const k=el.dataset.actionSet;
-    S.settings.headerActions[k]=S.settings.headerActions[k]===false;
+    const on=k==='booking' ? S.settings.headerActions[k]===true : S.settings.headerActions[k]!==false;
+    S.settings.headerActions[k]=!on;
     persist(); renderSettings(); renderPreview(); toast('Το κουμπί ενημερώθηκε');
   });
   $('settingsArea').querySelectorAll('[data-design-set]').forEach(el=>el.onclick=()=>{
@@ -2995,6 +3544,8 @@ function renderSettings(){
   const dbPush=$('dbPush'); if(dbPush) dbPush.onclick=()=>downloadMenuLive();
   const dbCopy=$('dbCopy'); if(dbCopy) dbCopy.onclick=()=>copyMenuLive();
   $('defLang').onchange=e=>{ S.settings.defaultLang=e.target.value; persist(); };
+  wirePublicConfigEditor();
+  wireDishOfDayEditor();
   wireOwnerHistory();
   wirePresetEditor();
   wireAnnouncementEditor();
@@ -3025,11 +3576,12 @@ function renderAll(){
 /* live sync from the customer menu tab */
 window.addEventListener('storage', e=>{
   if(e.key===STORAGE_KEY || e.key===STORAGE_KEY+'_ping'){
+    flushOpenProForms();
     S=loadState();
     renderOrders(); renderTables(); renderMenuArea(); renderSettings(); renderServicePill(); renderQR(); renderDash();
   }
 });
-setInterval(()=>{ const fresh=loadState(); if(fresh.updatedAt!==S.updatedAt){ S=fresh; renderOrders(); renderTables(); renderMenuArea(); renderSettings(); renderServicePill(); renderQR(); renderDash(); } }, 4000);
+setInterval(()=>{ const fresh=loadState(); if(fresh.updatedAt!==S.updatedAt){ flushOpenProForms(); S=fresh; renderOrders(); renderTables(); renderMenuArea(); renderSettings(); renderServicePill(); renderQR(); renderDash(); } }, 4000);
 
 /* stay logged in across a QR scan during this browser session only */
 try{ if(sessionStorage.getItem('tv_admin_ok')==='1' && sessionStorage.getItem('tv_admin_pin')) unlock(); }catch(e){}

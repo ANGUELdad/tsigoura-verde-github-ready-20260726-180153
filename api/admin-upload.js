@@ -1,9 +1,15 @@
 const { put } = require('@vercel/blob');
 const {
-  adminPinOk, adminPinConfigured, adminPinFromReq, clean
+  adminPinOk, adminPinConfigured, adminPinFromReq, clean,
+  applyCors, handlePreflight, readRawBody
 } = require('./_store');
 
 const MAX_BYTES = 4 * 1024 * 1024;
+const TYPE_ALIASES = {
+  'image/jpg': 'image/jpeg',
+  'image/pjpeg': 'image/jpeg',
+  'image/x-png': 'image/png',
+};
 const TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/avif']);
 const EXTENSIONS = {
   'image/jpeg': 'jpg',
@@ -37,13 +43,22 @@ function safePart(value, fallback) {
     .slice(0, 48) || fallback;
 }
 
+function normalizeType(header) {
+  const raw = clean(header, 80).toLowerCase().split(';')[0];
+  return TYPE_ALIASES[raw] || raw;
+}
+
+/* Keep Next-style config for platforms that honor it; Vercel Node ignores it. */
 module.exports.config = { api: { bodyParser: false } };
 
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
   res.setHeader('X-Content-Type-Options', 'nosniff');
+  if (handlePreflight(req, res)) return;
+  applyCors(req, res);
+
   if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST');
+    res.setHeader('Allow', 'POST, OPTIONS');
     return res.status(405).json({ ok:false, error:'method_not_allowed' });
   }
 
@@ -58,10 +73,10 @@ module.exports = async function handler(req, res) {
     return res.status(503).json({ ok:false, error:'blob_not_configured' });
   }
 
-  const type = clean(req.headers['content-type'], 80).toLowerCase().split(';')[0];
-  const length = Number(req.headers['content-length'] || 0);
+  const type = normalizeType(req.headers['content-type']);
+  const declared = Number(req.headers['content-length'] || 0);
   if (!TYPES.has(type)) return res.status(415).json({ ok:false, error:'unsupported_image_type' });
-  if (!length || length > MAX_BYTES) return res.status(413).json({ ok:false, error:'image_too_large' });
+  if (declared > MAX_BYTES) return res.status(413).json({ ok:false, error:'image_too_large' });
 
   const kind = req.headers['x-upload-kind'] === 'category' ? 'categories' : 'dishes';
   const id = safePart(req.headers['x-upload-id'], 'item');
@@ -69,7 +84,12 @@ module.exports = async function handler(req, res) {
   const pathname = `menu/${kind}/${id}-${original}.${EXTENSIONS[type]}`;
 
   try {
-    const blob = await put(pathname, req, {
+    let body = Buffer.isBuffer(req.body) ? req.body : null;
+    if (!body) body = await readRawBody(req, MAX_BYTES);
+    if (!body || !body.length) return res.status(400).json({ ok:false, error:'empty_body' });
+    if (body.length > MAX_BYTES) return res.status(413).json({ ok:false, error:'image_too_large' });
+
+    const blob = await put(pathname, body, {
       access: 'public',
       addRandomSuffix: true,
       contentType: type,
@@ -77,6 +97,9 @@ module.exports = async function handler(req, res) {
     record(ip);
     return res.status(201).json({ ok:true, url:blob.url, pathname:blob.pathname });
   } catch (error) {
+    if (error && error.status === 413) {
+      return res.status(413).json({ ok:false, error:'image_too_large' });
+    }
     return res.status(500).json({ ok:false, error:'upload_failed' });
   }
 };

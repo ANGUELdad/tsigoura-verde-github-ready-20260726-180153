@@ -2300,9 +2300,9 @@ body.searching .search-clear{transform:none!important;}
 
 <div class="toast" id="toast"></div>
 
-<script src="tsigoura-data.js?v=20260727-script-publish-v1"></script>
-<script src="menu-live.js?v=20260727-script-publish-v1"></script>
-<script src="tsigoura-menu-icons.js?v=20260727-owner-media-controls-v2"></script>
+<script src="tsigoura-data.js"></script>
+<script src="menu-live.js"></script>
+<script src="tsigoura-menu-icons.js"></script>
 <script src="tsigoura-qr.js"></script>
 <script>
 "use strict";
@@ -2532,25 +2532,55 @@ function usePublishedFile(){
     const published = (typeof window!=='undefined') ? window.TV_MENU_STATE : null;
     if(!published || !Array.isArray(published.menu) || !published.menu.length) return false;
     S = normalizeState(JSON.parse(JSON.stringify(published)));
-    saveState(S);
+    const publishedAt=Date.parse(window.TV_MENU_PUBLISHED_AT||'')||Date.now();
+    if(S.settings){
+      S.settings.cacheRevision=publishedAt;
+      S.settings.cacheSavedAt=publishedAt;
+    }
+    S.updatedAt=publishedAt;
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(S));
+      localStorage.setItem(STORAGE_KEY+'_ping', String(publishedAt));
+      localStorage.setItem(STORAGE_KEY+'_revision', String(publishedAt));
+    }catch(e){}
     return true;
   }catch(e){ return false; }
 }
 let liveMenuRevision=0;
+function menuFetchHeaders(){
+  return { 'Cache-Control':'no-cache', Pragma:'no-cache' };
+}
+function menuApiUrl(revision){
+  const params=new URLSearchParams();
+  params.set('_', String(Date.now()));
+  if(revision) params.set('revision', String(revision));
+  return '/api/menu?'+params.toString();
+}
+function applyRemoteMenuState(data){
+  if(!data || !data.ok || !data.state || !Array.isArray(data.state.menu) || !data.state.menu.length) return false;
+  S=normalizeState(data.state);
+  const revision=Number(data.revision)||0;
+  if(revision){
+    liveMenuRevision=revision;
+    if(S.settings){
+      S.settings.cacheRevision=revision;
+      S.settings.cacheSavedAt=revision;
+    }
+    S.updatedAt=revision;
+  }
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(S));
+    localStorage.setItem(STORAGE_KEY+'_ping', String(S.updatedAt||Date.now()));
+    localStorage.setItem(STORAGE_KEY+'_revision', String(liveMenuRevision||S.updatedAt||Date.now()));
+  }catch(e){}
+  return true;
+}
 async function hydrateRemoteMenu(){
   try{
-    const r=await fetch('/api/menu',{cache:'no-store'});
+    const r=await fetch(menuApiUrl(0),{cache:'no-store',headers:menuFetchHeaders()});
     if(r.ok){
       const data=await r.json();
-      if(data && data.ok && data.state && Array.isArray(data.state.menu) && data.state.menu.length){
-        S=normalizeState(data.state);
-        if(data.revision){
-          liveMenuRevision=Number(data.revision)||0;
-          if(S.settings) S.settings.cacheRevision=liveMenuRevision||S.settings.cacheRevision;
-        }
-        saveState(S);
-        return true;
-      }
+      if(applyRemoteMenuState(data)) return true;
     }
   }catch(e){}
   return usePublishedFile();
@@ -2725,7 +2755,7 @@ function renderQuickFlow(){
     ${orderChip}`;
   slot.querySelector('[data-flow="menu"]').onclick=()=>{ const first=document.querySelector('.sec'); if(first) scrollToCategory(first.id.replace('sec-','')); };
   const cartBtn=slot.querySelector('[data-flow="cart"]'); if(cartBtn) cartBtn.onclick=()=>{ if(count()){ renderCartSheet(); openSheet('cartSheet'); } else toast(T('flowEmpty')); };
-  const bookFlow=slot.querySelector('[data-flow="book"]'); if(bookFlow) bookFlow.onclick=()=>{ location.href='book.html'; };
+  const bookFlow=slot.querySelector('[data-flow="book"]'); if(bookFlow) bookFlow.onclick=()=>{ renderBook(); openSheet('bookSheet'); };
   const socialFlow=slot.querySelector('[data-flow="social"]'); if(socialFlow) socialFlow.onclick=()=>{ renderSocial(); openSheet('socialSheet'); };
   const wifiFlow=slot.querySelector('[data-flow="wifi"]'); if(wifiFlow) wifiFlow.onclick=()=>{ renderWifi(); openSheet('wifiSheet'); };
 }
@@ -4092,7 +4122,7 @@ document.getElementById('langBtn').onclick=()=>{renderLang();openSheet('langShee
 }
 (function(){
   const bb=document.getElementById('bookBtn');
-  if(bb) bb.onclick=()=>{ location.href='book.html'; };
+  if(bb) bb.onclick=()=>{ renderBook(); openSheet('bookSheet'); };
   const sb=document.getElementById('socialBtn');
   if(sb) sb.onclick=()=>{ renderSocial(); openSheet('socialSheet'); };
 })();
@@ -4145,16 +4175,15 @@ async function checkLiveMenuUpdate(force){
   if(!force && now-lastLiveCheckAt<30000) return false;
   liveCheckBusy=true; lastLiveCheckAt=now;
   try{
-    const r=await fetch('/api/menu',{cache:'no-store'});
+    const r=await fetch(menuApiUrl(liveMenuRevision||0),{cache:'no-store',headers:menuFetchHeaders()});
     if(!r.ok) return false;
     const data=await r.json();
-    const revision=Number(data&&data.revision)||0;
-    if(!data || !data.ok || !revision || revision<=liveMenuRevision || !data.state || !Array.isArray(data.state.menu)) return false;
+    if(!data || !data.ok) return false;
+    if(data.unchanged) return false;
+    const revision=Number(data.revision)||0;
+    if(!revision || (liveMenuRevision && revision<=liveMenuRevision) || !data.state || !Array.isArray(data.state.menu)) return false;
     const y=window.scrollY;
-    liveMenuRevision=revision;
-    S=normalizeState(data.state);
-    if(S.settings) S.settings.cacheRevision=revision;
-    saveState(S);
+    if(!applyRemoteMenuState(data)) return false;
     cart=cart.filter(l=>{ const i=itemOf(l.id); return i&&isGuestVisible(i)&&i.available&&i.price>0; });
     saveCart();
     apply();
@@ -4168,12 +4197,21 @@ async function checkLiveMenuUpdate(force){
   }
 }
 
-/* cross-tab sync (admin ↔ menu) */
+/* cross-tab sync (admin ↔ menu) — localStorage + BroadcastChannel + live API */
 window.addEventListener('storage',e=>{
-  if(e.key===STORAGE_KEY||e.key===STORAGE_KEY+'_ping'){ S=loadState();
+  if(e.key===STORAGE_KEY||e.key===STORAGE_KEY+'_ping'||e.key===STORAGE_KEY+'_admin_revision'){
+    if(e.key===STORAGE_KEY+'_admin_revision'){ checkLiveMenuUpdate(true); return; }
+    S=loadState();
     cart=cart.filter(l=>{const i=itemOf(l.id);return i&&isGuestVisible(i)&&i.available&&i.price>0;}); saveCart(); apply();
-    replayMotionClass(document.getElementById('root'),'motion-live-update',760); }
+    replayMotionClass(document.getElementById('root'),'motion-live-update',760);
+  }
 });
+try{
+  if('BroadcastChannel' in window){
+    const menuLiveChannel=new BroadcastChannel('tsigoura-menu-live');
+    menuLiveChannel.onmessage=()=>{ checkLiveMenuUpdate(true); };
+  }
+}catch(e){}
 
 /* ═══════════════ splash (first visit) ═══════════════ */
 function buildSplash(){

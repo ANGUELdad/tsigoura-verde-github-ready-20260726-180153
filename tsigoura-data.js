@@ -356,7 +356,7 @@ const DEFAULT_SETTINGS = {
   cacheRevision:0,
   cacheSavedAt:0,
   traditionalMenuOnly:true,
-  headerActions:{ social:true, wifi:true, language:true },
+  headerActions:{ booking:false, social:true, wifi:true, language:true },
   design:{ accent:'#38564F', showVisualRail:true, categoryArt:true, motion:'rich', showFeaturedHero:true },
   announcement:JSON.parse(JSON.stringify(DEFAULT_ANNOUNCEMENT)),
   eventPresets:[],
@@ -378,22 +378,26 @@ function loadState(){
        merged.settings.headerActions=Object.assign({}, base.settings.headerActions, (saved.settings&&saved.settings.headerActions)||{});
        merged.settings.design=Object.assign({}, base.settings.design, (saved.settings&&saved.settings.design)||{});
        if((saved.settings||{}).catalogVersion !== DEFAULT_SETTINGS.catalogVersion){
-         const savedById=new Map((Array.isArray(saved.menu)?saved.menu:[]).map(i=>[String(i.id),i]));
-         const official=JSON.parse(JSON.stringify(DEFAULT_MENU)).map(i=>{
-           const old=savedById.get(String(i.id));
-           if(old){
-             if(Array.isArray(old.allergens)&&old.allergens.length) i.allergens=old.allergens;
-           }
-           return i;
-         });
-         const officialIds=new Set(official.map(i=>String(i.id)));
-         const custom=(Array.isArray(saved.menu)?saved.menu:[]).filter(i=>i && !officialIds.has(String(i.id)));
-         merged.menu=official.concat(custom);
-         merged.categories=base.categories;
+         /* Catalog bumps may ADD newly printed dishes/categories, but must
+            NEVER wipe owner edits, resurrect deleted official dishes, or drop
+            custom dishes/categories. */
+         const savedMenu=Array.isArray(saved.menu)?saved.menu.filter(Boolean):[];
+         const savedById=new Map(savedMenu.map(i=>[String(i.id),i]));
+         const missingOfficial=DEFAULT_MENU
+           .filter(i=>!savedById.has(String(i.id)))
+           .map(i=>JSON.parse(JSON.stringify(i)));
+         merged.menu=savedMenu.concat(missingOfficial);
+         const savedCats=Array.isArray(saved.categories)?saved.categories.filter(Boolean):[];
+         if(savedCats.length){
+           const savedCatIds=new Set(savedCats.map(c=>String(c.id)));
+           const missingCats=base.categories
+             .filter(c=>!savedCatIds.has(String(c.id)))
+             .map(c=>JSON.parse(JSON.stringify(c)));
+           merged.categories=savedCats.concat(missingCats);
+         } else {
+           merged.categories=base.categories;
+         }
          merged.settings.catalogVersion=DEFAULT_SETTINGS.catalogVersion;
-         merged.settings.traditionalMenuOnly=DEFAULT_SETTINGS.traditionalMenuOnly;
-         merged.settings.headerActions=Object.assign({}, DEFAULT_SETTINGS.headerActions);
-         merged.settings.announcement=JSON.parse(JSON.stringify(DEFAULT_SETTINGS.announcement));
        }
        return normalizeState(merged); }catch(e){ return defaultState(); }
 }
@@ -408,7 +412,7 @@ function normalizeState(s){
   s.categories=(Array.isArray(s.categories)&&s.categories.length)?s.categories:base.categories;
   s.tables=Array.isArray(s.tables)?s.tables:base.tables;
   s.orders=Array.isArray(s.orders)?s.orders:[];
-  const catIds=new Set(s.categories.map(c=>String(c.id||'')));
+  /* Normalize category ids first, then rebuild the lookup used for dish.cat. */
   s.categories.forEach((c,ix)=>{
     c.id=String(c.id||('cat'+(ix+1))).slice(0,32);
     c.order=Number.isFinite(Number(c.order))?Number(c.order):ix+1;
@@ -424,9 +428,12 @@ function normalizeState(s){
       c.t[l.code]=String(typeof cur==='string'?cur:(cur&&cur.n)||fallbackCat).slice(0,40);
     });
   });
+  const catIds=new Set(s.categories.map(c=>String(c.id||'')));
   s.menu.forEach((i,ix)=>{
     i.id = i.id || (9000+ix);
-    i.cat = catIds.has(String(i.cat)) ? i.cat : (s.categories[0]&&s.categories[0].id)||'appetizers';
+    const rawCat=String(i.cat==null?'':i.cat);
+    i.cat = catIds.has(rawCat) ? (s.categories.find(c=>String(c.id)===rawCat)||{}).id || rawCat
+      : (s.categories[0]&&s.categories[0].id)||'appetizers';
     i.price = Math.max(0, Number(i.price)||0);
     i.unit = i.unit || 'portion';
     i.icon = i.icon || i.art || 'bowl';

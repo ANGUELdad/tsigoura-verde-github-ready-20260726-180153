@@ -1,6 +1,7 @@
 const {
   configured, adminPinOk, adminPinConfigured, clean,
-  adminPinFromReq, readAdminHistory, restoreMenuBackup
+  adminPinFromReq, readAdminHistory, restoreMenuBackup,
+  parseJsonBody, applyCors, handlePreflight
 } = require('./_store');
 
 const attempts = globalThis.__tvHistoryAttempts || (globalThis.__tvHistoryAttempts = new Map());
@@ -17,20 +18,19 @@ function failed(key) {
   recent.push(Date.now()); attempts.set(key,recent.slice(-12));
 }
 
-function body(req) {
-  return typeof req.body==='object'&&req.body ? req.body : JSON.parse(req.body||'{}');
-}
-
 module.exports = async function handler(req,res) {
+  res.setHeader('Cache-Control','no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+  if (handlePreflight(req, res)) return;
+  applyCors(req, res);
+
   if(!['GET','POST'].includes(req.method)){
-    res.setHeader('Allow','GET, POST');
+    res.setHeader('Allow','GET, POST, OPTIONS');
     return res.status(405).json({ok:false,error:'method_not_allowed'});
   }
-  res.setHeader('Cache-Control','no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
   try{
     if(!configured()) return res.status(503).json({ok:false,configured:false,error:'store_not_configured'});
     if(!adminPinConfigured()) return res.status(503).json({ok:false,configured:true,error:'admin_pin_not_set'});
-    const data=req.method==='POST'?body(req):{};
+    const data=req.method==='POST'?await parseJsonBody(req):{};
     const ip=ipOf(req);
     if(blocked(ip)) return res.status(429).json({ok:false,error:'too_many_attempts'});
     if(!adminPinOk(adminPinFromReq(req,data))){

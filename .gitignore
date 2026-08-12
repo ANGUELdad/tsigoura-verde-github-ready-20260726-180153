@@ -7,5 +7,8 @@ node_modules/
 playwright-report/
 test-results/
 .vercel/
+.data/
 *.log
 *.zip
+.vercel
+.env*
