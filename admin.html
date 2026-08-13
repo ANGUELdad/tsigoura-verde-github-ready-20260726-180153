@@ -428,6 +428,15 @@ nav.tabs button.on{color:var(--cream);border-bottom-color:var(--gold);}
 .announce-editor .mini-preview b{display:block;font-family:Fraunces,serif;font-size:17px;line-height:1.15;padding-right:34px;}
 .announce-editor .mini-preview span{position:absolute;right:12px;top:10px;font-size:23px;}
 .announce-editor .mini-preview p{font-size:12px;line-height:1.4;margin:5px 0 0;color:rgba(255,248,234,.82);}
+/* per-language panes — all six editable, Greek first and visually primary */
+.ann-langs{margin-top:14px;display:grid;gap:9px;}
+.ann-lang{border:1px solid var(--line);border-radius:11px;padding:9px 11px 11px;background:rgba(255,255,255,.55);}
+.ann-lang.primary{border-color:rgba(201,162,39,.42);background:rgba(255,252,243,.9);}
+.ann-lang-h{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:var(--forest);}
+.ann-lang-h .fl{font-size:15px;line-height:1;}
+.ann-lang-h em{font-style:normal;font-weight:500;color:var(--muted);font-size:11px;}
+.ann-lang .fieldrow{margin-top:7px;}
+.ann-lang textarea{resize:vertical;}
 .preset-list{display:grid;gap:8px;margin-top:12px;}
 .preset-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:11px 12px;border-radius:13px;background:rgba(255,255,255,.76);border:1px solid rgba(56,86,79,.12);}
 .preset-card b{display:block;color:var(--forest);font-size:14px;}
@@ -1485,9 +1494,12 @@ function flushOpenProForms(){
    so a title typed but not yet saved was silently reverted to the stored value
    and "Αποθήκευση banner" then republished the OLD text. Read the open editor
    back into state before anything rebuilds it. */
+/* One id scheme for every language pane, shared by the renderer, the reader
+   and the clear handler — so adding a language to LANGUAGES needs no edits here. */
+function annFieldId(kind,code){ return 'ann'+(kind==='title'?'Title':'Body')+'_'+code; }
 function readAnnouncementEditor(){
   const box=document.getElementById('announceEditor');
-  if(!box || !$('annTitleEl') || !$('annTarget')) return null;
+  if(!box || !$(annFieldId('title','el')) || !$('annTarget')) return null;
   const cur=normalizeAnnouncement(S.settings.announcement||{});
   const next={
     on:cur.on,
@@ -1499,8 +1511,14 @@ function readAnnouncementEditor(){
     t:Object.assign({}, cur.t||{})
   };
   if(!next.specialCats.length) next.specialCats=[next.targetCat];
-  next.t.el={title:$('annTitleEl').value.trim().slice(0,90), body:$('annBodyEl').value.trim().slice(0,220)};
-  next.t.en={title:$('annTitleEn').value.trim().slice(0,90), body:$('annBodyEn').value.trim().slice(0,220)};
+  LANGUAGES.forEach(l=>{
+    const ti=$(annFieldId('title',l.code)), bo=$(annFieldId('body',l.code));
+    if(!ti && !bo) return;               /* language pane absent — keep stored value */
+    next.t[l.code]={
+      title:(ti?ti.value:'').trim().slice(0,90),
+      body:(bo?bo.value:'').trim().slice(0,220)
+    };
+  });
   return normalizeAnnouncement(next);
 }
 /* Set while a handler deliberately REPLACES the announcement (reset/remove),
@@ -3510,14 +3528,16 @@ function announcementEditorHTML(){
       <div><label>Έως (κενό = χωρίς όριο)</label><input type="date" id="annTo" value="${ioEsc(A.to||'')}"></div>
       <div><label>Emoji</label><input id="annEmoji" value="${ioEsc(A.emoji||'')}" maxlength="8" placeholder="π.χ. 🔥"></div>
     </div>
-    <div class="fieldrow">
-      <div><label>Τίτλος EL</label><input id="annTitleEl" value="${ioEsc(el.title||'')}" maxlength="90"></div>
-      <div><label>Title EN</label><input id="annTitleEn" value="${ioEsc(en.title||'')}" maxlength="90"></div>
-    </div>
-    <div class="fieldrow">
-      <div><label>Κείμενο EL</label><textarea id="annBodyEl" rows="3" maxlength="220">${ioEsc(el.body||'')}</textarea></div>
-      <div><label>Text EN</label><textarea id="annBodyEn" rows="3" maxlength="220">${ioEsc(en.body||'')}</textarea></div>
-    </div>
+    <div class="ann-langs">${LANGUAGES.map(l=>{
+      const tv=(A.t&&A.t[l.code])||{title:'',body:''};
+      return `<div class="ann-lang${l.code==='el'?' primary':''}">
+        <div class="ann-lang-h"><span class="fl">${l.flag}</span>${ioEsc(l.label)}${l.code==='el'?' <em>· κύρια γλώσσα</em>':''}</div>
+        <div class="fieldrow">
+          <div><label>Τίτλος</label><input id="${annFieldId('title',l.code)}" value="${ioEsc(tv.title||'')}" maxlength="90" placeholder="${l.code==='el'?'π.χ. Δεκαπενταύγουστος στη Τσιγγούρα':''}"></div>
+          <div><label>Κείμενο</label><textarea id="${annFieldId('body',l.code)}" rows="2" maxlength="220">${ioEsc(tv.body||'')}</textarea></div>
+        </div>
+      </div>`;
+    }).join('')}</div>
     <div class="fieldrow">
       <div><label>Κύρια κατηγορία όταν πατηθεί</label><select id="annTarget">${cats.map(c=>`<option value="${ioEsc(c.id)}" ${String(A.targetCat)===String(c.id)?'selected':''}>${catLabel(c,'el')}</option>`).join('')}</select></div>
       <div><label>Κατηγορίες ειδικού μενού</label><div class="checks">${cats.map(c=>`<label><input type="checkbox" data-ann-cat value="${ioEsc(c.id)}" ${chosen.has(String(c.id))?'checked':''}>${catLabel(c,'el')}</label>`).join('')}</div></div>
@@ -3620,10 +3640,11 @@ function wireAnnouncementEditor(){
     const A=readAnn(); A.on=false;
     LANGUAGES.forEach(l=>{ A.t[l.code]={title:'',body:''}; });
     S.settings.announcement=normalizeAnnouncement(Object.assign({}, A, {from:A.from, to:A.to})); persist('announcement');
-    if($('annTitleEl')) $('annTitleEl').value='';
-    if($('annBodyEl')) $('annBodyEl').value='';
-    if($('annTitleEn')) $('annTitleEn').value='';
-    if($('annBodyEn')) $('annBodyEn').value='';
+    LANGUAGES.forEach(l=>{
+      const ti=$(annFieldId('title',l.code)), bo=$(annFieldId('body',l.code));
+      if(ti) ti.value='';
+      if(bo) bo.value='';
+    });
     syncToggleUi(S.settings.announcement);
     await flushRemoteSave({silent:false});
     toast('Το κείμενο αφαιρέθηκε');

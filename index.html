@@ -1015,6 +1015,57 @@ body{background:var(--paper)!important;}
   animation:emberIn .6s var(--ez-spring) .4s both,
             emberSway 3.4s ease-in-out 1s infinite alternate!important;}
 
+/* ── 2b. festive banner: ember surface, travelling sheen, breathing glow ────
+   Loaded after the flat "calm surfaces" pass above so it wins for the
+   announcement only — the rest of the menu stays deliberately quiet. */
+@keyframes annSheen  {0%{background-position:190% 0,0 0,0 0;}
+                      58%,100%{background-position:-95% 0,0 0,0 0;}}
+@keyframes annGlow   {from{box-shadow:0 14px 30px rgba(92,32,10,.32),inset 0 1px 0 rgba(255,236,204,.20),0 0 0 0 rgba(255,183,94,0);}
+                      to  {box-shadow:0 18px 38px rgba(92,32,10,.42),inset 0 1px 0 rgba(255,236,204,.30),0 0 0 4px rgba(255,183,94,.11);}}
+@keyframes emberFlick{0%,100%{opacity:1;}38%{opacity:.8;}62%{opacity:.97;}}
+.announce{
+  background-image:
+    linear-gradient(105deg,transparent 34%,rgba(255,228,174,.26) 47%,transparent 61%),
+    radial-gradient(140% 92% at 88% -16%,rgba(255,188,98,.44),transparent 62%),
+    linear-gradient(122deg,#40160A 0%,#8E3616 46%,#C98B3E 100%)!important;
+  background-size:260% 100%,100% 100%,100% 100%!important;
+  background-position:190% 0,0 0,0 0!important;
+  background-repeat:no-repeat!important;
+  border:1px solid rgba(255,214,150,.36)!important;
+  box-shadow:0 14px 30px rgba(92,32,10,.32),inset 0 1px 0 rgba(255,236,204,.20)!important;
+  transition:filter .2s var(--ez-out)!important;
+  animation:annIn .8s var(--ez-out) both,
+            annSheen 7.5s var(--ez-inout) 1.2s infinite,
+            annGlow 4.6s ease-in-out 1.4s infinite alternate!important;}
+/* filter, not transform — annIn holds transform via fill:both and would win */
+.announce:active{filter:brightness(1.07) saturate(1.06)!important;}
+.announce::after{background:
+  linear-gradient(180deg,rgba(46,13,4,.18),rgba(46,13,4,.56)),
+  radial-gradient(120% 78% at 50% 118%,rgba(28,8,2,.34),transparent 66%)!important;}
+.announce .ttl{color:#FFF1D8!important;letter-spacing:.1px!important;
+  text-shadow:0 1px 10px rgba(60,18,4,.42)!important;}
+/* gradient lettering only where it is safe — never risk invisible text */
+@supports ((-webkit-background-clip:text) or (background-clip:text)){
+  .announce .ttl{background:linear-gradient(96deg,#FFF6E4,#FFD89C 56%,#FFEFD2)!important;
+    -webkit-background-clip:text!important;background-clip:text!important;
+    -webkit-text-fill-color:transparent!important;
+    text-shadow:none!important;
+    filter:drop-shadow(0 1px 8px rgba(60,18,4,.44))!important;}
+}
+.announce .bd{color:rgba(255,241,219,.93)!important;
+  text-shadow:0 1px 6px rgba(60,18,4,.34)!important;}
+.announce .em{font-size:34px!important;
+  filter:drop-shadow(0 0 11px rgba(255,152,52,.5)) drop-shadow(0 2px 6px rgba(0,0,0,.34))!important;
+  animation:emberIn .6s var(--ez-spring) .4s both,
+            emberSway 3.4s ease-in-out 1s infinite alternate,
+            emberFlick 2.6s ease-in-out 1s infinite!important;}
+/* the reduced-motion pass earlier in the file cannot reach these later
+   !important rules, so restate it here */
+@media (prefers-reduced-motion:reduce){
+  .announce,.announce::before,.announce .em{animation:none!important;}
+  .announce{background-position:58% 0,0 0,0 0!important;}
+}
+
 /* ── 3. search + notice ─────────────────────────────────────────────────── */
 @keyframes fieldIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 .search{animation:fieldIn .6s var(--ez-out) .3s both!important;
