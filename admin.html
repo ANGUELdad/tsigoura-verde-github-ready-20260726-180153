@@ -1476,6 +1476,42 @@ function flushOpenProForms(){
       if(i) applyDishForm(i,box,{persist:false,flush:false,rerender:false,validate:false});
     });
   }catch(e){}
+  flushAnnouncementEditor();
+}
+/* ── announcement editor: keep typed input alive across re-renders ───────────
+   renderSettings() replaces settingsArea.innerHTML wholesale, and it is called
+   from ~15 places (other toggles, the 4s state poller, preset/history actions).
+   Dish forms were protected by flushOpenProForms(); the banner fields were not,
+   so a title typed but not yet saved was silently reverted to the stored value
+   and "Αποθήκευση banner" then republished the OLD text. Read the open editor
+   back into state before anything rebuilds it. */
+function readAnnouncementEditor(){
+  const box=document.getElementById('announceEditor');
+  if(!box || !$('annTitleEl') || !$('annTarget')) return null;
+  const cur=normalizeAnnouncement(S.settings.announcement||{});
+  const next={
+    on:cur.on,
+    from:$('annFrom').value,
+    to:$('annTo').value,
+    emoji:$('annEmoji').value.trim().slice(0,8),
+    targetCat:$('annTarget').value,
+    specialCats:[...box.querySelectorAll('[data-ann-cat]')].filter(cb=>cb.checked).map(cb=>cb.value),
+    t:Object.assign({}, cur.t||{})
+  };
+  if(!next.specialCats.length) next.specialCats=[next.targetCat];
+  next.t.el={title:$('annTitleEl').value.trim().slice(0,90), body:$('annBodyEl').value.trim().slice(0,220)};
+  next.t.en={title:$('annTitleEn').value.trim().slice(0,90), body:$('annBodyEn').value.trim().slice(0,220)};
+  return normalizeAnnouncement(next);
+}
+/* Set while a handler deliberately REPLACES the announcement (reset/remove),
+   so the flush cannot resurrect the stale DOM values it is about to discard. */
+let suppressAnnouncementFlush=false;
+function flushAnnouncementEditor(){
+  if(suppressAnnouncementFlush) return;
+  try{
+    const A=readAnnouncementEditor();
+    if(A) S.settings.announcement=A;
+  }catch(e){}
 }
 /* ── publishing (no database) ────────────────────────────────────────────────
    The live menu is the file menu-live.js. The owner downloads a fresh copy from
@@ -3511,26 +3547,10 @@ function wireAnnouncementEditor(){
     }
     return false;
   };
-  const readAnn=()=>{
-    const cur=normalizeAnnouncement(S.settings.announcement||{});
-    /* Pass explicit from/to (including empty) so normalizeAnnouncement does not
-       reinstate the sample July-26 window. */
-    const next={
-      on:cur.on,
-      from:$('annFrom').value,
-      to:$('annTo').value,
-      emoji:$('annEmoji').value.trim().slice(0,8),
-      targetCat:$('annTarget').value,
-      specialCats:[...box.querySelectorAll('[data-ann-cat]')].filter(cb=>cb.checked).map(cb=>cb.value),
-      t:Object.assign({}, cur.t||{})
-    };
-    if(!next.specialCats.length) next.specialCats=[next.targetCat];
-    if(!next.t.el) next.t.el={title:'',body:''};
-    if(!next.t.en) next.t.en={title:'',body:''};
-    next.t.el={title:$('annTitleEl').value.trim().slice(0,90), body:$('annBodyEl').value.trim().slice(0,220)};
-    next.t.en={title:$('annTitleEn').value.trim().slice(0,90), body:$('annBodyEn').value.trim().slice(0,220)};
-    return normalizeAnnouncement(next);
-  };
+  /* Single reader, shared with flushAnnouncementEditor() so a re-render and an
+     explicit save always capture the form the same way. Explicit from/to
+     (including empty) stop normalizeAnnouncement reinstating the July-26 sample. */
+  const readAnn=()=>readAnnouncementEditor()||normalizeAnnouncement(S.settings.announcement||{});
   const paintAnnouncementHint=(A)=>{
     let hint=box.querySelector('[data-ann-hint]');
     if(!hint){
@@ -3609,14 +3629,25 @@ function wireAnnouncementEditor(){
     toast('Το κείμενο αφαιρέθηκε');
   };
   $('annReset').onclick=async()=>{
-    S.settings.announcement=normalizeAnnouncement(JSON.parse(JSON.stringify(DEFAULT_ANNOUNCEMENT)));
-    persist('announcement');
-    await flushRemoteSave({silent:false});
-    renderSettings(); toast('Επανήλθε το banner 26/7 (κρυφό μέχρι να το ενεργοποιήσετε με νέες ημερομηνίες)');
+    /* Deliberate replace: hold the flush off until the editor has been rebuilt
+       from the new state, or it would read the pre-reset DOM straight back in. */
+    suppressAnnouncementFlush=true;
+    try{
+      S.settings.announcement=normalizeAnnouncement(JSON.parse(JSON.stringify(DEFAULT_ANNOUNCEMENT)));
+      persist('announcement');
+      await flushRemoteSave({silent:false});
+      renderSettings();
+    }finally{
+      suppressAnnouncementFlush=false;
+    }
+    toast('Επανήλθε το banner 26/7 (κρυφό μέχρι να το ενεργοποιήσετε με νέες ημερομηνίες)');
   };
   paintAnnouncementHint(S.settings.announcement||{});
 }
 function renderSettings(){
+  /* Capture anything typed into the open banner editor before this rebuild
+     throws the DOM away — otherwise unsaved edits are lost silently. */
+  flushAnnouncementEditor();
   if(!S.settings.headerActions) S.settings.headerActions={booking:false,social:true,wifi:true,language:true};
   const rows=[
     { ic:'sun', key:'serviceOpen', t:'Το κατάστημα είναι ανοιχτό', d:'Όταν είναι κλειστό, οι πελάτες βλέπουν το μενού αλλά δεν μπορούν να παραγγείλουν.' },

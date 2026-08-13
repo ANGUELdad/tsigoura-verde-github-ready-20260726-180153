@@ -440,10 +440,18 @@ async function writeMenu(state, meta = {}) {
   const previous=await readMenu();
   const now=new Date().toISOString();
   try { await storeDailyBackup(previous,now); } catch (e) {}
+  /* The revision doubles as the guest cache key: index.html polls
+     /api/menu?revision=N and ignores anything not strictly newer. It arrives
+     from the admin BROWSER's clock, so a skewed or second device could write a
+     revision <= the stored one and freeze every guest on the old menu forever.
+     Force it strictly upward so a publish always reaches phones. */
   const revisionNum = Number(meta.revision);
+  const previousRevision = Number(previous && previous.revision) || 0;
+  let revision = Number.isFinite(revisionNum) && revisionNum > 0 ? revisionNum : Date.now();
+  if (revision <= previousRevision) revision = previousRevision + 1;
   const doc = {
     state,
-    revision: Number.isFinite(revisionNum) && revisionNum > 0 ? revisionNum : Date.now(),
+    revision,
     updatedAt: now,
     updatedBy: clean(meta.updatedBy || 'admin', 80),
   };
