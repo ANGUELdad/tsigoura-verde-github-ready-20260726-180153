@@ -4622,7 +4622,20 @@ function renderAnnounce(){
         return {active:true};
       })();
   if(!win.active){ slot.innerHTML=''; return; }
-  const t=(A.t&&(A.t[lang]||A.t.en||A.t.el))||null; if(!t || (!String(t.title||'').trim() && !String(t.body||'').trim())){ slot.innerHTML=''; return; }
+  /* Fall back to ANY language that actually has text. normalizeAnnouncement
+     creates an entry for every language, so a blank pane used to mean the
+     object existed but was empty — and the banner disappeared completely for
+     guests on that language while everyone else still saw it. Show them a
+     populated language instead of nothing. */
+  const annText=code=>{
+    const v=A.t&&A.t[code];
+    if(!v) return null;
+    return (String(v.title||'').trim() || String(v.body||'').trim()) ? v : null;
+  };
+  const t = annText(lang) || annText('en') || annText('el')
+            || (typeof LANGUAGES!=='undefined' ? LANGUAGES.map(l=>annText(l.code)).find(Boolean) : null)
+            || null;
+  if(!t){ slot.innerHTML=''; return; }
   const img = (typeof MEDIA!=='undefined' && (MEDIA.souvles||MEDIA.hero)) ? `url('${MEDIA.souvles||MEDIA.hero}')` : 'none';
   slot.innerHTML=`<button class="announce" type="button" id="announceGo" data-special-open data-admin-announcement="1" style="--ann-img:${img}">
     ${A.emoji?`<span class="em">${A.emoji}</span>`:''}
