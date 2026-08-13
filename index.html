@@ -4546,15 +4546,20 @@ function renderAnnounce(){
   const slot=document.getElementById('announceSlot'); if(!slot) return;
   const A=activeAnnouncement();
   if(q.trim() || !A || !A.on){ slot.innerHTML=''; return; }
-  /* Compare plain YYYY-MM-DD in the VENUE's local time. Building Dates from
-     UTC-derived strings shifted the window by a day in Greece (UTC+3), which
-     silently hid announcements on the day they were meant to run. */
-  const pad=n=>String(n).padStart(2,'0');
-  const now=new Date();
-  const todayStr=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());
-  const fromStr=String(A.from||'').slice(0,10), toStr=String(A.to||'').slice(0,10);
-  if((fromStr && todayStr<fromStr) || (toStr && todayStr>toStr)){ slot.innerHTML=''; return; }
-  const t=(A.t&&(A.t[lang]||A.t.en))||null; if(!t || (!String(t.title||'').trim() && !String(t.body||'').trim())){ slot.innerHTML=''; return; }
+  /* Empty from/to = always visible. Otherwise compare YYYY-MM-DD in local venue time
+     (not UTC) so Greece does not lose a day to timezone shift. */
+  const win=(typeof announcementWindowStatus==='function')
+    ? announcementWindowStatus(A)
+    : (()=>{
+        const pad=n=>String(n).padStart(2,'0');
+        const now=new Date();
+        const today=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());
+        const from=String(A.from||'').slice(0,10), to=String(A.to||'').slice(0,10);
+        if((from && today<from) || (to && today>to)) return {active:false};
+        return {active:true};
+      })();
+  if(!win.active){ slot.innerHTML=''; return; }
+  const t=(A.t&&(A.t[lang]||A.t.en||A.t.el))||null; if(!t || (!String(t.title||'').trim() && !String(t.body||'').trim())){ slot.innerHTML=''; return; }
   const img = (typeof MEDIA!=='undefined' && (MEDIA.souvles||MEDIA.hero)) ? `url('${MEDIA.souvles||MEDIA.hero}')` : 'none';
   slot.innerHTML=`<button class="announce" type="button" id="announceGo" data-special-open data-admin-announcement="1" style="--ann-img:${img}">
     ${A.emoji?`<span class="em">${A.emoji}</span>`:''}

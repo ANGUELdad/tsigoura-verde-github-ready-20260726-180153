@@ -892,7 +892,7 @@ body.is-saving button[data-save],body.is-saving .upload-pick{pointer-events:none
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="tsigoura-data.js?v=20260727-script-publish-v1"></script>
+<script src="tsigoura-data.js?v=20260813-banner-live"></script>
 <script src="tsigoura-menu-icons.js?v=20260727-owner-media-controls-v2"></script>
 <script src="tsigoura-icons.js"></script>
 <script>
@@ -1522,9 +1522,16 @@ function mergeRemoteCatalogue(remoteState){
   const remote=normalizeState(JSON.parse(JSON.stringify(remoteState||{})));
   const localRev=Number((local.settings&&local.settings.cacheRevision)||local.updatedAt)||0;
   const remoteRev=Number((remote.settings&&remote.settings.cacheRevision)||remote.updatedAt)||0;
-  /* Prefer newer catalogue; always keep this device's kitchen queue / table occupancy.
-     If local edits are pending, never clobber them with a concurrent remote load. */
-  const useLocal=!!(dirtySincePublish || (localRev && remoteRev && localRev>remoteRev));
+  const localCount=Array.isArray(local.menu)?local.menu.length:0;
+  const remoteCount=Array.isArray(remote.menu)?remote.menu.length:0;
+  /* Guard against a tiny smoke-test / empty remote wiping the full owner catalogue. */
+  const remoteLooksStub=remoteCount>0 && localCount>=12 && remoteCount<=Math.max(3, Math.floor(localCount*0.25));
+  const useLocal=!!(
+    dirtySincePublish ||
+    remoteLooksStub ||
+    (localRev && remoteRev && localRev>remoteRev) ||
+    (localCount && !remoteCount)
+  );
   const catalogue=useLocal?local:remote;
   const merged=normalizeState(Object.assign({}, catalogue, {
     menu:JSON.parse(JSON.stringify(catalogue.menu||[])),
@@ -1536,7 +1543,7 @@ function mergeRemoteCatalogue(remoteState){
       return Object.assign({}, base, { status:t.status||'open', note:t.note||'' });
     })
   }));
-  return { merged, usedLocal:useLocal };
+  return { merged, usedLocal:useLocal, remoteLooksStub };
 }
 async function loadRemoteMenu({silent=false}={}){
   const pin=adminPin();
@@ -1552,7 +1559,7 @@ async function loadRemoteMenu({silent=false}={}){
     }
     if(data.state && Array.isArray(data.state.menu) && Array.isArray(data.state.categories)){
       flushOpenProForms();
-      const { merged, usedLocal }=mergeRemoteCatalogue(data.state);
+      const { merged, usedLocal, remoteLooksStub }=mergeRemoteCatalogue(data.state);
       if(data.revision && merged.settings && !usedLocal){
         merged.settings.cacheRevision=Number(data.revision)||merged.settings.cacheRevision;
         merged.settings.cacheSavedAt=merged.settings.cacheRevision;
@@ -1568,7 +1575,11 @@ async function loadRemoteMenu({silent=false}={}){
       }
       renderAll();
       refreshUndoBtn();
-      if(usedLocal && !silent) toast('Κρατήθηκαν νεότερες τοπικές αλλαγές');
+      if(usedLocal && remoteLooksStub){
+        dirtySincePublish=true;
+        scheduleRemoteSave('repair-stub-remote');
+        if(!silent) toast('Το ζωντανό αντίγραφο ήταν ελλιπές — δημοσιεύεται ξανά το πλήρες μενού');
+      }else if(usedLocal && !silent) toast('Κρατήθηκαν νεότερες τοπικές αλλαγές');
       else if(!silent) toast('Φορτώθηκε το ζωντανό μενού ✓');
     }
     if(dirtySincePublish) setSyncState('pending');
@@ -3402,8 +3413,8 @@ function announcementEditorHTML(){
       <div class="toggle ${A.on?'on':''}" id="annOn"></div>
     </div>
     <div class="fieldrow">
-      <div><label>Από</label><input type="date" id="annFrom" value="${ioEsc(A.from||'')}"></div>
-      <div><label>Έως</label><input type="date" id="annTo" value="${ioEsc(A.to||'')}"></div>
+      <div><label>Από (κενό = χωρίς όριο)</label><input type="date" id="annFrom" value="${ioEsc(A.from||'')}"></div>
+      <div><label>Έως (κενό = χωρίς όριο)</label><input type="date" id="annTo" value="${ioEsc(A.to||'')}"></div>
       <div><label>Emoji</label><input id="annEmoji" value="${ioEsc(A.emoji||'')}" maxlength="8" placeholder="π.χ. 🔥"></div>
     </div>
     <div class="fieldrow">
@@ -3428,54 +3439,102 @@ function announcementEditorHTML(){
 }
 function wireAnnouncementEditor(){
   const box=$('announceEditor'); if(!box) return;
+  const todayKey=()=>{
+    const d=new Date(), pad=n=>String(n).padStart(2,'0');
+    return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+  };
+  const ensureVisibleWindow=(A)=>{
+    /* Turning the banner on with the old July-26 sample dates left it invisible.
+       Clear expired gates so "Εμφάνιση banner" actually shows on the guest menu. */
+    const win=announcementWindowStatus(A);
+    if(A.on && !win.active){
+      A.from='';
+      A.to='';
+      return true;
+    }
+    return false;
+  };
   const readAnn=()=>{
     const cur=normalizeAnnouncement(S.settings.announcement||{});
-    cur.from=$('annFrom').value || cur.from;
-    cur.to=$('annTo').value || cur.to;
-    cur.emoji=$('annEmoji').value.trim().slice(0,8);
-    cur.targetCat=$('annTarget').value;
-    cur.specialCats=[...box.querySelectorAll('[data-ann-cat]')].filter(cb=>cb.checked).map(cb=>cb.value);
-    if(!cur.specialCats.length) cur.specialCats=[cur.targetCat];
-    cur.t=cur.t&&typeof cur.t==='object'?cur.t:{};
-    if(!cur.t.el) cur.t.el={title:'',body:''};
-    if(!cur.t.en) cur.t.en={title:'',body:''};
-    cur.t.el.title=$('annTitleEl').value.trim().slice(0,90);
-    cur.t.el.body=$('annBodyEl').value.trim().slice(0,220);
-    cur.t.en.title=$('annTitleEn').value.trim().slice(0,90);
-    cur.t.en.body=$('annBodyEn').value.trim().slice(0,220);
-    return normalizeAnnouncement(cur);
+    /* Pass explicit from/to (including empty) so normalizeAnnouncement does not
+       reinstate the sample July-26 window. */
+    const next={
+      on:cur.on,
+      from:$('annFrom').value,
+      to:$('annTo').value,
+      emoji:$('annEmoji').value.trim().slice(0,8),
+      targetCat:$('annTarget').value,
+      specialCats:[...box.querySelectorAll('[data-ann-cat]')].filter(cb=>cb.checked).map(cb=>cb.value),
+      t:Object.assign({}, cur.t||{})
+    };
+    if(!next.specialCats.length) next.specialCats=[next.targetCat];
+    if(!next.t.el) next.t.el={title:'',body:''};
+    if(!next.t.en) next.t.en={title:'',body:''};
+    next.t.el={title:$('annTitleEl').value.trim().slice(0,90), body:$('annBodyEl').value.trim().slice(0,220)};
+    next.t.en={title:$('annTitleEn').value.trim().slice(0,90), body:$('annBodyEn').value.trim().slice(0,220)};
+    return normalizeAnnouncement(next);
   };
   const saveAnn=async(msg)=>{
-    S.settings.announcement=readAnn();
+    let A=readAnn();
+    const cleared=ensureVisibleWindow(A);
+    if(cleared) A=normalizeAnnouncement(Object.assign({}, A, {from:'', to:''}));
+    S.settings.announcement=A;
     persist('announcement');
     const ok=await flushRemoteSave({silent:false});
     renderSettings();
-    if(ok) toast(msg||'Το banner αποθηκεύτηκε');
+    if(ok){
+      const win=announcementWindowStatus(A);
+      if(A.on && !win.active) toast('Το banner είναι ON αλλά εκτός ημερομηνιών — δεν φαίνεται στους πελάτες');
+      else if(A.on && !String((A.t.el&&A.t.el.title)||'').trim() && !String((A.t.el&&A.t.el.body)||'').trim()) toast('Βάλτε τίτλο ή κείμενο για να εμφανιστεί το banner');
+      else toast(cleared ? 'Το banner εμφανίζεται (καθαρίστηκαν παλιές ημερομηνίες)' : (msg||'Το banner αποθηκεύτηκε'));
+    }
   };
   $('annOn').onclick=async()=>{
-    const A=readAnn(); A.on=!A.on; S.settings.announcement=A; persist('announcement');
-    await flushRemoteSave({silent:true});
-    renderSettings(); toast(A.on?'Το banner εμφανίζεται':'Το banner κρύφτηκε');
+    let A=readAnn(); A.on=!A.on;
+    const cleared=ensureVisibleWindow(A);
+    if(cleared) A=normalizeAnnouncement(Object.assign({}, A, {from:'', to:'', on:true}));
+    S.settings.announcement=A; persist('announcement');
+    const ok=await flushRemoteSave({silent:false});
+    renderSettings();
+    if(!ok) return;
+    if(A.on && cleared) toast('Το banner εμφανίζεται · καθαρίστηκαν παλιές ημερομηνίες (π.χ. 26/7)');
+    else if(A.on){
+      const win=announcementWindowStatus(A);
+      toast(win.active?'Το banner εμφανίζεται στους πελάτες':'Το banner είναι ON αλλά εκτός ημερομηνιών');
+    }else toast('Το banner κρύφτηκε');
   };
   $('annSave').onclick=()=>saveAnn('Το banner αποθηκεύτηκε');
   $('annHide').onclick=async()=>{
     const A=readAnn(); A.on=false; S.settings.announcement=A; persist('announcement');
-    await flushRemoteSave({silent:true});
+    await flushRemoteSave({silent:false});
     renderSettings(); toast('Το banner κρύφτηκε');
   };
   $('annRemove').onclick=async()=>{
     const A=readAnn(); A.on=false;
     LANGUAGES.forEach(l=>{ A.t[l.code]={title:'',body:''}; });
-    S.settings.announcement=normalizeAnnouncement(A); persist('announcement');
-    await flushRemoteSave({silent:true});
+    S.settings.announcement=normalizeAnnouncement(Object.assign({}, A, {from:A.from, to:A.to})); persist('announcement');
+    await flushRemoteSave({silent:false});
     renderSettings(); toast('Το κείμενο αφαιρέθηκε');
   };
   $('annReset').onclick=async()=>{
     S.settings.announcement=normalizeAnnouncement(JSON.parse(JSON.stringify(DEFAULT_ANNOUNCEMENT)));
     persist('announcement');
-    await flushRemoteSave({silent:true});
-    renderSettings(); toast('Επανήλθε το banner 26/7');
+    await flushRemoteSave({silent:false});
+    renderSettings(); toast('Επανήλθε το banner 26/7 (κρυφό μέχρι να το ενεργοποιήσετε με νέες ημερομηνίες)');
   };
+  const hint=document.createElement('div');
+  hint.className='cat-mini';
+  hint.style.marginTop='8px';
+  const live=normalizeAnnouncement(S.settings.announcement||{});
+  const win=announcementWindowStatus(live);
+  hint.textContent = !live.on
+    ? 'Κατάσταση πελάτη: κρυφό (toggle OFF).'
+    : (!win.active
+      ? `Κατάσταση πελάτη: κρυφό — εκτός ημερομηνιών (σήμερα ${win.today}${win.from||win.to?`, παράθυρο ${win.from||'…'} → ${win.to||'…'}`:''}). Αφήστε Από/Έως κενά για μόνιμο banner.`
+      : (win.from||win.to
+        ? `Κατάσταση πελάτη: εμφανές σήμερα (${win.today}), παράθυρο ${win.from||'…'} → ${win.to||'…'}.`
+        : `Κατάσταση πελάτη: εμφανές μόνιμα (χωρίς ημερομηνίες).`));
+  box.appendChild(hint);
 }
 function renderSettings(){
   if(!S.settings.headerActions) S.settings.headerActions={booking:false,social:true,wifi:true,language:true};
@@ -3528,22 +3587,35 @@ function renderSettings(){
       <div class="txt"><div class="t">Προεπιλεγμένη γλώσσα</div><div class="d">Τι βλέπει ο πελάτης πριν επιλέξει.</div></div>
       <select id="defLang" style="width:160px;">${LANGUAGES.map(l=>`<option value="${l.code}" ${S.settings.defaultLang===l.code?'selected':''}>${l.flag} ${l.label}</option>`).join('')}</select>
     </div>`;
-  $('settingsArea').querySelectorAll('[data-set]').forEach(el=>el.onclick=()=>{
-    S.settings[el.dataset.set]=!S.settings[el.dataset.set]; persist(); renderSettings(); renderServicePill(); updateAdminFeatureVisibility(); renderDash(); renderQR(); renderPreview(); });
-  $('settingsArea').querySelectorAll('[data-action-set]').forEach(el=>el.onclick=()=>{
+  $('settingsArea').querySelectorAll('[data-set]').forEach(el=>el.onclick=async()=>{
+    S.settings[el.dataset.set]=!S.settings[el.dataset.set];
+    persist('settings-toggle');
+    await flushRemoteSave({silent:true});
+    renderSettings(); renderServicePill(); updateAdminFeatureVisibility(); renderDash(); renderQR(); renderPreview();
+  });
+  $('settingsArea').querySelectorAll('[data-action-set]').forEach(el=>el.onclick=async()=>{
     if(!S.settings.headerActions) S.settings.headerActions={};
     const k=el.dataset.actionSet;
     const on=k==='booking' ? S.settings.headerActions[k]===true : S.settings.headerActions[k]!==false;
     S.settings.headerActions[k]=!on;
-    persist(); renderSettings(); renderPreview(); toast('Το κουμπί ενημερώθηκε');
+    persist('header-action');
+    await flushRemoteSave({silent:true});
+    renderSettings(); renderPreview(); toast('Το κουμπί ενημερώθηκε');
   });
-  $('settingsArea').querySelectorAll('[data-design-set]').forEach(el=>el.onclick=()=>{
+  $('settingsArea').querySelectorAll('[data-design-set]').forEach(el=>el.onclick=async()=>{
     if(!S.settings.design) S.settings.design={};
     const k=el.dataset.designSet; S.settings.design[k]=S.settings.design[k]===false;
-    persist(); renderSettings(); });
+    persist('design-toggle');
+    await flushRemoteSave({silent:true});
+    renderSettings();
+  });
   const dbPush=$('dbPush'); if(dbPush) dbPush.onclick=()=>downloadMenuLive();
   const dbCopy=$('dbCopy'); if(dbCopy) dbCopy.onclick=()=>copyMenuLive();
-  $('defLang').onchange=e=>{ S.settings.defaultLang=e.target.value; persist(); };
+  $('defLang').onchange=async e=>{
+    S.settings.defaultLang=e.target.value;
+    persist('default-lang');
+    await flushRemoteSave({silent:true});
+  };
   wirePublicConfigEditor();
   wireDishOfDayEditor();
   wireOwnerHistory();

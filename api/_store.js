@@ -133,8 +133,30 @@ function blobSdk() {
 }
 
 async function blobRead(pathname) {
+  const { list } = blobSdk();
+  /* Public Blob CDN can keep serving a stale body after overwrite even with
+     get({ useCache:false }). Prefer list→etag-busted URL fetch for menu JSON. */
+  try {
+    const listed = await list({ prefix: pathname, limit: 100 });
+    const exact = (listed.blobs || []).find(b => b.pathname === pathname);
+    if (exact && exact.url) {
+      const bust = encodeURIComponent(String(exact.etag || exact.uploadedAt || Date.now()));
+      const url = exact.url + (exact.url.includes('?') ? '&' : '?') + 'tv=' + bust;
+      const r = await fetch(url, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+      });
+      if (r.ok) {
+        const text = await r.text();
+        if (text) {
+          try { return JSON.parse(text); } catch (e) { return null; }
+        }
+      }
+    }
+  } catch (e) {
+    /* fall through to SDK get */
+  }
   const { get } = blobSdk();
-  /* Public Blob stores (needed for dish image URLs) reject access:'private'. */
   const result = await get(pathname, { access: 'public', useCache: false });
   if (!result || result.statusCode === 304 || !result.stream) return null;
   const text = await streamToText(result.stream);
@@ -148,12 +170,14 @@ async function blobRead(pathname) {
 
 async function blobWrite(pathname, value) {
   const { put } = blobSdk();
+  /* Vercel Blob rejects cacheControlMaxAge below 60s for public stores; 0 was
+     ignored and left long CDN caching in place. */
   await put(pathname, JSON.stringify(value), {
     access: 'public',
     addRandomSuffix: false,
     allowOverwrite: true,
     contentType: 'application/json',
-    cacheControlMaxAge: 0,
+    cacheControlMaxAge: 60,
   });
 }
 

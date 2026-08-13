@@ -519,13 +519,33 @@ function normalizeEventPresets(value){
     };
   }).filter(Boolean).slice(0,20);
 }
+function announcementDateKey(v){
+  v=String(v||'').trim().slice(0,10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : '';
+}
+function announcementWindowStatus(a, at){
+  const A=(a && typeof a==='object') ? a : {};
+  const from=announcementDateKey(A.from);
+  const to=announcementDateKey(A.to);
+  const d=at instanceof Date ? at : new Date(at||Date.now());
+  const pad=n=>String(n).padStart(2,'0');
+  const today=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+  if(from && today<from) return {active:false, upcoming:true, expired:false, today, from, to};
+  if(to && today>to) return {active:false, upcoming:false, expired:true, today, from, to};
+  return {active:true, upcoming:false, expired:false, today, from, to};
+}
 function normalizeAnnouncement(a){
   const base=JSON.parse(JSON.stringify(DEFAULT_ANNOUNCEMENT));
   a = (a && typeof a==='object') ? a : {};
   const out=Object.assign({}, base, a);
-  out.on = Object.prototype.hasOwnProperty.call(a,'on') ? a.on !== false : base.on !== false;
-  out.from = /^\d{4}-\d{2}-\d{2}$/.test(String(out.from||'')) ? String(out.from) : base.from;
-  out.to = /^\d{4}-\d{2}-\d{2}$/.test(String(out.to||'')) ? String(out.to) : base.to;
+  out.on = Object.prototype.hasOwnProperty.call(a,'on') ? a.on === true : base.on === true;
+  /* Empty from/to = always-on (no date gate). Do NOT force the July-26 sample dates
+     back in when the owner clears the fields — that hid banners after they turned them on. */
+  if(Object.prototype.hasOwnProperty.call(a,'from')) out.from = announcementDateKey(a.from);
+  else out.from = announcementDateKey(base.from);
+  if(Object.prototype.hasOwnProperty.call(a,'to')) out.to = announcementDateKey(a.to);
+  else out.to = announcementDateKey(base.to);
+  if(out.from && out.to && out.from>out.to){ const swap=out.from; out.from=out.to; out.to=swap; }
   out.emoji = String(out.emoji||'').slice(0,8);
   out.targetCat = String(out.targetCat||base.targetCat).slice(0,32);
   out.specialCats = Array.isArray(out.specialCats) ? out.specialCats.map(x=>String(x).slice(0,32)).filter(Boolean).slice(0,8) : base.specialCats.slice();
