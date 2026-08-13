@@ -17,7 +17,12 @@
       ελληνικό προϊόν δεν μεταφράζεται καλά, κρατάμε το όνομα και εξηγούμε σύντομα.
    ========================================================================== */
 
-const STORAGE_KEY = 'tsigoura_verde_v13';  /* bumped — script-published menu */
+/* Admin sets window.TV_STORAGE_KEY before this file loads so owner edits do
+   not share the guest catalogue cache (that race hid the special banner). */
+const STORAGE_KEY = (typeof window !== 'undefined' && window.TV_STORAGE_KEY)
+  ? String(window.TV_STORAGE_KEY)
+  : 'tsigoura_verde_v13';  /* bumped — script-published menu */
+const LIVE_REVISION_KEY = 'tsigoura_verde_live_rev';
 
 const VENUE = {
   name: 'Tsigoura Verde Resort',

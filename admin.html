@@ -892,10 +892,18 @@ body.is-saving button[data-save],body.is-saving .upload-pick{pointer-events:none
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="tsigoura-data.js?v=20260813-banner-live"></script>
+<script>window.TV_STORAGE_KEY='tsigoura_verde_v13_admin';</script>
+<script src="tsigoura-data.js?v=20260813-banner-storage-v2"></script>
 <script src="tsigoura-menu-icons.js?v=20260727-owner-media-controls-v2"></script>
 <script src="tsigoura-icons.js"></script>
 <script>
+/* One-time migrate from the old shared guest/admin key so owners keep edits. */
+try{
+  if(!localStorage.getItem(STORAGE_KEY)){
+    const legacy=localStorage.getItem('tsigoura_verde_v13');
+    if(legacy) localStorage.setItem(STORAGE_KEY, legacy);
+  }
+}catch(e){}
 let S = loadState();
 let editMode = 'easy';
 let proLang = 'el';
@@ -1435,8 +1443,13 @@ function notifyFreshMenu(){
   try{
     const revision=String((S&&S.updatedAt)||Date.now());
     localStorage.setItem(STORAGE_KEY+'_admin_revision',revision);
+    /* Shared channel — guest tabs listen here (admin storage key is isolated). */
+    localStorage.setItem(LIVE_REVISION_KEY, revision);
     if(menuBroadcast) menuBroadcast.postMessage({type:'menu-revision',revision:Number(revision)});
-    if($('menuPreview') && editMode==='preview') renderPreviewDock();
+    if($('menuPreview') && editMode==='preview'){
+      renderPreviewDock();
+      previewRefreshSoon();
+    }
   }catch(e){}
 }
 function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('on'); setTimeout(()=>t.classList.remove('on'),2200); }
@@ -1654,6 +1667,7 @@ async function performLiveMenuSave({silent=false,resetOps=false}={}){
     S.updatedAt=revision;
     try{
       localStorage.setItem(STORAGE_KEY+'_admin_revision', String(revision));
+      localStorage.setItem(LIVE_REVISION_KEY, String(revision));
       saveState(S);
       if(menuBroadcast) menuBroadcast.postMessage({type:'menu-revision',revision});
     }catch(e){}
@@ -2847,6 +2861,14 @@ function renderPreview(){
       const previewBoot=`<script>try{
         localStorage.setItem('tv_lang','el');localStorage.setItem('tv_cookie','1');
         window.__tvAdminPreview=1;
+        /* Seed the GUEST catalogue key with the owner's current draft so the
+           preview (and specially the banner) matches Settings / Menu — not a
+           stale shared cache or an older Blob read. */
+        try{
+          var draft=${JSON.stringify(normalizeState(S))};
+          localStorage.setItem('tsigoura_verde_v13', JSON.stringify(draft));
+          localStorage.setItem('tsigoura_verde_v13_ping', String((draft&&draft.updatedAt)||Date.now()));
+        }catch(errSeed){}
         (function(){
           var lastY=0;
           function shell(){try{return window.frameElement&&window.frameElement.closest('.phone-frame');}catch(e){return null;}}

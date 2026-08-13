@@ -2300,9 +2300,9 @@ body.searching .search-clear{transform:none!important;}
 
 <div class="toast" id="toast"></div>
 
-<script src="tsigoura-data.js"></script>
-<script src="menu-live.js"></script>
-<script src="tsigoura-menu-icons.js"></script>
+<script src="tsigoura-data.js?v=20260813-banner-storage-v2"></script>
+<script src="menu-live.js?v=20260813-banner-storage-v2"></script>
+<script src="tsigoura-menu-icons.js?v=20260813-banner-storage-v2"></script>
 <script src="tsigoura-qr.js"></script>
 <script>
 "use strict";
@@ -2572,10 +2572,21 @@ function applyRemoteMenuState(data){
     localStorage.setItem(STORAGE_KEY, JSON.stringify(S));
     localStorage.setItem(STORAGE_KEY+'_ping', String(S.updatedAt||Date.now()));
     localStorage.setItem(STORAGE_KEY+'_revision', String(liveMenuRevision||S.updatedAt||Date.now()));
+    if(revision) localStorage.setItem(LIVE_REVISION_KEY, String(revision));
   }catch(e){}
   return true;
 }
 async function hydrateRemoteMenu(){
+  /* Admin phone-preview seeds localStorage with the owner's draft (including
+     the special banner). Prefer that over /api/menu so Settings ↔ Preview match. */
+  if(typeof window!=='undefined' && window.__tvAdminPreview){
+    try{
+      if(S && Array.isArray(S.menu) && S.menu.length){
+        S=normalizeState(S);
+        return true;
+      }
+    }catch(e){}
+  }
   try{
     const r=await fetch(menuApiUrl(0),{cache:'no-store',headers:menuFetchHeaders()});
     if(r.ok){
@@ -3685,6 +3696,8 @@ function canShowSocialAd(){
   if(document.querySelector('.sheet.on,.panel.on,.cookie.on')) return false;
   if(document.body.classList.contains('sheet-open')) return false;
   if(document.body.classList.contains('searching')) return false;
+  /* Keep the special banner clickable — don't cover it in the first minute. */
+  if(document.getElementById('announceGo') && Date.now()-(window.__tvBootAt||0)<60000) return false;
   if(document.activeElement&&document.activeElement.matches('input,textarea,select')) return false;
   if(Date.now()-lastGuestInteractionAt<12000) return false;
   if(window.scrollY>Math.max(180,window.innerHeight*.35)) return false;
@@ -4197,13 +4210,11 @@ async function checkLiveMenuUpdate(force){
   }
 }
 
-/* cross-tab sync (admin ↔ menu) — localStorage + BroadcastChannel + live API */
+/* cross-tab sync (admin ↔ menu) — NEVER trust admin localStorage for the
+   guest catalogue (shared-key races hid the special banner). Always pull /api/menu. */
 window.addEventListener('storage',e=>{
-  if(e.key===STORAGE_KEY||e.key===STORAGE_KEY+'_ping'||e.key===STORAGE_KEY+'_admin_revision'){
-    if(e.key===STORAGE_KEY+'_admin_revision'){ checkLiveMenuUpdate(true); return; }
-    S=loadState();
-    cart=cart.filter(l=>{const i=itemOf(l.id);return i&&isGuestVisible(i)&&i.available&&i.price>0;}); saveCart(); apply();
-    replayMotionClass(document.getElementById('root'),'motion-live-update',760);
+  if(e.key===LIVE_REVISION_KEY || e.key===STORAGE_KEY+'_admin_revision' || e.key===STORAGE_KEY+'_ping'){
+    checkLiveMenuUpdate(true);
   }
 });
 try{
@@ -4545,7 +4556,8 @@ function renderIntro(){
 function renderAnnounce(){
   const slot=document.getElementById('announceSlot'); if(!slot) return;
   const A=activeAnnouncement();
-  if(q.trim() || !A || !A.on){ slot.innerHTML=''; return; }
+  const isOn = !!(A && (A.on===true || A.on===1 || A.on==='true'));
+  if(q.trim() || !A || !isOn){ slot.innerHTML=''; return; }
   /* Empty from/to = always visible. Otherwise compare YYYY-MM-DD in local venue time
      (not UTC) so Greece does not lose a day to timezone shift. */
   const win=(typeof announcementWindowStatus==='function')
@@ -4710,6 +4722,7 @@ function apply(){
   requestAnimationFrame(()=>{ setStickyMetrics(); syncPinnedNav(); forceCloseFloatingUI(); });
 }
 async function boot(){
+  window.__tvBootAt=Date.now();
   await hydratePublicConfig();
   const remoteOk = await hydrateRemoteMenu();
   if(!remoteOk) applyEnvSettings();   /* fallback only — menu-live.js is the source of truth */
