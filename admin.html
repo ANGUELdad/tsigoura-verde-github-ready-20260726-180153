@@ -1520,16 +1520,16 @@ let liveState='unknown';           /* live | pending | offline | nopin */
 function mergeRemoteCatalogue(remoteState){
   const local=S||defaultState();
   const remote=normalizeState(JSON.parse(JSON.stringify(remoteState||{})));
-  const localRev=Number((local.settings&&local.settings.cacheRevision)||local.updatedAt)||0;
-  const remoteRev=Number((remote.settings&&remote.settings.cacheRevision)||remote.updatedAt)||0;
   const localCount=Array.isArray(local.menu)?local.menu.length:0;
   const remoteCount=Array.isArray(remote.menu)?remote.menu.length:0;
   /* Guard against a tiny smoke-test / empty remote wiping the full owner catalogue. */
   const remoteLooksStub=remoteCount>0 && localCount>=12 && remoteCount<=Math.max(3, Math.floor(localCount*0.25));
+  /* Live store is source of truth whenever this tab has nothing pending.
+     Do NOT prefer local just because cacheRevision is higher — that left
+     stale announcement/settings on screen while dishes already matched API. */
   const useLocal=!!(
     dirtySincePublish ||
     remoteLooksStub ||
-    (localRev && remoteRev && localRev>remoteRev) ||
     (localCount && !remoteCount)
   );
   const catalogue=useLocal?local:remote;
@@ -1544,6 +1544,22 @@ function mergeRemoteCatalogue(remoteState){
     })
   }));
   return { merged, usedLocal:useLocal, remoteLooksStub };
+}
+async function confirmPublicMenuRevision(revision, {timeoutMs=10000, intervalMs=450}={}){
+  const want=Number(revision)||0;
+  if(!want) return false;
+  const t0=Date.now();
+  let last=0;
+  while(Date.now()-t0<timeoutMs){
+    try{
+      const r=await fetch('/api/menu?_='+Date.now(),{cache:'no-store',headers:{'Cache-Control':'no-cache'}});
+      const data=await r.json().catch(()=>null);
+      last=Number(data&&data.revision)||0;
+      if(data&&data.ok&&last>=want) return true;
+    }catch(e){}
+    await new Promise(res=>setTimeout(res, intervalMs));
+  }
+  return false;
 }
 async function loadRemoteMenu({silent=false}={}){
   const pin=adminPin();
@@ -1635,14 +1651,29 @@ async function performLiveMenuSave({silent=false,resetOps=false}={}){
       S.settings.cacheRevision=revision;
       S.settings.cacheSavedAt=revision;
     }
+    S.updatedAt=revision;
     try{
       localStorage.setItem(STORAGE_KEY+'_admin_revision', String(revision));
+      saveState(S);
       if(menuBroadcast) menuBroadcast.postMessage({type:'menu-revision',revision});
     }catch(e){}
+    /* POST can succeed while public /api/menu still serves the previous Blob
+       for a moment. Keep the pill on "confirming" until guests can read it. */
+    setSyncState('confirming');
+    const visible=await confirmPublicMenuRevision(revision);
     lastRemoteSaveOk=true; lastRemoteSaveWhy=''; dirtySincePublish=false;
-    setSyncState('live');
     pendingRemoteReason='edit';
-    if(!silent) toast('Ενημερώθηκε ζωντανά ✓');
+    if(visible){
+      setSyncState('live');
+      if(!silent) toast('Ενημερώθηκε ζωντανά ✓');
+      return true;
+    }
+    setSyncState('pending');
+    if(!silent) toast('Αποθηκεύτηκε · οι πελάτες ενημερώνονται σε λίγα δευτερόλεπτα');
+    /* Soft follow-up so the pill flips to Δημοσιεύτηκε without another POST. */
+    confirmPublicMenuRevision(revision,{timeoutMs:20000,intervalMs:800}).then(ok=>{
+      if(ok && !dirtySincePublish) setSyncState('live');
+    });
     return true;
   }catch(e){
     lastRemoteSaveOk=false; lastRemoteSaveWhy='network'; dirtySincePublish=true;
@@ -1665,6 +1696,10 @@ function setSyncState(state, why){
     syncState='live'; pill.classList.add('ok');
     txt.textContent='Δημοσιεύτηκε';
     pill.title='Οι αλλαγές είναι διαθέσιμες σε όλες τις συσκευές.';
+  }else if(liveState==='confirming'){
+    syncState='confirming'; pill.classList.add('pending');
+    txt.textContent='Επιβεβαίωση…';
+    pill.title='Αποθηκεύτηκε · ελέγχουμε ότι το βλέπουν και οι πελάτες.';
   }else if(liveState==='pending'){
     syncState='pending'; pill.classList.add('pending');
     txt.textContent='Αποθήκευση…';
@@ -1688,7 +1723,7 @@ async function probeSync(){
     const st=await r.json();
     if(!st || !st.liveStore || !st.liveStore.configured) return setSyncState('offline','store_not_configured');
     if(!st.adminPinSet) return setSyncState('nopin');
-    if(liveState==='pending' || dirtySincePublish) return;
+    if(liveState==='pending' || liveState==='confirming' || dirtySincePublish) return;
     if(lastRemoteSaveOk===false) return setSyncState('offline', lastRemoteSaveWhy||'last_save_failed');
     setSyncState('live');
   }catch(e){ setSyncState('offline','network'); }
@@ -1699,7 +1734,7 @@ function wireSyncPillRetry(){
   pill.dataset.retryBound='1';
   pill.style.cursor='pointer';
   pill.onclick=()=>{
-    if(liveState==='pending') return;
+    if(liveState==='pending' || liveState==='confirming') return;
     if(liveState==='live' && !dirtySincePublish){ toast('Ήδη δημοσιευμένο'); return; }
     toast('Επανάληψη δημοσίευσης…');
     flushRemoteSave({silent:false});
@@ -3474,14 +3509,40 @@ function wireAnnouncementEditor(){
     next.t.en={title:$('annTitleEn').value.trim().slice(0,90), body:$('annBodyEn').value.trim().slice(0,220)};
     return normalizeAnnouncement(next);
   };
+  const paintAnnouncementHint=(A)=>{
+    let hint=box.querySelector('[data-ann-hint]');
+    if(!hint){
+      hint=document.createElement('div');
+      hint.className='cat-mini';
+      hint.dataset.annHint='1';
+      hint.style.marginTop='8px';
+      box.appendChild(hint);
+    }
+    const live=normalizeAnnouncement(A||S.settings.announcement||{});
+    const win=announcementWindowStatus(live);
+    hint.textContent = !live.on
+      ? 'Κατάσταση πελάτη: κρυφό (toggle OFF).'
+      : (!win.active
+        ? `Κατάσταση πελάτη: κρυφό — εκτός ημερομηνιών (σήμερα ${win.today}${win.from||win.to?`, παράθυρο ${win.from||'…'} → ${win.to||'…'}`:''}). Αφήστε Από/Έως κενά για μόνιμο banner.`
+        : (win.from||win.to
+          ? `Κατάσταση πελάτη: εμφανές σήμερα (${win.today}), παράθυρο ${win.from||'…'} → ${win.to||'…'}.`
+          : `Κατάσταση πελάτη: εμφανές μόνιμα (χωρίς ημερομηνίες).`));
+  };
+  const syncToggleUi=(A)=>{
+    const tog=$('annOn'); if(tog) tog.classList.toggle('on', !!A.on);
+    if($('annFrom') && Object.prototype.hasOwnProperty.call(A,'from')) $('annFrom').value=A.from||'';
+    if($('annTo') && Object.prototype.hasOwnProperty.call(A,'to')) $('annTo').value=A.to||'';
+    paintAnnouncementHint(A);
+  };
   const saveAnn=async(msg)=>{
     let A=readAnn();
     const cleared=ensureVisibleWindow(A);
     if(cleared) A=normalizeAnnouncement(Object.assign({}, A, {from:'', to:''}));
     S.settings.announcement=A;
     persist('announcement');
+    syncToggleUi(A);
     const ok=await flushRemoteSave({silent:false});
-    renderSettings();
+    syncToggleUi(S.settings.announcement||A);
     if(ok){
       const win=announcementWindowStatus(A);
       if(A.on && !win.active) toast('Το banner είναι ON αλλά εκτός ημερομηνιών — δεν φαίνεται στους πελάτες');
@@ -3490,12 +3551,15 @@ function wireAnnouncementEditor(){
     }
   };
   $('annOn').onclick=async()=>{
+    /* Read the open form first, then toggle — never rebuild the whole Settings
+       panel here (that wiped title/dates typed before the click). */
     let A=readAnn(); A.on=!A.on;
     const cleared=ensureVisibleWindow(A);
     if(cleared) A=normalizeAnnouncement(Object.assign({}, A, {from:'', to:'', on:true}));
     S.settings.announcement=A; persist('announcement');
+    syncToggleUi(A);
     const ok=await flushRemoteSave({silent:false});
-    renderSettings();
+    syncToggleUi(S.settings.announcement||A);
     if(!ok) return;
     if(A.on && cleared) toast('Το banner εμφανίζεται · καθαρίστηκαν παλιές ημερομηνίες (π.χ. 26/7)');
     else if(A.on){
@@ -3506,15 +3570,21 @@ function wireAnnouncementEditor(){
   $('annSave').onclick=()=>saveAnn('Το banner αποθηκεύτηκε');
   $('annHide').onclick=async()=>{
     const A=readAnn(); A.on=false; S.settings.announcement=A; persist('announcement');
+    syncToggleUi(A);
     await flushRemoteSave({silent:false});
-    renderSettings(); toast('Το banner κρύφτηκε');
+    syncToggleUi(S.settings.announcement||A); toast('Το banner κρύφτηκε');
   };
   $('annRemove').onclick=async()=>{
     const A=readAnn(); A.on=false;
     LANGUAGES.forEach(l=>{ A.t[l.code]={title:'',body:''}; });
     S.settings.announcement=normalizeAnnouncement(Object.assign({}, A, {from:A.from, to:A.to})); persist('announcement');
+    if($('annTitleEl')) $('annTitleEl').value='';
+    if($('annBodyEl')) $('annBodyEl').value='';
+    if($('annTitleEn')) $('annTitleEn').value='';
+    if($('annBodyEn')) $('annBodyEn').value='';
+    syncToggleUi(S.settings.announcement);
     await flushRemoteSave({silent:false});
-    renderSettings(); toast('Το κείμενο αφαιρέθηκε');
+    toast('Το κείμενο αφαιρέθηκε');
   };
   $('annReset').onclick=async()=>{
     S.settings.announcement=normalizeAnnouncement(JSON.parse(JSON.stringify(DEFAULT_ANNOUNCEMENT)));
@@ -3522,19 +3592,7 @@ function wireAnnouncementEditor(){
     await flushRemoteSave({silent:false});
     renderSettings(); toast('Επανήλθε το banner 26/7 (κρυφό μέχρι να το ενεργοποιήσετε με νέες ημερομηνίες)');
   };
-  const hint=document.createElement('div');
-  hint.className='cat-mini';
-  hint.style.marginTop='8px';
-  const live=normalizeAnnouncement(S.settings.announcement||{});
-  const win=announcementWindowStatus(live);
-  hint.textContent = !live.on
-    ? 'Κατάσταση πελάτη: κρυφό (toggle OFF).'
-    : (!win.active
-      ? `Κατάσταση πελάτη: κρυφό — εκτός ημερομηνιών (σήμερα ${win.today}${win.from||win.to?`, παράθυρο ${win.from||'…'} → ${win.to||'…'}`:''}). Αφήστε Από/Έως κενά για μόνιμο banner.`
-      : (win.from||win.to
-        ? `Κατάσταση πελάτη: εμφανές σήμερα (${win.today}), παράθυρο ${win.from||'…'} → ${win.to||'…'}.`
-        : `Κατάσταση πελάτη: εμφανές μόνιμα (χωρίς ημερομηνίες).`));
-  box.appendChild(hint);
+  paintAnnouncementHint(S.settings.announcement||{});
 }
 function renderSettings(){
   if(!S.settings.headerActions) S.settings.headerActions={booking:false,social:true,wifi:true,language:true};

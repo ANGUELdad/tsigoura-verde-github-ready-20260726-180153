@@ -132,31 +132,56 @@ function blobSdk() {
   }
 }
 
+async function blobFetchJson(url, bust) {
+  if (!url) return null;
+  const token = encodeURIComponent(String(bust || Date.now()));
+  const full = url + (url.includes('?') ? '&' : '?') + 'tv=' + token;
+  const r = await fetch(full, {
+    cache: 'no-store',
+    headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+  });
+  if (!r.ok) return null;
+  const text = await r.text();
+  if (!text) return null;
+  try { return JSON.parse(text); } catch (e) { return null; }
+}
+
 async function blobRead(pathname) {
-  const { list } = blobSdk();
-  /* Public Blob CDN can keep serving a stale body after overwrite even with
-     get({ useCache:false }). Prefer list→etag-busted URL fetch for menu JSON. */
+  const { list, get } = blobSdk();
+  /* Public Blob CDN keeps serving stale bodies after in-place overwrite.
+     Menu docs use revisioned paths + a tiny pointer file (see blobWrite).
+     For legacy single-file paths, prefer list→etag-busted URL fetch. */
   try {
+    if (pathname === BLOB_PATHS[KEY] || pathname.endsWith('/menu-v1.json')) {
+      const listed = await list({ prefix: 'tsigoura/menu-rev/', limit: 200 });
+      const blobs = (listed.blobs || []).slice().sort((a, b) => {
+        const ta = Date.parse(a.uploadedAt || 0) || 0;
+        const tb = Date.parse(b.uploadedAt || 0) || 0;
+        return tb - ta;
+      });
+      for (const blob of blobs.slice(0, 5)) {
+        const doc = await blobFetchJson(blob.url, blob.etag || blob.uploadedAt || Date.now());
+        if (doc && doc.state) return doc;
+      }
+      const pointerListed = await list({ prefix: 'tsigoura/menu-pointer.json', limit: 10 });
+      const pointerBlob = (pointerListed.blobs || []).find(b => b.pathname === 'tsigoura/menu-pointer.json');
+      if (pointerBlob && pointerBlob.url) {
+        const pointer = await blobFetchJson(pointerBlob.url, pointerBlob.etag || Date.now());
+        if (pointer && pointer.url) {
+          const doc = await blobFetchJson(pointer.url, pointer.revision || pointer.etag || Date.now());
+          if (doc && doc.state) return doc;
+        }
+      }
+    }
     const listed = await list({ prefix: pathname, limit: 100 });
     const exact = (listed.blobs || []).find(b => b.pathname === pathname);
     if (exact && exact.url) {
-      const bust = encodeURIComponent(String(exact.etag || exact.uploadedAt || Date.now()));
-      const url = exact.url + (exact.url.includes('?') ? '&' : '?') + 'tv=' + bust;
-      const r = await fetch(url, {
-        cache: 'no-store',
-        headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
-      });
-      if (r.ok) {
-        const text = await r.text();
-        if (text) {
-          try { return JSON.parse(text); } catch (e) { return null; }
-        }
-      }
+      const doc = await blobFetchJson(exact.url, exact.etag || exact.uploadedAt || Date.now());
+      if (doc != null) return doc;
     }
   } catch (e) {
     /* fall through to SDK get */
   }
-  const { get } = blobSdk();
   const result = await get(pathname, { access: 'public', useCache: false });
   if (!result || result.statusCode === 304 || !result.stream) return null;
   const text = await streamToText(result.stream);
@@ -169,16 +194,48 @@ async function blobRead(pathname) {
 }
 
 async function blobWrite(pathname, value) {
-  const { put } = blobSdk();
+  const { put, list, del } = blobSdk();
+  const body = JSON.stringify(value);
   /* Vercel Blob rejects cacheControlMaxAge below 60s for public stores; 0 was
      ignored and left long CDN caching in place. */
-  await put(pathname, JSON.stringify(value), {
+  const putOpts = {
     access: 'public',
     addRandomSuffix: false,
     allowOverwrite: true,
     contentType: 'application/json',
     cacheControlMaxAge: 60,
-  });
+  };
+
+  /* Menu JSON: write a NEW revisioned object so CDN cannot serve a stale
+     overwrite of the same URL. Keep a pointer + a small rolling set. */
+  if (pathname === BLOB_PATHS[KEY] || pathname.endsWith('/menu-v1.json')) {
+    const revision = (value && value.revision) || Date.now();
+    const revPath = 'tsigoura/menu-rev/' + String(revision) + '.json';
+    const putResult = await put(revPath, body, putOpts);
+    const pointer = {
+      revision,
+      pathname: revPath,
+      url: putResult && putResult.url,
+      updatedAt: (value && value.updatedAt) || new Date().toISOString(),
+    };
+    await put('tsigoura/menu-pointer.json', JSON.stringify(pointer), putOpts);
+    /* Best-effort legacy path for older readers still mid-deploy. */
+    try { await put(pathname, body, putOpts); } catch (e) {}
+    /* Prune older revisions (keep newest ~12). */
+    try {
+      const listed = await list({ prefix: 'tsigoura/menu-rev/', limit: 200 });
+      const blobs = (listed.blobs || []).slice().sort((a, b) => {
+        const ta = Date.parse(a.uploadedAt || 0) || 0;
+        const tb = Date.parse(b.uploadedAt || 0) || 0;
+        return tb - ta;
+      });
+      const stale = blobs.slice(12).map(b => b.url).filter(Boolean);
+      if (stale.length) await del(stale);
+    } catch (e) {}
+    return;
+  }
+
+  await put(pathname, body, putOpts);
 }
 
 function readFsBundle() {
