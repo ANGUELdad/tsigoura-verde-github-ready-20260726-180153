@@ -299,15 +299,32 @@ nav.tabs button.on{color:var(--cream);border-bottom-color:var(--gold);}
 .tcard .note{font-size:10.5px;color:var(--warn);margin-top:7px;line-height:1.4;display:flex;gap:5px;align-items:flex-start;}
 .tcard .note .ico{width:11px;height:11px;stroke-width:2;flex:0 0 auto;margin-top:1px;}
 
-/* easy mode item rows */
-.easy-row{display:grid;grid-template-columns:44px 40px minmax(0,1fr) auto auto auto;align-items:center;gap:10px;background:var(--paper);border-radius:14px;padding:11px 14px;
-  box-shadow:var(--shadow);margin-bottom:8px;max-width:100%;overflow:hidden;}
-.easy-row .nm{font-weight:600;font-size:14px;}
-.easy-row .cat{font-size:10.5px;color:var(--muted);}
+/* easy mode item rows — single horizontal band; never stack controls under ↑↓ */
+.easy-row{
+  display:flex;align-items:center;gap:10px 12px;flex-wrap:nowrap;
+  background:var(--paper);border-radius:14px;padding:10px 12px;
+  box-shadow:var(--shadow);margin-bottom:8px;max-width:100%;
+}
+.easy-row .easy-left{display:flex;align-items:center;gap:8px;flex:0 0 auto;}
+.easy-row .easy-main{flex:1 1 auto;min-width:0;}
+.easy-row .easy-controls{
+  display:flex;align-items:center;justify-content:flex-end;gap:8px;
+  flex:0 1 auto;min-width:0;flex-wrap:nowrap;
+}
+.easy-row .nm{font-weight:600;font-size:14px;line-height:1.25;margin:0;}
+.easy-row .cat{font-size:10.5px;color:var(--muted);line-height:1.3;margin:2px 0 0;}
 .easy-row .nm,.easy-row .cat{overflow-wrap:anywhere;}
-.easy-row .spacer{display:none;}
-.price-edit{display:flex;align-items:center;gap:6px;}
-.price-edit input{width:82px;text-align:right;font-weight:700;}
+.price-edit{display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;}
+.price-edit input{
+  width:72px;min-width:72px;max-width:88px;height:40px;min-height:40px;
+  text-align:right;font-weight:700;font-size:14px;line-height:1;padding:0 8px;
+  box-sizing:border-box;
+}
+.price-edit .btn{
+  width:40px;min-width:40px;height:40px;min-height:40px;padding:0;
+  display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;
+}
+.price-edit .btn .ico{width:14px;height:14px;display:block;}
 .toggle{position:relative;width:52px;height:29px;border-radius:15px;background:#D8D2C4;transition:.2s;flex:0 0 auto;}
 .toggle.on{background:var(--ok);}
 .toggle::after{content:'';position:absolute;top:3px;left:3px;width:23px;height:23px;border-radius:50%;
@@ -315,9 +332,58 @@ nav.tabs button.on{color:var(--cream);border-bottom-color:var(--gold);}
 .toggle.on::after{transform:translateX(23px);}
 .easy-row.off{opacity:.55;}
 .easy-row.hidden{opacity:.42;background:#F0EDE6;}
-.soldlabel{font-size:10.5px;font-weight:700;width:66px;text-align:right;}
-.hidebtn{font-size:10.5px;font-weight:800;border:1px solid var(--line);border-radius:10px;background:var(--cream);color:var(--muted);padding:8px 10px;white-space:nowrap;}
+.soldlabel{
+  font-size:11px;font-weight:700;line-height:1.2;white-space:nowrap;
+  min-width:4.5em;text-align:center;flex:0 0 auto;
+}
+.hidebtn{
+  font-size:11px;font-weight:800;border:1px solid var(--line);border-radius:10px;
+  background:var(--cream);color:var(--muted);padding:0 12px;white-space:nowrap;
+  height:40px;min-height:40px;display:inline-flex;align-items:center;justify-content:center;
+  flex:0 0 auto;line-height:1;
+}
 .hidebtn.on{background:#FBEAE5;border-color:#E7C3B2;color:var(--bad);}
+.dish-order{display:flex;flex-direction:column;gap:3px;flex:0 0 auto;}
+.dish-order button{
+  width:36px;height:32px;min-height:32px;border-radius:10px;border:1px solid var(--line);
+  background:var(--cream);color:var(--forest);font-size:14px;font-weight:900;padding:0;
+  display:inline-flex;align-items:center;justify-content:center;line-height:1;
+}
+.dish-order button:disabled{opacity:.35;}
+.easy-edit{
+  width:40px;min-width:40px;height:40px;min-height:40px;border-radius:10px;
+  border:1px solid var(--line);background:var(--cream);color:var(--forest);
+  padding:0;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;
+}
+.easy-edit .ico{width:18px;height:18px;stroke:currentColor;stroke-width:1.8;display:block;flex:0 0 auto;}
+.easy-row .rico{width:40px;height:40px;border-radius:12px;background:var(--cream);
+  border:1px solid var(--line);display:flex;align-items:center;justify-content:center;flex:0 0 auto;overflow:hidden;}
+.easy-row .rico .ico{width:17px;height:17px;stroke:var(--forest-2);stroke-width:1.7;}
+.easy-row .rico .greek-ic{width:34px;height:34px;}
+/* Tablet: keep one row; shrink name before wrapping controls under arrows */
+@media(max-width:900px){
+  .easy-row .easy-main{flex:1 1 120px;}
+  .soldlabel{min-width:0;}
+  .hidebtn{padding:0 10px;}
+}
+/* Phone: wrap controls to a FULL-WIDTH second row (below name), never under ↑↓ alone */
+@media(max-width:640px){
+  .easy-row{flex-wrap:wrap;align-items:center;}
+  .easy-row .easy-main{flex:1 1 calc(100% - 100px);}
+  .easy-row .easy-controls{
+    flex:1 1 100%;justify-content:flex-start;flex-wrap:wrap;
+    padding-left:0;margin-left:0;width:100%;
+  }
+  .dish-order{flex-direction:row;gap:4px;}
+  .dish-order button{width:34px;height:34px;min-height:34px;}
+  .price-edit .btn{min-width:40px;}
+}
+@media(max-width:420px){
+  .easy-row .easy-controls{gap:6px;}
+  .soldlabel{font-size:10.5px;}
+  .hidebtn{padding:0 8px;font-size:10.5px;}
+  .price-edit input{width:64px;min-width:64px;}
+}
 
 /* pro mode */
 .pro-item{background:var(--paper);border-radius:16px;box-shadow:var(--shadow);margin-bottom:10px;overflow:hidden;}
@@ -354,13 +420,10 @@ nav.tabs button.on{color:var(--cream);border-bottom-color:var(--gold);}
 .cat-order button{width:44px;height:44px;min-height:44px;border-radius:12px;border:1px solid var(--line);background:var(--cream);color:var(--forest);font-size:16px;font-weight:900;line-height:1;padding:0;display:flex;align-items:center;justify-content:center;}
 .cat-order button:disabled{opacity:.35;cursor:default;}
 .cat-order button:not(:disabled):active{transform:scale(.94);background:#EEF5EA;}
-.dish-order{display:flex;flex-direction:column;gap:3px;flex:0 0 auto;}
-.dish-order button{width:40px;height:36px;min-height:36px;border-radius:10px;border:1px solid var(--line);background:var(--cream);color:var(--forest);font-size:14px;font-weight:900;padding:0;display:flex;align-items:center;justify-content:center;}
-.dish-order button:disabled{opacity:.35;}
-.easy-edit{min-height:44px;min-width:44px;border-radius:10px;border:1px solid var(--line);background:var(--cream);color:var(--forest);font-weight:800;padding:0 10px;}
 .cat-edit .cat-preview{width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;
   background:var(--catbg,#E7EEEA);color:var(--catacc,#38564F);box-shadow:inset 0 0 0 1px rgba(255,255,255,.65);}
 .cat-edit .cat-preview .ico{width:22px;height:22px;stroke-width:1.9;}
+.cat-edit .cat-preview .greek-ic{width:34px;height:34px;}
 .cat-edit input,.cat-edit select{min-width:0;}
 .cat-edit input[type="color"]{width:54px;height:42px;padding:4px;border-radius:11px;}
 .cat-state{display:inline-flex;align-items:center;gap:5px;margin-top:5px;padding:3px 7px;border-radius:999px;
@@ -376,14 +439,10 @@ nav.tabs button.on{color:var(--cream);border-bottom-color:var(--gold);}
 .cat-translation-grid input{width:100%;}
 .cat-mini{font-size:10.5px;color:var(--muted);line-height:1.3;margin-top:3px;}
 .cat-actions{display:flex;gap:6px;justify-content:flex-end;}
-.cat-actions button{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--cream);color:var(--forest);}
+.cat-actions button{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--cream);color:var(--forest);display:inline-flex;align-items:center;justify-content:center;padding:0;}
 .cat-actions button.danger{color:var(--bad);}
 .cat-edit.drop-target{outline:2px solid rgba(160,126,60,.45);background:#FFF8E8;}
 @media(max-width:780px){
-  .easy-row{grid-template-columns:44px 40px minmax(0,1fr) auto;gap:9px;}
-  .easy-row .price-edit,.easy-row .soldlabel,.easy-row .hidebtn,.easy-row .easy-edit,.easy-row .toggle{grid-column:3 / 5;}
-  .easy-row .price-edit{justify-content:flex-start;}
-  .easy-row .soldlabel{text-align:left;width:auto;}
   .cat-edit{grid-template-columns:52px 42px minmax(0,1fr);align-items:start;}
   .cat-edit select,.cat-edit input[type="color"],.cat-actions{grid-column:3 / 4;}
   .cat-media{grid-column:1 / -1;grid-template-columns:1fr;}
@@ -393,7 +452,6 @@ nav.tabs button.on{color:var(--cream);border-bottom-color:var(--gold);}
   .announce-editor{padding:12px;overflow-x:hidden;}
   .announce-editor .checks{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
   .announce-editor .checks label{min-height:44px;}
-  .price-edit .btn{min-width:44px;flex:0 0 auto;}
 }
 
 /* orders */
@@ -486,16 +544,11 @@ nav.tabs button .ico{width:15px;height:15px;stroke-width:1.9;}
 .tcard .actions button{display:inline-flex;align-items:center;gap:4px;}
 .tcard .actions button .ico{width:11px;height:11px;stroke-width:2.2;}
 .state .ico{width:11px;height:11px;stroke-width:2.4;}
-.easy-row .rico{width:40px;height:40px;border-radius:12px;background:var(--cream);
-  border:1px solid var(--line);display:flex;align-items:center;justify-content:center;flex:0 0 auto;overflow:hidden;}
-.easy-row .rico .ico{width:17px;height:17px;stroke:var(--forest-2);stroke-width:1.7;}
 .easy-row .rico .greek-ic{width:34px;height:34px;}
-.easy-row .dish-order{margin-right:2px;}
 .pro-head .phico{width:34px;height:34px;border-radius:11px;background:var(--cream);
   display:flex;align-items:center;justify-content:center;flex:0 0 auto;overflow:hidden;}
 .pro-head .phico .ico{width:15px;height:15px;stroke:var(--forest-2);stroke-width:1.8;}
 .pro-head .phico .greek-ic{width:28px;height:28px;}
-.cat-edit .cat-preview .greek-ic{width:34px;height:34px;}
 .easy-cat-h .greek-ic{width:22px;height:22px;}
 .easy-cat-h .ico{width:16px;height:16px;stroke-width:1.9;}
 /* Plate-art thumbs (same rule as guest menu) */
@@ -621,8 +674,7 @@ nav.tabs button .ico{width:15px;height:15px;stroke-width:1.9;}
   .layout-row,.fieldrow{grid-template-columns:1fr;}
   .layout-actions{display:grid;grid-template-columns:1fr 1fr;}
   .layout-actions .btn{justify-content:center;}
-  .easy-row{grid-template-columns:44px 40px minmax(0,1fr) 52px;}
-  .easy-row .price-edit,.easy-row .soldlabel,.easy-row .hidebtn,.easy-row .easy-edit{grid-column:3 / 5;}
+  .easy-row .easy-controls{flex:1 1 100%;}
   .price-edit{flex-wrap:wrap;}
   .pro-head{gap:8px;padding:12px;}
   .pro-head .phico{display:none;}
@@ -662,9 +714,7 @@ nav.tabs button .ico{width:15px;height:15px;stroke-width:1.9;}
   .floor-label.round-row{left:36%;}
   .plan-table{border-width:2.5px;}
   .plan-table b{font-size:12px;}
-  .easy-row{grid-template-columns:40px 34px minmax(0,1fr);}
-  .easy-row .toggle{grid-column:3;justify-self:start;}
-  .easy-row .price-edit,.easy-row .soldlabel,.easy-row .hidebtn,.easy-row .easy-edit{grid-column:1 / -1;}
+  .easy-row .easy-controls{width:100%;}
   .io-ticket,.io-side{padding:16px;}
   .io-line .pr{grid-column:2 / 4;justify-self:start;}
   .order .top{flex-wrap:wrap;}
@@ -683,12 +733,49 @@ nav.tabs button .ico{width:15px;height:15px;stroke-width:1.9;}
 /* 2026-07-31 — owner UI quality pass */
 :root{--tap:44px;}
 :focus-visible{outline:3px solid #E4C95F;outline-offset:3px;}
-button,.btn,nav.tabs button,.hidebtn,.upload-pick,.langtabs button,.cat-actions button,.cat-order button,.dish-order button,.easy-edit,
+button,.btn,nav.tabs button,.hidebtn,.upload-pick,.langtabs button,.cat-actions button,.cat-order button,.easy-edit,
 .io-x,.io-editbtn,.io-shortcuts button,.ops-go,.ops-actions button{
   min-height:var(--tap);
 }
-input,select,textarea{min-height:var(--tap);font-size:16px;}
+/* Keep ↑↓ compact — global tap size would blow them up and warp the row */
+.dish-order button{min-height:32px!important;height:32px;}
+.price-edit .btn{min-height:40px!important;height:40px;}
+.easy-edit{min-height:40px!important;height:40px;}
+input,select,textarea{min-height:var(--tap);font-size:16px;line-height:1.25;box-sizing:border-box;}
 button:disabled,[aria-disabled="true"]{cursor:not-allowed;}
+
+/* Hard rule: buttons never drip text / mis-align icons across aspect ratios */
+.btn,nav.tabs button,.modeswitch button,.status-pill,.sync-pill,.hidebtn,.easy-edit,
+.upload-pick,.langtabs button,.ops-go,.ops-actions button,.announce-actions .btn,
+.panel-head .btn,.setting-row .btn,.preset-actions .btn,.scan-actions .btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  line-height:1.15;vertical-align:middle;box-sizing:border-box;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.btn .ico,nav.tabs button .ico,.modeswitch button .ico,.hidebtn .ico,.easy-edit .ico,
+.upload-pick .ico,.ops-go .ico,.panel-head .btn .ico{
+  flex:0 0 auto;display:block;overflow:visible;
+}
+.modeswitch button,.status-pill,.sync-pill{min-width:0;max-width:100%;}
+header .bar{align-items:center;}
+header .bar .btn,header .bar .status-pill,header .bar .sync-pill{
+  flex:0 1 auto;align-self:center;
+}
+nav.tabs{align-items:stretch;-webkit-overflow-scrolling:touch;}
+nav.tabs button{align-items:center;}
+.panel-head{gap:10px;}
+.panel-head .btn{flex:0 1 auto;}
+.setting-row{align-items:center;}
+.announce-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+.announce-actions .btn{flex:0 1 auto;}
+.pro-head{align-items:center;}
+.pro-head .dish-order button{min-height:32px!important;}
+.login .btn{width:100%;justify-content:center;}
+@media(max-width:760px){
+  .btn,.modeswitch button,.status-pill,.sync-pill,.hidebtn{white-space:nowrap;}
+  .modeswitch button{font-size:12.5px;padding-inline:8px;}
+  header .bar{gap:8px;}
+}
 .login{padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));}
 .login .box{max-width:420px;}
 .login-status{min-height:22px;margin:10px 0 0;color:var(--bad);font-size:12px;line-height:1.45;}
@@ -929,7 +1016,7 @@ body.is-saving button[data-save],body.is-saving .upload-pick{pointer-events:none
 <script>window.TV_STORAGE_KEY='tsigoura_verde_v13_admin';</script>
 <script src="tsigoura-data.js?v=20260813-banner-storage-v2"></script>
 <script src="tsigoura-menu-icons.js?v=20260821-iconOverride-fix"></script>
-<script src="tsigoura-icons.js"></script>
+<script src="tsigoura-icons.js?v=20260821-edit-icon-fix"></script>
 <script>
 /* One-time migrate from the old shared guest/admin key so owners keep edits. */
 try{
@@ -2476,25 +2563,28 @@ function renderEasy(){
       row.className='easy-row reveal'+(i.available?'':' off')+(i.hidden||!ss.active?' hidden':'');
       row.dataset.id=String(i.id);
       row.innerHTML=`
-        <div class="dish-order">
-          <button type="button" data-dish-up data-testid="easy-dish-up-${i.id}" title="Πάνω" ${ix===0?'disabled':''}>↑</button>
-          <button type="button" data-dish-down data-testid="easy-dish-down-${i.id}" title="Κάτω" ${ix===items.length-1?'disabled':''}>↓</button>
+        <div class="easy-left">
+          <div class="dish-order">
+            <button type="button" data-dish-up data-testid="easy-dish-up-${i.id}" title="Πάνω" ${ix===0?'disabled':''}>↑</button>
+            <button type="button" data-dish-down data-testid="easy-dish-down-${i.id}" title="Κάτω" ${ix===items.length-1?'disabled':''}>↓</button>
+          </div>
+          <div class="rico">${adminDishThumb(i)}</div>
         </div>
-        <div class="rico">${adminDishThumb(i)}</div>
-        <div>
+        <div class="easy-main">
           <div class="nm">${itemName(i,'el')}</div>
           <div class="cat">${itemName(i,'en')}${scheduleText?` · ${scheduleText}`:''}</div>
         </div>
-        <div class="spacer"></div>
-        <div class="price-edit">
-          <button class="btn ghost sm pressable" data-minus>${ICO.get('minus')}</button>
-          <input type="number" step="0.10" min="0" value="${i.price.toFixed(2)}" data-price>
-          <button class="btn ghost sm pressable" data-plus>${ICO.get('plus')}</button>
-        </div>
-        <span class="soldlabel" style="color:${(i.hidden||!ss.active)?'var(--bad)':(i.available?'var(--ok)':'var(--bad)')}">${i.hidden?'Κρυφό':(!ss.active?'Εκτός ημερομηνίας':(i.available?'Διαθέσιμο':'Τελείωσε'))}</span>
-        <button class="easy-edit pressable" type="button" data-edit data-testid="easy-edit-${i.id}" title="Πλήρης επεξεργασία">${ICO.get('edit')}</button>
-        <button class="hidebtn ${i.hidden?'on':''}" data-hide data-testid="dish-visibility-${i.id}">${i.hidden?'Εμφάνιση':'Απόκρυψη'}</button>
-        <div class="toggle ${i.available?'on':''}" data-toggle title="Διαθέσιμο / τελείωσε"></div>`;
+        <div class="easy-controls">
+          <div class="price-edit">
+            <button class="btn ghost sm pressable" data-minus aria-label="Μείωση">${ICO.get('minus')}</button>
+            <input type="number" step="0.10" min="0" value="${i.price.toFixed(2)}" data-price>
+            <button class="btn ghost sm pressable" data-plus aria-label="Αύξηση">${ICO.get('plus')}</button>
+          </div>
+          <span class="soldlabel" style="color:${(i.hidden||!ss.active)?'var(--bad)':(i.available?'var(--ok)':'var(--bad)')}">${i.hidden?'Κρυφό':(!ss.active?'Εκτός':(i.available?'Διαθέσιμο':'Τελείωσε'))}</span>
+          <button class="hidebtn ${i.hidden?'on':''}" data-hide data-testid="dish-visibility-${i.id}">${i.hidden?'Εμφάνιση':'Απόκρυψη'}</button>
+          <div class="toggle ${i.available?'on':''}" data-toggle title="Διαθέσιμο / τελείωσε"></div>
+          <button class="easy-edit pressable" type="button" data-edit data-testid="easy-edit-${i.id}" title="Πλήρης επεξεργασία" aria-label="Επεξεργασία">${ICO.get('edit')}</button>
+        </div>`;
       row.querySelector('[data-dish-up]').onclick=()=>shiftDishInCategory(i.id,-1);
       row.querySelector('[data-dish-down]').onclick=()=>shiftDishInCategory(i.id,1);
       row.querySelector('[data-edit]').onclick=()=>openProDish(i.id);
