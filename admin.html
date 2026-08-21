@@ -344,16 +344,20 @@ nav.tabs button.on{color:var(--cream);border-bottom-color:var(--gold);}
 .cat-manager .cat-top{display:flex;align-items:center;gap:10px;justify-content:space-between;margin-bottom:12px;}
 .cat-manager h3{font-size:18px;color:var(--forest);display:flex;align-items:center;gap:8px;}
 .cat-list{display:grid;gap:8px;}
-.cat-edit{display:grid;grid-template-columns:28px 46px minmax(0,1fr) minmax(96px,.55fr) 54px auto;
+.cat-edit{display:grid;grid-template-columns:48px 46px minmax(0,1fr) minmax(96px,.55fr) 54px auto;
   gap:8px;align-items:center;background:rgba(255,255,255,.72);border:1px solid var(--line);border-radius:14px;padding:8px;max-width:100%;overflow:hidden;}
 .cat-edit.dragging{opacity:.55;outline:2px dashed var(--gold);}
 .cat-edit.hidden{opacity:.52;background:#F0EDE6;}
 .cat-edit .drag-handle{width:28px;height:28px;}
 .cat-order{display:flex;flex-direction:column;gap:4px;align-items:center;justify-content:center;}
-.cat-order .ord{font-size:10px;font-weight:900;color:var(--gold);letter-spacing:.4px;min-width:18px;text-align:center;}
-.cat-order button{width:28px;height:26px;border-radius:8px;border:1px solid var(--line);background:var(--cream);color:var(--forest);font-size:12px;font-weight:900;line-height:1;padding:0;display:flex;align-items:center;justify-content:center;}
+.cat-order .ord{font-size:11px;font-weight:900;color:var(--gold);letter-spacing:.4px;min-width:18px;text-align:center;}
+.cat-order button{width:44px;height:44px;min-height:44px;border-radius:12px;border:1px solid var(--line);background:var(--cream);color:var(--forest);font-size:16px;font-weight:900;line-height:1;padding:0;display:flex;align-items:center;justify-content:center;}
 .cat-order button:disabled{opacity:.35;cursor:default;}
 .cat-order button:not(:disabled):active{transform:scale(.94);background:#EEF5EA;}
+.dish-order{display:flex;flex-direction:column;gap:3px;flex:0 0 auto;}
+.dish-order button{width:40px;height:36px;min-height:36px;border-radius:10px;border:1px solid var(--line);background:var(--cream);color:var(--forest);font-size:14px;font-weight:900;padding:0;display:flex;align-items:center;justify-content:center;}
+.dish-order button:disabled{opacity:.35;}
+.easy-edit{min-height:44px;min-width:44px;border-radius:10px;border:1px solid var(--line);background:var(--cream);color:var(--forest);font-weight:800;padding:0 10px;}
 .cat-edit .cat-preview{width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;
   background:var(--catbg,#E7EEEA);color:var(--catacc,#38564F);box-shadow:inset 0 0 0 1px rgba(255,255,255,.65);}
 .cat-edit .cat-preview .ico{width:22px;height:22px;stroke-width:1.9;}
@@ -380,12 +384,16 @@ nav.tabs button.on{color:var(--cream);border-bottom-color:var(--gold);}
   .easy-row .price-edit,.easy-row .soldlabel,.easy-row .hidebtn{grid-column:2 / 4;}
   .easy-row .price-edit{justify-content:flex-start;}
   .easy-row .soldlabel{text-align:left;width:auto;}
-  .cat-edit{grid-template-columns:36px 42px minmax(0,1fr);align-items:start;}
+  .cat-edit{grid-template-columns:52px 42px minmax(0,1fr);align-items:start;}
   .cat-edit select,.cat-edit input[type="color"],.cat-actions{grid-column:3 / 4;}
   .cat-media{grid-column:1 / -1;grid-template-columns:1fr;}
   .cat-translations{grid-column:1 / -1;}
   .cat-translation-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
   .cat-actions{justify-content:flex-start;}
+  .announce-editor{padding:12px;overflow-x:hidden;}
+  .announce-editor .checks{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+  .announce-editor .checks label{min-height:44px;}
+  .price-edit .btn{min-width:44px;flex:0 0 auto;}
 }
 
 /* orders */
@@ -611,7 +619,7 @@ nav.tabs button .ico{width:15px;height:15px;stroke-width:1.9;}
   .cat-manager{padding:12px;}
   .cat-manager .cat-top{align-items:flex-start;flex-wrap:wrap;}
   .cat-manager .cat-top .btn{width:100%;justify-content:center;}
-  .cat-edit{grid-template-columns:36px 40px minmax(0,1fr);}
+  .cat-edit{grid-template-columns:52px 40px minmax(0,1fr);}
   .cat-edit select,.cat-edit input[type="color"],.cat-actions{grid-column:1 / -1;width:100%;}
   .cat-actions{display:grid;grid-template-columns:repeat(3,1fr);}
   .cat-actions button{width:100%;}
@@ -665,7 +673,7 @@ nav.tabs button .ico{width:15px;height:15px;stroke-width:1.9;}
 /* 2026-07-31 — owner UI quality pass */
 :root{--tap:44px;}
 :focus-visible{outline:3px solid #E4C95F;outline-offset:3px;}
-button,.btn,nav.tabs button,.hidebtn,.upload-pick,.langtabs button,.cat-actions button,
+button,.btn,nav.tabs button,.hidebtn,.upload-pick,.langtabs button,.cat-actions button,.cat-order button,.dish-order button,.easy-edit,
 .io-x,.io-editbtn,.io-shortcuts button,.ops-go,.ops-actions button{
   min-height:var(--tap);
 }
@@ -712,7 +720,8 @@ body.is-saving button[data-save],body.is-saving .upload-pick{pointer-events:none
 }
 @media(max-width:390px){
   .status-pill{flex-basis:100%;}
-  .modeswitch{grid-template-columns:1fr;}
+  .modeswitch{grid-template-columns:repeat(3,1fr);}
+  .modeswitch button{font-size:12px;padding-inline:4px;}
   .media-upload{display:grid;grid-template-columns:1fr;}
   .media-upload .upload-status{min-height:32px;}
   .cat-actions{grid-template-columns:repeat(3,1fr)!important;}
@@ -1411,6 +1420,14 @@ function flushRemoteSave(options={}){
   flushOpenProForms();
   saveState(S);
   return saveLiveMenu(options);
+}
+/** Persist locally then wait for the live store write (phone + PC publish path). */
+async function persistAndPublish(reason, options={}){
+  persist(reason||'edit');
+  clearTimeout(remoteSaveTimer);
+  const ok=await flushRemoteSave({ silent: options.silent!==false });
+  if(ok) dirtySincePublish=false;
+  return !!ok;
 }
 function persist(reason){
   S=normalizeState(S||defaultState());
@@ -2194,6 +2211,7 @@ $('tabs').querySelectorAll('button').forEach(b=>{
   b.onclick = ()=>{
     $('tabs').querySelectorAll('button').forEach(x=>x.classList.remove('on'));
     b.classList.add('on');
+    try{ b.scrollIntoView({ inline:'nearest', block:'nearest', behavior:'smooth' }); }catch(e){}
     document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
     $('panel-'+b.dataset.tab).classList.add('on');
     if(b.dataset.tab==='qr') renderQR();
@@ -2383,7 +2401,7 @@ function renderEasy(){
   tools.innerHTML=`
     <button type="button" class="btn gold pressable" id="easyAddDish" data-testid="easy-add-dish">${ICO.get('plus')}Προσθήκη πιάτου</button>
     <button type="button" class="btn ghost sm pressable" id="easyAddCat" data-testid="easy-add-category">${ICO.get('plus')}Νέα κατηγορία</button>
-    <span class="hint" style="flex:1 1 100%;margin:0;">Τιμή / διαθεσιμότητα εδώ · πλήρες edit (όνομα, αλλεργιογόνα) ανοίγει στο Pro.</span>`;
+    <span class="hint" style="flex:1 1 100%;margin:0;">Τιμή / απόκρυψη εδώ · πάτα «Επεξεργασία» για πλήρες edit σε κινητό ή PC.</span>`;
   area.appendChild(tools);
   tools.querySelector('#easyAddDish').onclick=()=>{
     const id=addNewDish();
@@ -2421,20 +2439,22 @@ function renderEasy(){
           <button class="btn ghost sm pressable" data-plus>${ICO.get('plus')}</button>
         </div>
         <span class="soldlabel" style="color:${(i.hidden||!ss.active)?'var(--bad)':(i.available?'var(--ok)':'var(--bad)')}">${i.hidden?'Κρυφό':(!ss.active?'Εκτός ημερομηνίας':(i.available?'Διαθέσιμο':'Τελείωσε'))}</span>
+        <button class="easy-edit pressable" type="button" data-edit data-testid="easy-edit-${i.id}" title="Πλήρης επεξεργασία">${ICO.get('edit')}</button>
         <button class="hidebtn ${i.hidden?'on':''}" data-hide data-testid="dish-visibility-${i.id}">${i.hidden?'Εμφάνιση':'Απόκρυψη'}</button>
         <div class="toggle ${i.available?'on':''}" data-toggle title="Διαθέσιμο / τελείωσε"></div>`;
-      row.querySelector('[data-toggle]').onclick=()=>{ i.available=!i.available; persist(); renderEasy(); toast(i.available?'Διαθέσιμο':'Τελείωσε'); };
-      row.querySelector('[data-hide]').onclick=()=>{ i.hidden=!i.hidden; persist(); renderEasy(); toast(i.hidden?'Κρύφτηκε από το menu':'Εμφανίζεται στο menu'); };
+      row.querySelector('[data-edit]').onclick=()=>openProDish(i.id);
+      row.querySelector('[data-toggle]').onclick=async()=>{ i.available=!i.available; await persistAndPublish('availability',{silent:true}); renderEasy(); toast(i.available?'Διαθέσιμο ✓':'Τελείωσε ✓'); };
+      row.querySelector('[data-hide]').onclick=async()=>{ i.hidden=!i.hidden; await persistAndPublish('visibility',{silent:true}); renderEasy(); toast(i.hidden?'Κρύφτηκε ✓':'Εμφανίζεται ✓'); };
       const inp=row.querySelector('[data-price]');
-      const commitPrice=()=>{
+      const commitPrice=async()=>{
         const v=parseFloat(inp.value);
         if(isNaN(v)||v<0){ toast('Μη έγκυρη τιμή'); inp.value=Number(i.price||0).toFixed(2); return; }
-        i.price=+v.toFixed(2); persist(); toast('Τιμή ενημερώθηκε');
+        i.price=+v.toFixed(2); await persistAndPublish('price',{silent:true}); toast('Τιμή ενημερώθηκε ✓');
       };
       inp.onchange=commitPrice;
       inp.onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); commitPrice(); inp.blur(); } };
-      row.querySelector('[data-minus]').onclick=()=>{ i.price=Math.max(0,+(Number(i.price||0)-0.5).toFixed(2)); persist(); renderEasy(); };
-      row.querySelector('[data-plus]').onclick=()=>{ i.price=+(Number(i.price||0)+0.5).toFixed(2); persist(); renderEasy(); };
+      row.querySelector('[data-minus]').onclick=async()=>{ i.price=Math.max(0,+(Number(i.price||0)-0.5).toFixed(2)); await persistAndPublish('price',{silent:true}); renderEasy(); };
+      row.querySelector('[data-plus]').onclick=async()=>{ i.price=+(Number(i.price||0)+0.5).toFixed(2); await persistAndPublish('price',{silent:true}); renderEasy(); };
       area.appendChild(row);
     });
   });
@@ -2465,12 +2485,16 @@ function renderPro(){
   };
   area.appendChild(addBtn);
 
-  S.menu.forEach(i=>{
+  S.menu.forEach((i,ix)=>{
     const box=document.createElement('div'); box.className='pro-item';
     box.draggable=true; box.dataset.id=i.id;
     box.innerHTML=`
       <div class="pro-head">
-        <span class="drag-handle" title="Σύρε για αλλαγή σειράς">⋮⋮</span>
+        <div class="dish-order">
+          <button type="button" data-dish-up data-testid="dish-up-${i.id}" title="Πάνω" ${ix===0?'disabled':''}>↑</button>
+          <button type="button" data-dish-down data-testid="dish-down-${i.id}" title="Κάτω" ${ix===S.menu.length-1?'disabled':''}>↓</button>
+        </div>
+        <span class="drag-handle" title="Σύρε για αλλαγή σειράς (PC)">⋮⋮</span>
         <span class="phico">${ICO.get(i.icon||'bowl')}</span>
         <span class="dotstate" style="width:9px;height:9px;border-radius:50%;flex:0 0 auto;
           background:${i.hidden?'#8B8674':(i.available?'var(--ok)':'var(--bad)')}"></span>
@@ -2536,7 +2560,9 @@ function renderPro(){
           <button type="button" class="btn danger sm pressable" data-del data-testid="dish-delete-${i.id}">${ICO.get('trash')}Διαγραφή πιάτου</button>
         </div>
       </div>`;
-    box.querySelector('.pro-head').onclick=e=>{ if(e.target.closest('.drag-handle')) return; box.classList.toggle('open'); };
+    box.querySelector('.pro-head').onclick=e=>{ if(e.target.closest('.drag-handle,[data-dish-up],[data-dish-down]')) return; box.classList.toggle('open'); };
+    box.querySelector('[data-dish-up]').onclick=e=>{ e.stopPropagation(); shiftDish(i.id,-1); };
+    box.querySelector('[data-dish-down]').onclick=e=>{ e.stopPropagation(); shiftDish(i.id,1); };
     box.addEventListener('dragstart',e=>{
       if(!e.target.closest('.drag-handle')){ e.preventDefault(); return; }
       box.classList.add('dragging'); e.dataTransfer.setData('text/plain',String(i.id));
@@ -2547,11 +2573,7 @@ function renderPro(){
       e.preventDefault();
       const from=String(e.dataTransfer.getData('text/plain')), to=String(i.id);
       if(!from || from===to) return;
-      const a=S.menu.findIndex(x=>String(x.id)===from), b=S.menu.findIndex(x=>String(x.id)===to);
-      if(a<0||b<0) return;
-      const [m]=S.menu.splice(a,1); S.menu.splice(b,0,m);
-      S.menu.forEach((x,idx)=>x.order=idx+1);
-      persist(); renderPro(); toast('Η σειρά ενημερώθηκε');
+      moveDish(from,to);
     });
     box.querySelectorAll('[data-lang]').forEach(b=>b.onclick=(e)=>{
       e.stopPropagation();
@@ -2697,7 +2719,7 @@ function renderCategoryManager(area){
     <h3>${ICO.get('layers')}Κατηγορίες</h3>
     <button type="button" class="btn gold sm pressable" id="addCategoryBtn" data-testid="add-category">${ICO.get('plus')}Νέα κατηγορία</button>
   </div>
-  <div class="cat-mini" style="margin-bottom:10px;">Αλλάξτε τη <b>σειρά</b> με τα βέλη ↑ ↓ (ή σύρετε το ⋮⋮). Η σειρά εμφανίζεται αμέσως στο μενού πελατών.</div>
+  <div class="cat-mini" style="margin-bottom:10px;">Αλλάξτε τη <b>σειρά</b> με τα μεγάλα βέλη ↑ ↓ (δουλεύει σε κινητό και PC). Η σειρά φαίνεται αμέσως στους πελάτες.</div>
   <div class="cat-list"></div>`;
   const list=wrap.querySelector('.cat-list');
   wrap.querySelector('#addCategoryBtn').onclick=()=>addCategory();
@@ -2837,7 +2859,7 @@ function applyCategoryOrder(ordered){
   ordered.forEach((c,ix)=>{ c.order=ix+1; });
   S.categories=ordered;
   return persistAndPublish('category-order',{silent:true}).then(ok=>{
-    renderPro();
+    if(editMode==='pro') renderPro();
     toast(ok?'Η σειρά κατηγοριών δημοσιεύτηκε ✓':'Η σειρά αποθηκεύτηκε · έλεγχος σύνδεσης');
     return ok;
   });
@@ -2859,6 +2881,30 @@ function moveCategory(from,to){
   if(a<0||b<0) return;
   const [m]=ordered.splice(a,1); ordered.splice(b,0,m);
   applyCategoryOrder(ordered);
+}
+function applyDishOrder(){
+  S.menu.forEach((x,idx)=>{ x.order=idx+1; });
+  return persistAndPublish('dish-order',{silent:true}).then(ok=>{
+    if(editMode==='pro') renderPro();
+    toast(ok?'Η σειρά πιάτων δημοσιεύτηκε ✓':'Η σειρά αποθηκεύτηκε · έλεγχος σύνδεσης');
+    return ok;
+  });
+}
+function shiftDish(id, dir){
+  const ix=S.menu.findIndex(x=>String(x.id)===String(id));
+  if(ix<0) return;
+  const j=ix+Number(dir||0);
+  if(j<0 || j>=S.menu.length) return;
+  const [m]=S.menu.splice(ix,1);
+  S.menu.splice(j,0,m);
+  applyDishOrder();
+}
+function moveDish(from,to){
+  if(!from || !to || from===to) return;
+  const a=S.menu.findIndex(x=>String(x.id)===from), b=S.menu.findIndex(x=>String(x.id)===to);
+  if(a<0||b<0) return;
+  const [m]=S.menu.splice(a,1); S.menu.splice(b,0,m);
+  applyDishOrder();
 }
 
 function rawItemName(i,code){
