@@ -349,6 +349,11 @@ nav.tabs button.on{color:var(--cream);border-bottom-color:var(--gold);}
 .cat-edit.dragging{opacity:.55;outline:2px dashed var(--gold);}
 .cat-edit.hidden{opacity:.52;background:#F0EDE6;}
 .cat-edit .drag-handle{width:28px;height:28px;}
+.cat-order{display:flex;flex-direction:column;gap:4px;align-items:center;justify-content:center;}
+.cat-order .ord{font-size:10px;font-weight:900;color:var(--gold);letter-spacing:.4px;min-width:18px;text-align:center;}
+.cat-order button{width:28px;height:26px;border-radius:8px;border:1px solid var(--line);background:var(--cream);color:var(--forest);font-size:12px;font-weight:900;line-height:1;padding:0;display:flex;align-items:center;justify-content:center;}
+.cat-order button:disabled{opacity:.35;cursor:default;}
+.cat-order button:not(:disabled):active{transform:scale(.94);background:#EEF5EA;}
 .cat-edit .cat-preview{width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;
   background:var(--catbg,#E7EEEA);color:var(--catacc,#38564F);box-shadow:inset 0 0 0 1px rgba(255,255,255,.65);}
 .cat-edit .cat-preview .ico{width:22px;height:22px;stroke-width:1.9;}
@@ -369,12 +374,13 @@ nav.tabs button.on{color:var(--cream);border-bottom-color:var(--gold);}
 .cat-actions{display:flex;gap:6px;justify-content:flex-end;}
 .cat-actions button{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--cream);color:var(--forest);}
 .cat-actions button.danger{color:var(--bad);}
+.cat-edit.drop-target{outline:2px solid rgba(160,126,60,.45);background:#FFF8E8;}
 @media(max-width:780px){
   .easy-row{grid-template-columns:34px minmax(0,1fr) auto;gap:9px;}
   .easy-row .price-edit,.easy-row .soldlabel,.easy-row .hidebtn{grid-column:2 / 4;}
   .easy-row .price-edit{justify-content:flex-start;}
   .easy-row .soldlabel{text-align:left;width:auto;}
-  .cat-edit{grid-template-columns:28px 42px minmax(0,1fr);align-items:start;}
+  .cat-edit{grid-template-columns:36px 42px minmax(0,1fr);align-items:start;}
   .cat-edit select,.cat-edit input[type="color"],.cat-actions{grid-column:3 / 4;}
   .cat-media{grid-column:1 / -1;grid-template-columns:1fr;}
   .cat-translations{grid-column:1 / -1;}
@@ -605,7 +611,7 @@ nav.tabs button .ico{width:15px;height:15px;stroke-width:1.9;}
   .cat-manager{padding:12px;}
   .cat-manager .cat-top{align-items:flex-start;flex-wrap:wrap;}
   .cat-manager .cat-top .btn{width:100%;justify-content:center;}
-  .cat-edit{grid-template-columns:28px 40px minmax(0,1fr);}
+  .cat-edit{grid-template-columns:36px 40px minmax(0,1fr);}
   .cat-edit select,.cat-edit input[type="color"],.cat-actions{grid-column:1 / -1;width:100%;}
   .cat-actions{display:grid;grid-template-columns:repeat(3,1fr);}
   .cat-actions button{width:100%;}
@@ -2691,11 +2697,12 @@ function renderCategoryManager(area){
     <h3>${ICO.get('layers')}Κατηγορίες</h3>
     <button type="button" class="btn gold sm pressable" id="addCategoryBtn" data-testid="add-category">${ICO.get('plus')}Νέα κατηγορία</button>
   </div>
-  <div class="cat-mini" style="margin-bottom:10px;">Προσθέστε, μετονομάστε, ταξινομήστε, κρύψτε ή διαγράψτε κατηγορίες. Οι αλλαγές ισχύουν αμέσως στο μενού.</div>
+  <div class="cat-mini" style="margin-bottom:10px;">Αλλάξτε τη <b>σειρά</b> με τα βέλη ↑ ↓ (ή σύρετε το ⋮⋮). Η σειρά εμφανίζεται αμέσως στο μενού πελατών.</div>
   <div class="cat-list"></div>`;
   const list=wrap.querySelector('.cat-list');
   wrap.querySelector('#addCategoryBtn').onclick=()=>addCategory();
-  S.categories.slice().sort((a,b)=>a.order-b.order).forEach((c,ix)=>{
+  const ordered=S.categories.slice().sort((a,b)=>(Number(a.order)||0)-(Number(b.order)||0));
+  ordered.forEach((c,ix)=>{
     const used=S.menu.filter(i=>i.cat===c.id).length;
     const visible=S.menu.filter(i=>i.cat===c.id&&dishGuestVisible(i)).length;
     const autoHidden=!c.hidden&&visible===0;
@@ -2706,14 +2713,19 @@ function renderCategoryManager(area){
     row.className='cat-edit';
     row.draggable=true;
     row.dataset.id=c.id;
+    row.dataset.order=String(c.order||ix+1);
     row.style.setProperty('--catacc', acc);
     row.style.setProperty('--catbg', tint);
     row.innerHTML=`
-      <span class="drag-handle" title="Σύρε για αλλαγή σειράς">⋮⋮</span>
-      <span class="cat-preview">${ICO.get(c.icon||'bowl')}</span>
+      <div class="cat-order">
+        <button type="button" data-cat-up data-testid="category-up-${ioEsc(c.id)}" title="Πάνω" ${ix===0?'disabled':''}>↑</button>
+        <span class="ord" title="Σειρά">${ix+1}</span>
+        <button type="button" data-cat-down data-testid="category-down-${ioEsc(c.id)}" title="Κάτω" ${ix===ordered.length-1?'disabled':''}>↓</button>
+      </div>
+      <span class="cat-preview" title="Σύρε για αλλαγή σειράς">${ICO.get(c.icon||'bowl')}</span>
       <div>
         <input data-cat-name value="${catLabel(c,'el')}" maxlength="40" placeholder="Όνομα κατηγορίας">
-        <div class="cat-mini">${used} πιάτα · id ${ioEsc(c.id)}</div>
+        <div class="cat-mini">${used} πιάτα · σειρά ${ix+1} · id ${ioEsc(c.id)}</div>
         <span class="cat-state ${stateClass}">${stateText}</span>
       </div>
       <select data-cat-icon>${icons.map(ic=>`<option value="${ic}" ${ic===(c.icon||'bowl')?'selected':''}>${ic}</option>`).join('')}</select>
@@ -2733,16 +2745,25 @@ function renderCategoryManager(area){
       </div>`;
     if(c.hidden) row.classList.add('hidden');
     row.addEventListener('dragstart',e=>{
-      if(!e.target.closest('.drag-handle')){ e.preventDefault(); return; }
-      row.classList.add('dragging'); e.dataTransfer.setData('text/plain',String(c.id));
+      /* Allow drag from the row chrome; block when editing form fields. */
+      if(e.target.closest('input,select,textarea,button,label,.cat-media,.cat-translations,.upload-pick,.media-upload')){
+        e.preventDefault(); return;
+      }
+      row.classList.add('dragging');
+      e.dataTransfer.effectAllowed='move';
+      e.dataTransfer.setData('text/plain',String(c.id));
     });
     row.addEventListener('dragend',()=>row.classList.remove('dragging'));
-    row.addEventListener('dragover',e=>e.preventDefault());
+    row.addEventListener('dragover',e=>{ e.preventDefault(); e.dataTransfer.dropEffect='move'; row.classList.add('drop-target'); });
+    row.addEventListener('dragleave',()=>row.classList.remove('drop-target'));
     row.addEventListener('drop',e=>{
       e.preventDefault();
+      row.classList.remove('drop-target');
       const from=String(e.dataTransfer.getData('text/plain')), to=String(c.id);
       moveCategory(from,to);
     });
+    row.querySelector('[data-cat-up]').onclick=e=>{ e.stopPropagation(); shiftCategory(c.id,-1); };
+    row.querySelector('[data-cat-down]').onclick=e=>{ e.stopPropagation(); shiftCategory(c.id,1); };
     row.querySelector('[data-cat-save]').onclick=()=>saveCategoryRow(c,row);
     row.querySelector('[data-cat-name]').onchange=()=>saveCategoryRow(c,row);
     row.querySelector('[data-cat-icon]').onchange=()=>saveCategoryRow(c,row);
@@ -2761,7 +2782,14 @@ function renderCategoryManager(area){
     row.querySelector('[data-cat-accent]').onchange=()=>saveCategoryRow(c,row);
     row.querySelector('[data-cat-tint]').onchange=()=>saveCategoryRow(c,row);
     row.querySelectorAll('[data-cat-lang]').forEach(input=>input.onchange=()=>saveCategoryRow(c,row));
-    row.querySelector('[data-cat-hide]').onclick=()=>{ c.hidden=!c.hidden; persist(); renderPro(); toast(c.hidden?'Η κατηγορία κρύφτηκε':'Η κατηγορία εμφανίζεται'); };
+    row.querySelector('[data-cat-hide]').onclick=async()=>{
+      c.hidden=!c.hidden;
+      const ok=await persistAndPublish('visibility',{silent:true});
+      renderPro();
+      toast(ok
+        ? (c.hidden?'Η κατηγορία κρύφτηκε ✓':'Η κατηγορία εμφανίζεται ✓')
+        : (c.hidden?'Η κατηγορία κρύφτηκε':'Η κατηγορία εμφανίζεται'));
+    };
     row.querySelector('[data-cat-del]').onclick=()=>deleteCategory(c);
     list.appendChild(row);
   });
@@ -2797,19 +2825,40 @@ function deleteCategory(c){
   if(!confirm(question)) return;
   if(used) S.menu=S.menu.filter(i=>i.cat!==c.id);
   S.categories=S.categories.filter(x=>x!==c);
-  S.categories.forEach((x,ix)=>x.order=ix+1);
-  persist(); renderPro(); renderDash();
-  toast(used?`Διαγράφηκαν η κατηγορία και ${used} πιάτα`:'Η κατηγορία διαγράφηκε');
+  S.categories.slice().sort((a,b)=>(Number(a.order)||0)-(Number(b.order)||0)).forEach((x,ix)=>{ x.order=ix+1; });
+  persistAndPublish('category-delete',{silent:false}).then(ok=>{
+    renderPro(); renderDash();
+    toast(ok
+      ? (used?`Διαγράφηκαν η κατηγορία και ${used} πιάτα ✓`:'Η κατηγορία διαγράφηκε ✓')
+      : (used?`Διαγράφηκαν η κατηγορία και ${used} πιάτα`:'Η κατηγορία διαγράφηκε'));
+  });
+}
+function applyCategoryOrder(ordered){
+  ordered.forEach((c,ix)=>{ c.order=ix+1; });
+  S.categories=ordered;
+  return persistAndPublish('category-order',{silent:true}).then(ok=>{
+    renderPro();
+    toast(ok?'Η σειρά κατηγοριών δημοσιεύτηκε ✓':'Η σειρά αποθηκεύτηκε · έλεγχος σύνδεσης');
+    return ok;
+  });
+}
+function shiftCategory(id, dir){
+  const ordered=S.categories.slice().sort((a,b)=>(Number(a.order)||0)-(Number(b.order)||0));
+  const ix=ordered.findIndex(c=>String(c.id)===String(id));
+  if(ix<0) return;
+  const j=ix+Number(dir||0);
+  if(j<0 || j>=ordered.length) return;
+  const [m]=ordered.splice(ix,1);
+  ordered.splice(j,0,m);
+  applyCategoryOrder(ordered);
 }
 function moveCategory(from,to){
   if(!from || !to || from===to) return;
-  const ordered=S.categories.slice().sort((a,b)=>a.order-b.order);
+  const ordered=S.categories.slice().sort((a,b)=>(Number(a.order)||0)-(Number(b.order)||0));
   const a=ordered.findIndex(c=>String(c.id)===from), b=ordered.findIndex(c=>String(c.id)===to);
   if(a<0||b<0) return;
   const [m]=ordered.splice(a,1); ordered.splice(b,0,m);
-  ordered.forEach((c,ix)=>c.order=ix+1);
-  S.categories=ordered;
-  persist(); renderPro(); toast('Η σειρά κατηγοριών ενημερώθηκε');
+  applyCategoryOrder(ordered);
 }
 
 function rawItemName(i,code){
