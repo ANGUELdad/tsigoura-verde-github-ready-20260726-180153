@@ -918,7 +918,7 @@ body.is-saving button[data-save],body.is-saving .upload-pick{pointer-events:none
 
 <script>window.TV_STORAGE_KEY='tsigoura_verde_v13_admin';</script>
 <script src="tsigoura-data.js?v=20260813-banner-storage-v2"></script>
-<script src="tsigoura-menu-icons.js?v=20260727-owner-media-controls-v2"></script>
+<script src="tsigoura-menu-icons.js?v=20260821-cat-icon-path-fix"></script>
 <script src="tsigoura-icons.js"></script>
 <script>
 /* One-time migrate from the old shared guest/admin key so owners keep edits. */
@@ -969,7 +969,7 @@ function knownDishImagePath(i){
   return '';
 }
 function knownCategoryImagePath(c){
-  if(c&&c.image) return c.image;
+  if(c&&c.image && !/(?:^|\/)cat-[a-z0-9-]+\.png$/i.test(c.image)) return c.image;
   if(typeof catArtSrc==='function') return catArtSrc(c)||'';
   return '';
 }

@@ -135,7 +135,11 @@ function safeMediaPath(v){
   return v.includes('..') ? '' : v;
 }
 function dishArt(i){ const custom=safeMediaPath(i&&i.image); if(custom) return custom; const f=i&&DISH_ART[i.id]; return f?ART_DIR+f+'.png':''; }
-function catArtSrc(c){ const custom=safeMediaPath(c&&c.image); if(custom) return custom; const f=c&&CAT_ART[c.id]; return f?ART_DIR+f+'.png':''; }
+function catArtSrc(c){
+  const custom=safeMediaPath(c&&c.image);
+  if(custom && !/(?:^|\/)cat-[a-z0-9-]+\.png$/i.test(custom)) return custom;
+  const f=c&&CAT_ART[c.id]; return f?ART_DIR+f+'.png':'';
+}
 
 const GREEK_FOOD_BASE = 'media/dishes/';
 const GREEK_FOOD_ICON = {
@@ -179,6 +183,29 @@ function svgFor(src){
   if(src[0]==='@'){ const n=src.slice(1); return CUSTOM[n] || PACK[FALLBACK[n]||'dish'] || PACK.dish; }
   return PACK[src] || PACK.dish;
 }
-function pngIcon(file){ return `<span class="greek-ic" style="--food:url('${GREEK_FOOD_BASE}${file}')" aria-hidden="true"></span>`; }
+/* Accept basename ("16-horiatiki-salad.png"), relative ("media/dishes/…"),
+   or absolute URL — never double-prefix media/dishes/. */
+function resolveFoodCssUrl(pathOrFile){
+  const v=String(pathOrFile||'').trim();
+  if(!v) return '';
+  if(/^https?:\/\//i.test(v) || /^data:/i.test(v) || /^blob:/i.test(v)) return v;
+  const clean=v.replace(/^\/+/,'');
+  if(clean.includes('/')) return clean;
+  return GREEK_FOOD_BASE+clean;
+}
+/* Placeholder paths that were saved into live state but never shipped as files. */
+function isMissingCatPlaceholder(path){
+  return /(?:^|\/)cat-[a-z0-9-]+\.png$/i.test(String(path||''));
+}
+function pngIcon(file){
+  const url=resolveFoodCssUrl(file);
+  if(!url) return PACK.dish;
+  return `<span class="greek-ic" style="--food:url('${url}')" aria-hidden="true"></span>`;
+}
 function dishIcon(i){ return (i&&GREEK_FOOD_ICON[i.id]&&!i.iconOverride) ? pngIcon(GREEK_FOOD_ICON[i.id]) : svgFor(DISH_ICON[i&&i.icon] || i&&i.icon || 'dish'); }
-function catIcon(c){ return (c&&c.imageIcon) ? pngIcon(c.imageIcon) : svgFor(DISH_ICON[c&&c.icon] || CAT_ICON[c&&c.id] || c&&c.icon || 'dish'); }
+function catIcon(c){
+  if(c&&GREEK_CAT_ICON[c.id]&&!c.iconOverride) return pngIcon(GREEK_CAT_ICON[c.id]);
+  const custom=(c&&(c.imageIcon||c.image))||'';
+  if(custom && !isMissingCatPlaceholder(custom)) return pngIcon(custom);
+  return svgFor(DISH_ICON[c&&c.icon] || CAT_ICON[c&&c.id] || c&&c.icon || 'dish');
+}
