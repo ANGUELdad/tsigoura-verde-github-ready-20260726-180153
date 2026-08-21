@@ -202,9 +202,17 @@ function pngIcon(file){
   if(!url) return PACK.dish;
   return `<span class="greek-ic" style="--food:url('${url}')" aria-hidden="true"></span>`;
 }
-function dishIcon(i){ return (i&&GREEK_FOOD_ICON[i.id]&&!i.iconOverride) ? pngIcon(GREEK_FOOD_ICON[i.id]) : svgFor(DISH_ICON[i&&i.icon] || i&&i.icon || 'dish'); }
+function dishIcon(i){
+  /* Prefer real plate art. iconOverride used to force line icons and blanked
+     every Easy/Pro thumb once it got stuck true in live state. */
+  if(i&&GREEK_FOOD_ICON[i.id]) return pngIcon(GREEK_FOOD_ICON[i.id]);
+  const custom=safeMediaPath(i&&i.image);
+  if(custom && /\.(png|jpe?g|webp|avif)(\?|$)/i.test(custom) && !isMissingCatPlaceholder(custom))
+    return `<span class="greek-ic" style="--food:url('${resolveFoodCssUrl(custom)}')" aria-hidden="true"></span>`;
+  return svgFor(DISH_ICON[i&&i.icon] || i&&i.icon || 'dish');
+}
 function catIcon(c){
-  if(c&&GREEK_CAT_ICON[c.id]&&!c.iconOverride) return pngIcon(GREEK_CAT_ICON[c.id]);
+  if(c&&GREEK_CAT_ICON[c.id]) return pngIcon(GREEK_CAT_ICON[c.id]);
   const custom=(c&&(c.imageIcon||c.image))||'';
   if(custom && !isMissingCatPlaceholder(custom)) return pngIcon(custom);
   return svgFor(DISH_ICON[c&&c.icon] || CAT_ICON[c&&c.id] || c&&c.icon || 'dish');

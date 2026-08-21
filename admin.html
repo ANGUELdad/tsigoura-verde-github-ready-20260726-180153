@@ -300,7 +300,7 @@ nav.tabs button.on{color:var(--cream);border-bottom-color:var(--gold);}
 .tcard .note .ico{width:11px;height:11px;stroke-width:2;flex:0 0 auto;margin-top:1px;}
 
 /* easy mode item rows */
-.easy-row{display:grid;grid-template-columns:34px minmax(0,1fr) auto auto auto;align-items:center;gap:10px;background:var(--paper);border-radius:14px;padding:11px 14px;
+.easy-row{display:grid;grid-template-columns:44px 40px minmax(0,1fr) auto auto auto;align-items:center;gap:10px;background:var(--paper);border-radius:14px;padding:11px 14px;
   box-shadow:var(--shadow);margin-bottom:8px;max-width:100%;overflow:hidden;}
 .easy-row .nm{font-weight:600;font-size:14px;}
 .easy-row .cat{font-size:10.5px;color:var(--muted);}
@@ -380,8 +380,8 @@ nav.tabs button.on{color:var(--cream);border-bottom-color:var(--gold);}
 .cat-actions button.danger{color:var(--bad);}
 .cat-edit.drop-target{outline:2px solid rgba(160,126,60,.45);background:#FFF8E8;}
 @media(max-width:780px){
-  .easy-row{grid-template-columns:34px minmax(0,1fr) auto;gap:9px;}
-  .easy-row .price-edit,.easy-row .soldlabel,.easy-row .hidebtn{grid-column:2 / 4;}
+  .easy-row{grid-template-columns:44px 40px minmax(0,1fr) auto;gap:9px;}
+  .easy-row .price-edit,.easy-row .soldlabel,.easy-row .hidebtn,.easy-row .easy-edit,.easy-row .toggle{grid-column:3 / 5;}
   .easy-row .price-edit{justify-content:flex-start;}
   .easy-row .soldlabel{text-align:left;width:auto;}
   .cat-edit{grid-template-columns:52px 42px minmax(0,1fr);align-items:start;}
@@ -486,12 +486,21 @@ nav.tabs button .ico{width:15px;height:15px;stroke-width:1.9;}
 .tcard .actions button{display:inline-flex;align-items:center;gap:4px;}
 .tcard .actions button .ico{width:11px;height:11px;stroke-width:2.2;}
 .state .ico{width:11px;height:11px;stroke-width:2.4;}
-.easy-row .rico{width:34px;height:34px;border-radius:11px;background:var(--cream);
-  border:1px solid var(--line);display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
+.easy-row .rico{width:40px;height:40px;border-radius:12px;background:var(--cream);
+  border:1px solid var(--line);display:flex;align-items:center;justify-content:center;flex:0 0 auto;overflow:hidden;}
 .easy-row .rico .ico{width:17px;height:17px;stroke:var(--forest-2);stroke-width:1.7;}
-.pro-head .phico{width:30px;height:30px;border-radius:10px;background:var(--cream);
-  display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
+.easy-row .rico .greek-ic{width:34px;height:34px;}
+.easy-row .dish-order{margin-right:2px;}
+.pro-head .phico{width:34px;height:34px;border-radius:11px;background:var(--cream);
+  display:flex;align-items:center;justify-content:center;flex:0 0 auto;overflow:hidden;}
 .pro-head .phico .ico{width:15px;height:15px;stroke:var(--forest-2);stroke-width:1.8;}
+.pro-head .phico .greek-ic{width:28px;height:28px;}
+.cat-edit .cat-preview .greek-ic{width:34px;height:34px;}
+.easy-cat-h .greek-ic{width:22px;height:22px;}
+.easy-cat-h .ico{width:16px;height:16px;stroke-width:1.9;}
+/* Plate-art thumbs (same rule as guest menu) */
+.greek-ic{display:block;width:1.35em;height:1.35em;background:var(--food) center/contain no-repeat;flex:0 0 auto;}
+.rico .greek-ic,.phico .greek-ic,.cat-preview .greek-ic,.easy-cat-h .greek-ic{background-size:contain!important;background-position:center!important;background-repeat:no-repeat!important;}
 .order .tbl .ico{width:15px;height:15px;stroke-width:2;}
 .checks label .ico{width:13px;height:13px;stroke:var(--forest-3);stroke-width:1.8;}
 .warnbox{display:flex;gap:9px;align-items:flex-start;}
@@ -612,7 +621,8 @@ nav.tabs button .ico{width:15px;height:15px;stroke-width:1.9;}
   .layout-row,.fieldrow{grid-template-columns:1fr;}
   .layout-actions{display:grid;grid-template-columns:1fr 1fr;}
   .layout-actions .btn{justify-content:center;}
-  .easy-row{grid-template-columns:34px minmax(0,1fr) 52px;}
+  .easy-row{grid-template-columns:44px 40px minmax(0,1fr) 52px;}
+  .easy-row .price-edit,.easy-row .soldlabel,.easy-row .hidebtn,.easy-row .easy-edit{grid-column:3 / 5;}
   .price-edit{flex-wrap:wrap;}
   .pro-head{gap:8px;padding:12px;}
   .pro-head .phico{display:none;}
@@ -652,9 +662,9 @@ nav.tabs button .ico{width:15px;height:15px;stroke-width:1.9;}
   .floor-label.round-row{left:36%;}
   .plan-table{border-width:2.5px;}
   .plan-table b{font-size:12px;}
-  .easy-row{grid-template-columns:30px minmax(0,1fr);}
-  .easy-row .toggle{grid-column:2;justify-self:start;}
-  .easy-row .price-edit,.easy-row .soldlabel,.easy-row .hidebtn{grid-column:1 / -1;}
+  .easy-row{grid-template-columns:40px 34px minmax(0,1fr);}
+  .easy-row .toggle{grid-column:3;justify-self:start;}
+  .easy-row .price-edit,.easy-row .soldlabel,.easy-row .hidebtn,.easy-row .easy-edit{grid-column:1 / -1;}
   .io-ticket,.io-side{padding:16px;}
   .io-line .pr{grid-column:2 / 4;justify-self:start;}
   .order .top{flex-wrap:wrap;}
@@ -918,7 +928,7 @@ body.is-saving button[data-save],body.is-saving .upload-pick{pointer-events:none
 
 <script>window.TV_STORAGE_KEY='tsigoura_verde_v13_admin';</script>
 <script src="tsigoura-data.js?v=20260813-banner-storage-v2"></script>
-<script src="tsigoura-menu-icons.js?v=20260821-cat-icon-path-fix"></script>
+<script src="tsigoura-menu-icons.js?v=20260821-iconOverride-fix"></script>
 <script src="tsigoura-icons.js"></script>
 <script>
 /* One-time migrate from the old shared guest/admin key so owners keep edits. */
@@ -1425,9 +1435,36 @@ function flushRemoteSave(options={}){
 async function persistAndPublish(reason, options={}){
   persist(reason||'edit');
   clearTimeout(remoteSaveTimer);
-  const ok=await flushRemoteSave({ silent: options.silent!==false });
+  const ok=await flushRemoteSave({
+    silent: options.silent!==false,
+    skipConfirm: !!options.skipConfirm,
+    lightSaving: !!options.lightSaving
+  });
   if(ok) dirtySincePublish=false;
   return !!ok;
+}
+/** Debounced publish for rapid ↑↓ / price taps — UI stays instant. */
+let quickPublishTimer=null;
+function queueQuickPublish(reason){
+  pendingRemoteReason=reason||pendingRemoteReason||'edit';
+  dirtySincePublish=true;
+  setSyncState('pending');
+  clearTimeout(remoteSaveTimer);
+  clearTimeout(quickPublishTimer);
+  quickPublishTimer=setTimeout(()=>{
+    flushRemoteSave({silent:true,skipConfirm:true,lightSaving:true}).then(ok=>{
+      if(ok) dirtySincePublish=false;
+      else toast('Δεν δημοσιεύτηκε · δοκιμάστε ξανά');
+    });
+  }, 420);
+}
+function adminDishThumb(i){
+  try{ if(typeof dishIcon==='function') return dishIcon(i); }catch(e){}
+  return ICO.get((i&&i.icon)||'bowl');
+}
+function adminCatThumb(c){
+  try{ if(typeof catIcon==='function') return catIcon(c); }catch(e){}
+  return ICO.get((c&&c.icon)||'bowl');
 }
 function persist(reason){
   S=normalizeState(S||defaultState());
@@ -1702,7 +1739,7 @@ function saveLiveMenu(options={}){
   liveSaveChain=liveSaveChain.catch(()=>false).then(()=>performLiveMenuSave(options));
   return liveSaveChain;
 }
-async function performLiveMenuSave({silent=false,resetOps=false}={}){
+async function performLiveMenuSave({silent=false,resetOps=false,skipConfirm=false,lightSaving=false}={}){
   const pin=adminPin();
   if(!pin){
     lastRemoteSaveOk=false; lastRemoteSaveWhy='wrong_pin'; dirtySincePublish=true;
@@ -1710,7 +1747,7 @@ async function performLiveMenuSave({silent=false,resetOps=false}={}){
     toast(saveErrorMessage('wrong_pin'));
     return false;
   }
-  document.body.classList.add('is-saving');
+  if(!lightSaving) document.body.classList.add('is-saving');
   try{
     flushOpenProForms();
     /* Catalogue / settings edits keep kitchen orders and table occupancy.
@@ -1748,12 +1785,21 @@ async function performLiveMenuSave({silent=false,resetOps=false}={}){
       saveState(S);
       if(menuBroadcast) menuBroadcast.postMessage({type:'menu-revision',revision});
     }catch(e){}
+    lastRemoteSaveOk=true; lastRemoteSaveWhy=''; dirtySincePublish=false;
+    pendingRemoteReason='edit';
+    /* Fast path for ↑↓ / price taps: don't block the UI waiting on CDN. */
+    if(skipConfirm){
+      setSyncState('pending');
+      if(!silent) toast('Αποθηκεύτηκε · ενημέρωση πελατών…');
+      confirmPublicMenuRevision(revision,{timeoutMs:20000,intervalMs:800}).then(ok=>{
+        if(ok && !dirtySincePublish) setSyncState('live');
+      });
+      return true;
+    }
     /* POST can succeed while public /api/menu still serves the previous Blob
        for a moment. Keep the pill on "confirming" until guests can read it. */
     setSyncState('confirming');
     const visible=await confirmPublicMenuRevision(revision);
-    lastRemoteSaveOk=true; lastRemoteSaveWhy=''; dirtySincePublish=false;
-    pendingRemoteReason='edit';
     if(visible){
       setSyncState('live');
       if(!silent) toast('Ενημερώθηκε ζωντανά ✓');
@@ -2413,21 +2459,28 @@ function renderEasy(){
 
   const cats = S.categories.slice().sort((a,b)=>a.order-b.order);
   cats.forEach(c=>{
-    const items = S.menu.filter(i=>i.cat===c.id); if(!items.length) return;
+    const items = S.menu.filter(i=>i.cat===c.id)
+      .slice()
+      .sort((a,b)=>(Number(a.order)||0)-(Number(b.order)||0));
+    if(!items.length) return;
     const h=document.createElement('h3');
+    h.className='easy-cat-h';
     h.style.cssText='font-size:15px;color:var(--forest-3);margin:18px 0 8px;display:flex;align-items:center;gap:8px;';
-    h.innerHTML = ICO.draw(c.icon) + '<span>'+catLabel(c,'el')+'</span>';
-    h.querySelector('.ico').style.cssText='width:16px;height:16px;stroke-width:1.9;';
+    h.innerHTML = adminCatThumb(c) + '<span>'+catLabel(c,'el')+'</span>';
     area.appendChild(h);
 
-    items.forEach(i=>{
+    items.forEach((i,ix)=>{
       const ss=dishScheduleStatus(i);
       const scheduleText=ss.enabled?(ss.active?'Προγραμματισμένο · live':(ss.upcoming?'Έρχεται '+ss.schedule.from:'Έληξε '+ss.schedule.to)):'';
       const row=document.createElement('div');
       row.className='easy-row reveal'+(i.available?'':' off')+(i.hidden||!ss.active?' hidden':'');
       row.dataset.id=String(i.id);
       row.innerHTML=`
-        <div class="rico">${ICO.get(i.icon)}</div>
+        <div class="dish-order">
+          <button type="button" data-dish-up data-testid="easy-dish-up-${i.id}" title="Πάνω" ${ix===0?'disabled':''}>↑</button>
+          <button type="button" data-dish-down data-testid="easy-dish-down-${i.id}" title="Κάτω" ${ix===items.length-1?'disabled':''}>↓</button>
+        </div>
+        <div class="rico">${adminDishThumb(i)}</div>
         <div>
           <div class="nm">${itemName(i,'el')}</div>
           <div class="cat">${itemName(i,'en')}${scheduleText?` · ${scheduleText}`:''}</div>
@@ -2442,19 +2495,21 @@ function renderEasy(){
         <button class="easy-edit pressable" type="button" data-edit data-testid="easy-edit-${i.id}" title="Πλήρης επεξεργασία">${ICO.get('edit')}</button>
         <button class="hidebtn ${i.hidden?'on':''}" data-hide data-testid="dish-visibility-${i.id}">${i.hidden?'Εμφάνιση':'Απόκρυψη'}</button>
         <div class="toggle ${i.available?'on':''}" data-toggle title="Διαθέσιμο / τελείωσε"></div>`;
+      row.querySelector('[data-dish-up]').onclick=()=>shiftDishInCategory(i.id,-1);
+      row.querySelector('[data-dish-down]').onclick=()=>shiftDishInCategory(i.id,1);
       row.querySelector('[data-edit]').onclick=()=>openProDish(i.id);
-      row.querySelector('[data-toggle]').onclick=async()=>{ i.available=!i.available; await persistAndPublish('availability',{silent:true}); renderEasy(); toast(i.available?'Διαθέσιμο ✓':'Τελείωσε ✓'); };
-      row.querySelector('[data-hide]').onclick=async()=>{ i.hidden=!i.hidden; await persistAndPublish('visibility',{silent:true}); renderEasy(); toast(i.hidden?'Κρύφτηκε ✓':'Εμφανίζεται ✓'); };
+      row.querySelector('[data-toggle]').onclick=()=>{ i.available=!i.available; persist('availability'); queueQuickPublish('availability'); renderEasy(); toast(i.available?'Διαθέσιμο ✓':'Τελείωσε ✓'); };
+      row.querySelector('[data-hide]').onclick=()=>{ i.hidden=!i.hidden; persist('visibility'); queueQuickPublish('visibility'); renderEasy(); toast(i.hidden?'Κρύφτηκε ✓':'Εμφανίζεται ✓'); };
       const inp=row.querySelector('[data-price]');
-      const commitPrice=async()=>{
+      const commitPrice=()=>{
         const v=parseFloat(inp.value);
         if(isNaN(v)||v<0){ toast('Μη έγκυρη τιμή'); inp.value=Number(i.price||0).toFixed(2); return; }
-        i.price=+v.toFixed(2); await persistAndPublish('price',{silent:true}); toast('Τιμή ενημερώθηκε ✓');
+        i.price=+v.toFixed(2); persist('price'); queueQuickPublish('price'); toast('Τιμή ενημερώθηκε ✓');
       };
       inp.onchange=commitPrice;
       inp.onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); commitPrice(); inp.blur(); } };
-      row.querySelector('[data-minus]').onclick=async()=>{ i.price=Math.max(0,+(Number(i.price||0)-0.5).toFixed(2)); await persistAndPublish('price',{silent:true}); renderEasy(); };
-      row.querySelector('[data-plus]').onclick=async()=>{ i.price=+(Number(i.price||0)+0.5).toFixed(2); await persistAndPublish('price',{silent:true}); renderEasy(); };
+      row.querySelector('[data-minus]').onclick=()=>{ i.price=Math.max(0,+(Number(i.price||0)-0.5).toFixed(2)); persist('price'); queueQuickPublish('price'); renderEasy(); };
+      row.querySelector('[data-plus]').onclick=()=>{ i.price=+(Number(i.price||0)+0.5).toFixed(2); persist('price'); queueQuickPublish('price'); renderEasy(); };
       area.appendChild(row);
     });
   });
@@ -2495,7 +2550,7 @@ function renderPro(){
           <button type="button" data-dish-down data-testid="dish-down-${i.id}" title="Κάτω" ${ix===S.menu.length-1?'disabled':''}>↓</button>
         </div>
         <span class="drag-handle" title="Σύρε για αλλαγή σειράς (PC)">⋮⋮</span>
-        <span class="phico">${ICO.get(i.icon||'bowl')}</span>
+        <span class="phico">${adminDishThumb(i)}</span>
         <span class="dotstate" style="width:9px;height:9px;border-radius:50%;flex:0 0 auto;
           background:${i.hidden?'#8B8674':(i.available?'var(--ok)':'var(--bad)')}"></span>
         <span class="nm">${itemName(i,'el')}</span>
@@ -2694,7 +2749,8 @@ function applyDishForm(i,box,opts={}){
   i.removable=(box.querySelector('[data-removable]')?box.querySelector('[data-removable]').value:'').split(',').map(v=>v.trim()).filter(Boolean).slice(0,20)
     .map((value,idx)=>Object.assign({},oldRemovable[idx]||{},{[proLang]:value}));
   i.icon = (box.querySelector('[data-icon]')&&box.querySelector('[data-icon]').value) || 'bowl';
-  i.iconOverride = true;
+  /* Never force iconOverride — it hid plate art and left every Easy row as a generic bowl. */
+  if('iconOverride' in i) delete i.iconOverride;
   i.image = cleanAdminPath(box.querySelector('[data-image]')?box.querySelector('[data-image]').value:'');
   box.querySelectorAll('[data-flag]').forEach(cb=> i[cb.dataset.flag] = cb.checked );
   i.schedule=normalizeDishSchedule({
@@ -2744,7 +2800,7 @@ function renderCategoryManager(area){
         <span class="ord" title="Σειρά">${ix+1}</span>
         <button type="button" data-cat-down data-testid="category-down-${ioEsc(c.id)}" title="Κάτω" ${ix===ordered.length-1?'disabled':''}>↓</button>
       </div>
-      <span class="cat-preview" title="Σύρε για αλλαγή σειράς">${ICO.get(c.icon||'bowl')}</span>
+      <span class="cat-preview" title="Σύρε για αλλαγή σειράς">${adminCatThumb(c)}</span>
       <div>
         <input data-cat-name value="${catLabel(c,'el')}" maxlength="40" placeholder="Όνομα κατηγορίας">
         <div class="cat-mini">${used} πιάτα · σειρά ${ix+1} · id ${ioEsc(c.id)}</div>
@@ -2858,11 +2914,13 @@ function deleteCategory(c){
 function applyCategoryOrder(ordered){
   ordered.forEach((c,ix)=>{ c.order=ix+1; });
   S.categories=ordered;
-  return persistAndPublish('category-order',{silent:true}).then(ok=>{
-    if(editMode==='pro') renderPro();
-    toast(ok?'Η σειρά κατηγοριών δημοσιεύτηκε ✓':'Η σειρά αποθηκεύτηκε · έλεγχος σύνδεσης');
-    return ok;
-  });
+  /* Instant UI — publish in the background after a short debounce. */
+  if(editMode==='pro') renderPro();
+  else if(editMode==='easy') renderEasy();
+  toast('Σειρά κατηγοριών ενημερώθηκε');
+  persist('category-order');
+  queueQuickPublish('category-order');
+  return Promise.resolve(true);
 }
 function shiftCategory(id, dir){
   const ordered=S.categories.slice().sort((a,b)=>(Number(a.order)||0)-(Number(b.order)||0));
@@ -2884,11 +2942,12 @@ function moveCategory(from,to){
 }
 function applyDishOrder(){
   S.menu.forEach((x,idx)=>{ x.order=idx+1; });
-  return persistAndPublish('dish-order',{silent:true}).then(ok=>{
-    if(editMode==='pro') renderPro();
-    toast(ok?'Η σειρά πιάτων δημοσιεύτηκε ✓':'Η σειρά αποθηκεύτηκε · έλεγχος σύνδεσης');
-    return ok;
-  });
+  if(editMode==='pro') renderPro();
+  else if(editMode==='easy') renderEasy();
+  toast('Σειρά ενημερώθηκε');
+  persist('dish-order');
+  queueQuickPublish('dish-order');
+  return Promise.resolve(true);
 }
 function shiftDish(id, dir){
   const ix=S.menu.findIndex(x=>String(x.id)===String(id));
@@ -2897,6 +2956,27 @@ function shiftDish(id, dir){
   if(j<0 || j>=S.menu.length) return;
   const [m]=S.menu.splice(ix,1);
   S.menu.splice(j,0,m);
+  applyDishOrder();
+}
+function shiftDishInCategory(id, dir){
+  const dish=(S.menu||[]).find(x=>String(x.id)===String(id));
+  if(!dish) return;
+  const list=(S.menu||[]).filter(x=>String(x.cat)===String(dish.cat))
+    .slice()
+    .sort((a,b)=>(Number(a.order)||0)-(Number(b.order)||0));
+  const ix=list.findIndex(x=>String(x.id)===String(id));
+  const j=ix+Number(dir||0);
+  if(ix<0 || j<0 || j>=list.length) return;
+  const [m]=list.splice(ix,1);
+  list.splice(j,0,m);
+  list.forEach((x,idx)=>{ x.order=idx+1; });
+  /* Keep global menu sorted: categories then dish order. */
+  const catOrder=new Map((S.categories||[]).map(c=>[String(c.id), Number(c.order)||0]));
+  S.menu.sort((a,b)=>{
+    const ca=catOrder.get(String(a.cat))||0, cb=catOrder.get(String(b.cat))||0;
+    if(ca!==cb) return ca-cb;
+    return (Number(a.order)||0)-(Number(b.order)||0);
+  });
   applyDishOrder();
 }
 function moveDish(from,to){
